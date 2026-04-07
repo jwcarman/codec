@@ -15,8 +15,6 @@
  */
 package org.jwcarman.codec.jackson;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
@@ -32,26 +30,8 @@ public class JacksonCodecFactory implements CodecFactory {
   }
 
   @Override
-  public <T> Codec<T> create(Class<T> type) {
-    JavaType javaType = objectMapper.getTypeFactory().constructType(type);
-    return new JacksonCodec<>(objectMapper, javaType, type);
-  }
-
-  @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
     JavaType javaType = objectMapper.getTypeFactory().constructType(typeRef.getType());
-    Class<T> rawType = extractRawType(typeRef.getType());
-    return new JacksonCodec<>(objectMapper, javaType, rawType);
-  }
-
-  private static <T> Class<T> extractRawType(Type type) {
-    if (type instanceof ParameterizedType parameterizedType) {
-      return asClass(parameterizedType.getRawType());
-    }
-    return asClass(type);
-  }
-
-  private static <T> Class<T> asClass(Type type) {
-    return (Class<T>) type;
+    return new JacksonCodec<>(objectMapper, javaType);
   }
 }

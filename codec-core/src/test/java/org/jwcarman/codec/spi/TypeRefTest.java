@@ -16,9 +16,11 @@
 package org.jwcarman.codec.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -60,5 +62,129 @@ class TypeRefTest {
     assertThat(innerType).isInstanceOf(ParameterizedType.class);
     ParameterizedType innerParamType = (ParameterizedType) innerType;
     assertThat(innerParamType.getRawType()).isEqualTo(Map.class);
+  }
+
+  // --- of(Class) factory ---
+
+  @Test
+  void ofClassShouldCaptureType() {
+    TypeRef<String> ref = TypeRef.of(String.class);
+    assertThat(ref.getType()).isEqualTo(String.class);
+  }
+
+  @Test
+  void ofClassShouldRejectNull() {
+    assertThatThrownBy(() -> TypeRef.of(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("type must not be null");
+  }
+
+  @Test
+  void ofClassShouldWorkWithPrimitiveArrayType() {
+    TypeRef<byte[]> ref = TypeRef.of(byte[].class);
+    assertThat(ref.getType()).isEqualTo(byte[].class);
+  }
+
+  // --- equals / hashCode ---
+
+  @Test
+  void twoAnonymousTypeRefsForSameTypeShouldBeEqual() {
+    TypeRef<List<String>> ref1 = new TypeRef<>() {};
+    TypeRef<List<String>> ref2 = new TypeRef<>() {};
+    assertThat(ref1).isEqualTo(ref2);
+    assertThat(ref1.hashCode()).isEqualTo(ref2.hashCode());
+  }
+
+  @Test
+  void typeRefsForDifferentTypeArgsShouldNotBeEqual() {
+    TypeRef<List<String>> ref1 = new TypeRef<>() {};
+    TypeRef<List<Integer>> ref2 = new TypeRef<>() {};
+    assertThat(ref1).isNotEqualTo(ref2);
+  }
+
+  @Test
+  void ofClassAndAnonymousSubclassForNonGenericTypeShouldBeEqual() {
+    TypeRef<String> fromFactory = TypeRef.of(String.class);
+    TypeRef<String> fromAnonymous = new TypeRef<>() {};
+    assertThat(fromFactory).isEqualTo(fromAnonymous);
+    assertThat(fromFactory.hashCode()).isEqualTo(fromAnonymous.hashCode());
+  }
+
+  @Test
+  void equalsShouldReturnTrueForSameInstance() {
+    TypeRef<String> ref = TypeRef.of(String.class);
+    assertThat(ref).isEqualTo(ref);
+  }
+
+  @Test
+  void equalsShouldReturnFalseForNull() {
+    TypeRef<String> ref = TypeRef.of(String.class);
+    assertThat(ref).isNotEqualTo(null);
+  }
+
+  @Test
+  void equalsShouldReturnFalseForNonTypeRef() {
+    TypeRef<String> ref = TypeRef.of(String.class);
+    assertThat(ref).isNotEqualTo("not a TypeRef");
+  }
+
+  // --- Map key behavior ---
+
+  @Test
+  void shouldWorkAsMapKeyWithAnonymousInstances() {
+    Map<TypeRef<?>, String> map = new HashMap<>();
+    TypeRef<List<String>> key1 = new TypeRef<>() {};
+    map.put(key1, "list-of-string");
+
+    TypeRef<List<String>> key2 = new TypeRef<>() {};
+    assertThat(map.get(key2)).isEqualTo("list-of-string");
+  }
+
+  @Test
+  void shouldWorkAsMapKeyWithOfFactory() {
+    Map<TypeRef<?>, String> map = new HashMap<>();
+    map.put(TypeRef.of(String.class), "string");
+
+    assertThat(map.get(TypeRef.of(String.class))).isEqualTo("string");
+  }
+
+  @Test
+  void shouldWorkAsMapKeyMixingOfAndAnonymous() {
+    Map<TypeRef<?>, String> map = new HashMap<>();
+    map.put(TypeRef.of(String.class), "string");
+
+    TypeRef<String> anonymousRef = new TypeRef<>() {};
+    assertThat(map.get(anonymousRef)).isEqualTo("string");
+  }
+
+  @Test
+  void shouldDistinguishDifferentTypesAsMapKeys() {
+    Map<TypeRef<?>, String> map = new HashMap<>();
+    map.put(new TypeRef<List<String>>() {}, "list-string");
+    map.put(new TypeRef<List<Integer>>() {}, "list-integer");
+
+    assertThat(map.get(new TypeRef<List<String>>() {})).isEqualTo("list-string");
+    assertThat(map.get(new TypeRef<List<Integer>>() {})).isEqualTo("list-integer");
+  }
+
+  // --- toString ---
+
+  @Test
+  void toStringShouldIncludeSimpleClassName() {
+    TypeRef<String> ref = TypeRef.of(String.class);
+    assertThat(ref.toString()).isEqualTo("TypeRef<java.lang.String>");
+  }
+
+  @Test
+  void toStringShouldIncludeParameterizedTypeName() {
+    TypeRef<List<String>> ref = new TypeRef<>() {};
+    assertThat(ref.toString()).isEqualTo("TypeRef<java.util.List<java.lang.String>>");
+  }
+
+  @Test
+  void toStringShouldIncludeNestedParameterizedTypeName() {
+    TypeRef<Map<String, List<Integer>>> ref = new TypeRef<>() {};
+    assertThat(ref.toString())
+        .isEqualTo("TypeRef<java.util.Map<java.lang.String, java.util.List<java.lang.Integer>>>");
   }
 }

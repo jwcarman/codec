@@ -19,6 +19,4 @@ public interface Codec<T> {
   byte[] encode(T value);
 
   T decode(byte[] bytes);
-
-  Class<T> type();
 }

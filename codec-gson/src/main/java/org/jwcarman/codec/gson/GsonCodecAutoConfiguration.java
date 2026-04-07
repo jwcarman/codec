@@ -16,7 +16,6 @@
 package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
-import org.jwcarman.codec.autoconfigure.CodecAutoConfiguration;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -25,7 +24,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-@AutoConfiguration(before = CodecAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(Gson.class)
 @EnableConfigurationProperties(GsonCodecProperties.class)
 public class GsonCodecAutoConfiguration {

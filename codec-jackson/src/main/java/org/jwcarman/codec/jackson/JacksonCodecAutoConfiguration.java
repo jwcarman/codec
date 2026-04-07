@@ -15,7 +15,6 @@
  */
 package org.jwcarman.codec.jackson;
 
-import org.jwcarman.codec.autoconfigure.CodecAutoConfiguration;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -24,7 +23,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import tools.jackson.databind.ObjectMapper;
 
-@AutoConfiguration(before = CodecAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(ObjectMapper.class)
 @EnableConfigurationProperties(JacksonCodecProperties.class)
 public class JacksonCodecAutoConfiguration {

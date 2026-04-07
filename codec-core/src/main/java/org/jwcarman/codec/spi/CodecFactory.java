@@ -16,7 +16,9 @@
 package org.jwcarman.codec.spi;
 
 public interface CodecFactory {
-  <T> Codec<T> create(Class<T> type);
-
   <T> Codec<T> create(TypeRef<T> typeRef);
+
+  default <T> Codec<T> create(Class<T> type) {
+    return create(TypeRef.of(type));
+  }
 }

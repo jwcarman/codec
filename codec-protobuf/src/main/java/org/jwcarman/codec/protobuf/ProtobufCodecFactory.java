@@ -16,8 +16,9 @@
 package org.jwcarman.codec.protobuf;
 
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.Parser;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
@@ -26,40 +27,33 @@ import org.jwcarman.codec.spi.TypeRef;
 public class ProtobufCodecFactory implements CodecFactory {
 
   @Override
-  public <T> Codec<T> create(Class<T> type) {
-    if (!GeneratedMessageV3.class.isAssignableFrom(type)) {
+  public <T> Codec<T> create(TypeRef<T> typeRef) {
+    Type type = typeRef.getType();
+    if (!(type instanceof Class<?> clazz)) {
       throw new IllegalArgumentException(
-          "Type " + type.getName() + " is not a GeneratedMessageV3 subclass");
+          "Protobuf codecs do not support parameterized types: " + type);
     }
-    Class<? extends GeneratedMessageV3> messageType = type.asSubclass(GeneratedMessageV3.class);
-    Method parseFromMethod = findParseFromMethod(messageType);
-    ProtobufCodec<? extends GeneratedMessageV3> codec =
-        new ProtobufCodec<>(messageType, parseFromMethod);
+    if (!GeneratedMessageV3.class.isAssignableFrom(clazz)) {
+      throw new IllegalArgumentException(
+          "Type " + clazz.getName() + " is not a GeneratedMessageV3 subclass");
+    }
+    Class<? extends GeneratedMessageV3> messageType = clazz.asSubclass(GeneratedMessageV3.class);
+    Parser<? extends GeneratedMessageV3> parser = getParser(messageType);
+    ProtobufCodec<? extends GeneratedMessageV3> codec = new ProtobufCodec<>(parser);
     return (Codec<T>) codec;
   }
 
-  @Override
-  public <T> Codec<T> create(TypeRef<T> typeRef) {
-    Class<T> rawType = extractRawType(typeRef.getType());
-    return create(rawType);
-  }
-
-  private static Method findParseFromMethod(Class<? extends GeneratedMessageV3> type) {
+  private static Parser<? extends GeneratedMessageV3> getParser(
+      Class<? extends GeneratedMessageV3> type) {
     try {
-      return type.getMethod("parseFrom", byte[].class);
+      Method method = type.getMethod("getDefaultInstance");
+      GeneratedMessageV3 defaultInstance = (GeneratedMessageV3) method.invoke(null);
+      return defaultInstance.getParserForType();
     } catch (NoSuchMethodException e) {
-      throw new IllegalStateException("No parseFrom(byte[]) method found on " + type.getName(), e);
+      throw new IllegalStateException(
+          "No getDefaultInstance() method found on " + type.getName(), e);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("Failed to get default instance for " + type.getName(), e);
     }
-  }
-
-  private static <T> Class<T> extractRawType(Type type) {
-    if (type instanceof ParameterizedType parameterizedType) {
-      return asClass(parameterizedType.getRawType());
-    }
-    return asClass(type);
-  }
-
-  private static <T> Class<T> asClass(Type type) {
-    return (Class<T>) type;
   }
 }

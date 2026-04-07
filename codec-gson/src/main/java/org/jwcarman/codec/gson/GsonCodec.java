@@ -24,12 +24,10 @@ public class GsonCodec<T> implements Codec<T> {
 
   private final Gson gson;
   private final TypeToken<T> typeToken;
-  private final Class<T> rawType;
 
-  GsonCodec(Gson gson, TypeToken<T> typeToken, Class<T> rawType) {
+  GsonCodec(Gson gson, TypeToken<T> typeToken) {
     this.gson = gson;
     this.typeToken = typeToken;
-    this.rawType = rawType;
   }
 
   @Override
@@ -40,10 +38,5 @@ public class GsonCodec<T> implements Codec<T> {
   @Override
   public T decode(byte[] bytes) {
     return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), typeToken);
-  }
-
-  @Override
-  public Class<T> type() {
-    return rawType;
   }
 }

@@ -17,18 +17,15 @@ package org.jwcarman.codec.protobuf;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import com.google.protobuf.Parser;
 import org.jwcarman.codec.spi.Codec;
 
 class ProtobufCodec<T extends GeneratedMessageV3> implements Codec<T> {
 
-  private final Class<T> type;
-  private final Method parseFromMethod;
+  private final Parser<T> parser;
 
-  ProtobufCodec(Class<T> type, Method parseFromMethod) {
-    this.type = type;
-    this.parseFromMethod = parseFromMethod;
+  ProtobufCodec(Parser<T> parser) {
+    this.parser = parser;
   }
 
   @Override
@@ -39,19 +36,9 @@ class ProtobufCodec<T extends GeneratedMessageV3> implements Codec<T> {
   @Override
   public T decode(byte[] bytes) {
     try {
-      return type.cast(parseFromMethod.invoke(null, bytes));
-    } catch (InvocationTargetException e) {
-      if (e.getCause() instanceof InvalidProtocolBufferException) {
-        throw new IllegalArgumentException("Failed to decode protobuf message", e.getCause());
-      }
-      throw new IllegalStateException("Failed to invoke parseFrom", e);
-    } catch (IllegalAccessException e) {
-      throw new IllegalStateException("Failed to invoke parseFrom", e);
+      return parser.parseFrom(bytes);
+    } catch (InvalidProtocolBufferException e) {
+      throw new IllegalArgumentException("Failed to decode protobuf message", e);
     }
-  }
-
-  @Override
-  public Class<T> type() {
-    return type;
   }
 }

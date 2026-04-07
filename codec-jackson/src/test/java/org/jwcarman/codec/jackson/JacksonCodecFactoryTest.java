@@ -63,12 +63,6 @@ class JacksonCodecFactoryTest {
   }
 
   @Test
-  void shouldReturnCorrectTypeForClass() {
-    Codec<Person> codec = factory.create(Person.class);
-    assertThat(codec.type()).isEqualTo(Person.class);
-  }
-
-  @Test
   void shouldRoundTripListOfStrings() {
     Codec<List<String>> codec = factory.create(new TypeRef<List<String>>() {});
     List<String> original = List.of("hello", "world");
@@ -110,18 +104,6 @@ class JacksonCodecFactoryTest {
     List<String> decoded = codec.decode(encoded);
 
     assertThat(decoded).isEmpty();
-  }
-
-  @Test
-  void shouldReturnCorrectTypeForTypeRef() {
-    Codec<List<String>> codec = factory.create(new TypeRef<List<String>>() {});
-    assertThat(codec.type()).isEqualTo(List.class);
-  }
-
-  @Test
-  void shouldReturnCorrectTypeForMapTypeRef() {
-    Codec<Map<String, Integer>> codec = factory.create(new TypeRef<Map<String, Integer>>() {});
-    assertThat(codec.type()).isEqualTo(Map.class);
   }
 
   @Test

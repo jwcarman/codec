@@ -17,6 +17,7 @@ package org.jwcarman.codec.spi;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 public abstract class TypeRef<T> {
   private final Type type;
@@ -26,7 +27,33 @@ public abstract class TypeRef<T> {
     this.type = ((ParameterizedType) superclass).getActualTypeArguments()[0];
   }
 
+  private TypeRef(Type type) {
+    this.type = type;
+  }
+
+  public static <T> TypeRef<T> of(Class<T> type) {
+    Objects.requireNonNull(type, "type must not be null");
+    return new TypeRef<>(type) {};
+  }
+
   public Type getType() {
     return type;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof TypeRef<?> other)) return false;
+    return type.equals(other.type);
+  }
+
+  @Override
+  public int hashCode() {
+    return type.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return "TypeRef<" + type.getTypeName() + ">";
   }
 }

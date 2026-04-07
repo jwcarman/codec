@@ -23,12 +23,10 @@ public class JacksonCodec<T> implements Codec<T> {
 
   private final ObjectMapper objectMapper;
   private final JavaType javaType;
-  private final Class<T> rawType;
 
-  JacksonCodec(ObjectMapper objectMapper, JavaType javaType, Class<T> rawType) {
+  JacksonCodec(ObjectMapper objectMapper, JavaType javaType) {
     this.objectMapper = objectMapper;
     this.javaType = javaType;
-    this.rawType = rawType;
   }
 
   @Override
@@ -39,10 +37,5 @@ public class JacksonCodec<T> implements Codec<T> {
   @Override
   public T decode(byte[] bytes) {
     return objectMapper.readValue(bytes, javaType);
-  }
-
-  @Override
-  public Class<T> type() {
-    return rawType;
   }
 }

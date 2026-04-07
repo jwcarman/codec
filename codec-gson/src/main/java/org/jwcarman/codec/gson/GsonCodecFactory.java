@@ -17,8 +17,6 @@ package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
@@ -32,26 +30,8 @@ public class GsonCodecFactory implements CodecFactory {
   }
 
   @Override
-  public <T> Codec<T> create(Class<T> type) {
-    TypeToken<T> typeToken = TypeToken.get(type);
-    return new GsonCodec<>(gson, typeToken, type);
-  }
-
-  @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
     TypeToken<T> typeToken = (TypeToken<T>) TypeToken.get(typeRef.getType());
-    Class<T> rawType = extractRawType(typeRef.getType());
-    return new GsonCodec<>(gson, typeToken, rawType);
-  }
-
-  private static <T> Class<T> extractRawType(Type type) {
-    if (type instanceof ParameterizedType parameterizedType) {
-      return asClass(parameterizedType.getRawType());
-    }
-    return asClass(type);
-  }
-
-  private static <T> Class<T> asClass(Type type) {
-    return (Class<T>) type;
+    return new GsonCodec<>(gson, typeToken);
   }
 }

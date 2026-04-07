@@ -68,12 +68,6 @@ class ProtobufCodecFactoryTest {
   }
 
   @Test
-  void shouldReturnCorrectType() {
-    Codec<TestMessages.Person> codec = factory.create(TestMessages.Person.class);
-    assertThat(codec.type()).isEqualTo(TestMessages.Person.class);
-  }
-
-  @Test
   void shouldWorkWithTypeRef() {
     Codec<TestMessages.Person> codec = factory.create(new TypeRef<TestMessages.Person>() {});
     TestMessages.Person original =

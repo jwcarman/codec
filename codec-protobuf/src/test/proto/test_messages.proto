@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package codec.protobuf.test;
+
+option java_package = "org.jwcarman.codec.protobuf";
+option java_outer_classname = "TestMessages";
+
+message Address {
+  string street = 1;
+  string city = 2;
+}
+
+message Person {
+  string name = 1;
+  int32 age = 2;
+  Address address = 3;
+}

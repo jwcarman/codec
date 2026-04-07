@@ -49,6 +49,11 @@
                 <artifactId>codec-gson</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jwcarman.codec</groupId>
+                <artifactId>codec-protobuf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

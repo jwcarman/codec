@@ -89,6 +89,7 @@
         <module>codec-core</module>
         <module>codec-jackson</module>
         <module>codec-gson</module>
+        <module>codec-protobuf</module>
     </modules>
 
     <dependencies>

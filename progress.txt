@@ -1,8 +1,8 @@
-LAST_RUN: 2026-04-07T07:49:00-04:00
-ITERATION: 2
-SPEC_COMPLETED: 002-codec-jackson.md
-WHAT_WAS_DONE: Created codec-jackson module with JacksonCodecFactory, JacksonCodec, JacksonCodecAutoConfiguration, JacksonCodecProperties, auto-config registration, and 12 passing tests covering POJO round-trips, generic types (List, Map, List<Record>), null fields, empty collections, type() correctness, thread safety, and auto-config wiring with ConditionalOnMissingBean.
-VERIFICATION: ./mvnw verify — BUILD SUCCESS, 27 tests run (15 core + 12 jackson), 0 failures; ./mvnw spotless:check — PASS
+LAST_RUN: 2026-04-07T07:52:00-04:00
+ITERATION: 3
+SPEC_COMPLETED: 003-codec-gson.md
+WHAT_WAS_DONE: Created codec-gson module with GsonCodecFactory, GsonCodec, GsonCodecAutoConfiguration, GsonCodecProperties, auto-config registration, and 12 passing tests covering POJO round-trips, generic types (List, Map, List<Record>), null fields, empty collections, type() correctness, thread safety, and auto-config wiring with ConditionalOnMissingBean. Auto-config uses ObjectProvider<Gson> to optionally inject existing Gson bean or fall back to new Gson().
+VERIFICATION: ./mvnw verify — BUILD SUCCESS, 39 tests run (15 core + 12 jackson + 12 gson), 0 failures; ./mvnw spotless:check — PASS
 STATUS: MORE_WORK
-NEXT_SPEC: 003-codec-gson.md
-NOTES: Spring Boot 4.x moved JacksonAutoConfiguration to org.springframework.boot.jackson.autoconfigure package (from spring-boot-jackson module). Jackson 3.x (tools.jackson) no longer throws checked IOException from ObjectMapper methods. The unchecked cast in JacksonCodecFactory.asClass() is unavoidable due to Java type erasure when converting Type to Class<T> — kept without @SuppressWarnings per project rules (compiler emits a warning note but builds successfully). Module added to parent POM and codec-bom.
+NEXT_SPEC: 004-codec-protobuf.md
+NOTES: Gson is managed by Spring Boot 4.x (version 2.13.2). Unlike Jackson, Gson is NOT auto-configured by Spring Boot, so the auto-config uses ObjectProvider<Gson> to optionally inject an existing bean or create a default instance. The unchecked cast in GsonCodecFactory (TypeToken.get and asClass) is unavoidable due to Java type erasure — compiler emits a warning note but builds successfully.

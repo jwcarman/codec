@@ -44,6 +44,11 @@
                 <artifactId>codec-jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jwcarman.codec</groupId>
+                <artifactId>codec-gson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

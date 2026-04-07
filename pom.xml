@@ -88,6 +88,7 @@
         <module>codec-bom</module>
         <module>codec-core</module>
         <module>codec-jackson</module>
+        <module>codec-gson</module>
     </modules>
 
     <dependencies>

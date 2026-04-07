@@ -18,6 +18,7 @@ package org.jwcarman.codec.protobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -82,6 +83,22 @@ class ProtobufCodecFactoryTest {
     assertThatThrownBy(() -> factory.create(String.class))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("is not a GeneratedMessageV3 subclass");
+  }
+
+  @Test
+  void shouldThrowForParameterizedType() {
+    assertThatThrownBy(() -> factory.create(new TypeRef<List<String>>() {}))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("do not support parameterized types");
+  }
+
+  @Test
+  void shouldThrowForInvalidBytes() {
+    Codec<TestMessages.Person> codec = factory.create(TestMessages.Person.class);
+    byte[] garbage = {0x00, 0x7F, 0x00, 0x7F, 0x00};
+    assertThatThrownBy(() -> codec.decode(garbage))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Failed to decode protobuf message");
   }
 
   @Test

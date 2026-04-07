@@ -91,8 +91,7 @@ class TypeRefTest {
   void twoAnonymousTypeRefsForSameTypeShouldBeEqual() {
     TypeRef<List<String>> ref1 = new TypeRef<>() {};
     TypeRef<List<String>> ref2 = new TypeRef<>() {};
-    assertThat(ref1).isEqualTo(ref2);
-    assertThat(ref1).hasSameHashCodeAs(ref2);
+    assertThat(ref1).isEqualTo(ref2).hasSameHashCodeAs(ref2);
   }
 
   @Test
@@ -106,8 +105,7 @@ class TypeRefTest {
   void ofClassAndAnonymousSubclassForNonGenericTypeShouldBeEqual() {
     TypeRef<String> fromFactory = TypeRef.of(String.class);
     TypeRef<String> fromAnonymous = new TypeRef<>() {};
-    assertThat(fromFactory).isEqualTo(fromAnonymous);
-    assertThat(fromFactory).hasSameHashCodeAs(fromAnonymous);
+    assertThat(fromFactory).isEqualTo(fromAnonymous).hasSameHashCodeAs(fromAnonymous);
   }
 
   @Test
@@ -163,8 +161,9 @@ class TypeRefTest {
     map.put(new TypeRef<List<String>>() {}, "list-string");
     map.put(new TypeRef<List<Integer>>() {}, "list-integer");
 
-    assertThat(map).containsEntry(new TypeRef<List<String>>() {}, "list-string");
-    assertThat(map).containsEntry(new TypeRef<List<Integer>>() {}, "list-integer");
+    assertThat(map)
+        .containsEntry(new TypeRef<List<String>>() {}, "list-string")
+        .containsEntry(new TypeRef<List<Integer>>() {}, "list-integer");
   }
 
   // --- toString ---

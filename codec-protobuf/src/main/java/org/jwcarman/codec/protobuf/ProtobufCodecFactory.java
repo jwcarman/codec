@@ -17,7 +17,6 @@ package org.jwcarman.codec.protobuf;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Parser;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import org.jwcarman.codec.spi.Codec;
@@ -49,11 +48,8 @@ public class ProtobufCodecFactory implements CodecFactory {
       Method method = type.getMethod("getDefaultInstance");
       GeneratedMessageV3 defaultInstance = (GeneratedMessageV3) method.invoke(null);
       return defaultInstance.getParserForType();
-    } catch (NoSuchMethodException e) {
-      throw new IllegalStateException(
-          "No getDefaultInstance() method found on " + type.getName(), e);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new IllegalStateException("Failed to get default instance for " + type.getName(), e);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to get parser for " + type.getName(), e);
     }
   }
 }

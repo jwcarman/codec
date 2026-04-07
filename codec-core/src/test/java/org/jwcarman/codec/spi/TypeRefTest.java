@@ -92,7 +92,7 @@ class TypeRefTest {
     TypeRef<List<String>> ref1 = new TypeRef<>() {};
     TypeRef<List<String>> ref2 = new TypeRef<>() {};
     assertThat(ref1).isEqualTo(ref2);
-    assertThat(ref1.hashCode()).isEqualTo(ref2.hashCode());
+    assertThat(ref1).hasSameHashCodeAs(ref2);
   }
 
   @Test
@@ -107,7 +107,7 @@ class TypeRefTest {
     TypeRef<String> fromFactory = TypeRef.of(String.class);
     TypeRef<String> fromAnonymous = new TypeRef<>() {};
     assertThat(fromFactory).isEqualTo(fromAnonymous);
-    assertThat(fromFactory.hashCode()).isEqualTo(fromAnonymous.hashCode());
+    assertThat(fromFactory).hasSameHashCodeAs(fromAnonymous);
   }
 
   @Test
@@ -137,7 +137,7 @@ class TypeRefTest {
     map.put(key1, "list-of-string");
 
     TypeRef<List<String>> key2 = new TypeRef<>() {};
-    assertThat(map.get(key2)).isEqualTo("list-of-string");
+    assertThat(map).containsEntry(key2, "list-of-string");
   }
 
   @Test
@@ -145,7 +145,7 @@ class TypeRefTest {
     Map<TypeRef<?>, String> map = new HashMap<>();
     map.put(TypeRef.of(String.class), "string");
 
-    assertThat(map.get(TypeRef.of(String.class))).isEqualTo("string");
+    assertThat(map).containsEntry(TypeRef.of(String.class), "string");
   }
 
   @Test
@@ -154,7 +154,7 @@ class TypeRefTest {
     map.put(TypeRef.of(String.class), "string");
 
     TypeRef<String> anonymousRef = new TypeRef<>() {};
-    assertThat(map.get(anonymousRef)).isEqualTo("string");
+    assertThat(map).containsEntry(anonymousRef, "string");
   }
 
   @Test
@@ -163,8 +163,8 @@ class TypeRefTest {
     map.put(new TypeRef<List<String>>() {}, "list-string");
     map.put(new TypeRef<List<Integer>>() {}, "list-integer");
 
-    assertThat(map.get(new TypeRef<List<String>>() {})).isEqualTo("list-string");
-    assertThat(map.get(new TypeRef<List<Integer>>() {})).isEqualTo("list-integer");
+    assertThat(map).containsEntry(new TypeRef<List<String>>() {}, "list-string");
+    assertThat(map).containsEntry(new TypeRef<List<Integer>>() {}, "list-integer");
   }
 
   // --- toString ---
@@ -172,19 +172,19 @@ class TypeRefTest {
   @Test
   void toStringShouldIncludeSimpleClassName() {
     TypeRef<String> ref = TypeRef.of(String.class);
-    assertThat(ref.toString()).isEqualTo("TypeRef<java.lang.String>");
+    assertThat(ref).hasToString("TypeRef<java.lang.String>");
   }
 
   @Test
   void toStringShouldIncludeParameterizedTypeName() {
     TypeRef<List<String>> ref = new TypeRef<>() {};
-    assertThat(ref.toString()).isEqualTo("TypeRef<java.util.List<java.lang.String>>");
+    assertThat(ref).hasToString("TypeRef<java.util.List<java.lang.String>>");
   }
 
   @Test
   void toStringShouldIncludeNestedParameterizedTypeName() {
     TypeRef<Map<String, List<Integer>>> ref = new TypeRef<>() {};
-    assertThat(ref.toString())
-        .isEqualTo("TypeRef<java.util.Map<java.lang.String, java.util.List<java.lang.Integer>>>");
+    assertThat(ref)
+        .hasToString("TypeRef<java.util.Map<java.lang.String, java.util.List<java.lang.Integer>>>");
   }
 }

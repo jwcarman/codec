@@ -87,7 +87,8 @@ class ProtobufCodecFactoryTest {
 
   @Test
   void shouldThrowForParameterizedType() {
-    assertThatThrownBy(() -> factory.create(new TypeRef<List<String>>() {}))
+    TypeRef<List<String>> typeRef = new TypeRef<>() {};
+    assertThatThrownBy(() -> factory.create(typeRef))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("do not support parameterized types");
   }

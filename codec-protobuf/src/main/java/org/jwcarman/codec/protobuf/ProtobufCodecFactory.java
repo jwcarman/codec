@@ -15,7 +15,7 @@
  */
 package org.jwcarman.codec.protobuf;
 
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.Parser;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -32,21 +32,21 @@ public class ProtobufCodecFactory implements CodecFactory {
       throw new IllegalArgumentException(
           "Protobuf codecs do not support parameterized types: " + type);
     }
-    if (!GeneratedMessageV3.class.isAssignableFrom(clazz)) {
+    if (!GeneratedMessage.class.isAssignableFrom(clazz)) {
       throw new IllegalArgumentException(
-          "Type " + clazz.getName() + " is not a GeneratedMessageV3 subclass");
+          "Type " + clazz.getName() + " is not a GeneratedMessage subclass");
     }
-    Class<? extends GeneratedMessageV3> messageType = clazz.asSubclass(GeneratedMessageV3.class);
-    Parser<? extends GeneratedMessageV3> parser = getParser(messageType);
-    ProtobufCodec<? extends GeneratedMessageV3> codec = new ProtobufCodec<>(parser);
+    Class<? extends GeneratedMessage> messageType = clazz.asSubclass(GeneratedMessage.class);
+    Parser<? extends GeneratedMessage> parser = getParser(messageType);
+    ProtobufCodec<? extends GeneratedMessage> codec = new ProtobufCodec<>(parser);
     return (Codec<T>) codec;
   }
 
-  private static Parser<? extends GeneratedMessageV3> getParser(
-      Class<? extends GeneratedMessageV3> type) {
+  private static Parser<? extends GeneratedMessage> getParser(
+      Class<? extends GeneratedMessage> type) {
     try {
       Method method = type.getMethod("getDefaultInstance");
-      GeneratedMessageV3 defaultInstance = (GeneratedMessageV3) method.invoke(null);
+      GeneratedMessage defaultInstance = (GeneratedMessage) method.invoke(null);
       return defaultInstance.getParserForType();
     } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("Failed to get parser for " + type.getName(), e);

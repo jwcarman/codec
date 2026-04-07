@@ -15,12 +15,12 @@
  */
 package org.jwcarman.codec.protobuf;
 
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.jwcarman.codec.spi.Codec;
 
-class ProtobufCodec<T extends GeneratedMessageV3> implements Codec<T> {
+class ProtobufCodec<T extends GeneratedMessage> implements Codec<T> {
 
   private final Parser<T> parser;
 

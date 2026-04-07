@@ -15,7 +15,7 @@
  */
 package org.jwcarman.codec.protobuf;
 
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
-@ConditionalOnClass(GeneratedMessageV3.class)
+@ConditionalOnClass(GeneratedMessage.class)
 @EnableConfigurationProperties(ProtobufCodecProperties.class)
 public class ProtobufCodecAutoConfiguration {
 

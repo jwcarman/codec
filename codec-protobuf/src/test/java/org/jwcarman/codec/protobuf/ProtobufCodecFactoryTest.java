@@ -82,7 +82,7 @@ class ProtobufCodecFactoryTest {
   void shouldThrowForNonProtobufType() {
     assertThatThrownBy(() -> factory.create(String.class))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("is not a GeneratedMessageV3 subclass");
+        .hasMessageContaining("is not a GeneratedMessage subclass");
   }
 
   @Test

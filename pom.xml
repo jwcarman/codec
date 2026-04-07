@@ -87,6 +87,7 @@
     <modules>
         <module>codec-bom</module>
         <module>codec-core</module>
+        <module>codec-jackson</module>
     </modules>
 
     <dependencies>

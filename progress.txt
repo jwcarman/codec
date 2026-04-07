@@ -1,8 +1,8 @@
-LAST_RUN: 2026-04-07T07:43:00-04:00
-ITERATION: 1
-SPEC_COMPLETED: 001-codec-core.md
-WHAT_WAS_DONE: Created parent POM, codec-bom, and codec-core modules with SPI interfaces (Codec, CodecFactory, TypeRef), built-in codecs (StringCodec, ByteArrayCodec), auto-configuration, Maven wrapper, and 15 passing tests.
-VERIFICATION: ./mvnw verify — BUILD SUCCESS, 15 tests run (3 TypeRef, 3 AutoConfiguration, 4 StringCodec, 5 ByteArrayCodec), 0 failures; ./mvnw spotless:check — PASS
+LAST_RUN: 2026-04-07T07:49:00-04:00
+ITERATION: 2
+SPEC_COMPLETED: 002-codec-jackson.md
+WHAT_WAS_DONE: Created codec-jackson module with JacksonCodecFactory, JacksonCodec, JacksonCodecAutoConfiguration, JacksonCodecProperties, auto-config registration, and 12 passing tests covering POJO round-trips, generic types (List, Map, List<Record>), null fields, empty collections, type() correctness, thread safety, and auto-config wiring with ConditionalOnMissingBean.
+VERIFICATION: ./mvnw verify — BUILD SUCCESS, 27 tests run (15 core + 12 jackson), 0 failures; ./mvnw spotless:check — PASS
 STATUS: MORE_WORK
-NEXT_SPEC: 002-codec-jackson.md
-NOTES: Maven wrapper copied from Odyssey project. Parent POM modeled after Odyssey's structure with same plugin versions. All Java files have Apache 2.0 license headers. codec-bom currently lists only codec-core — later specs should add their modules.
+NEXT_SPEC: 003-codec-gson.md
+NOTES: Spring Boot 4.x moved JacksonAutoConfiguration to org.springframework.boot.jackson.autoconfigure package (from spring-boot-jackson module). Jackson 3.x (tools.jackson) no longer throws checked IOException from ObjectMapper methods. The unchecked cast in JacksonCodecFactory.asClass() is unavoidable due to Java type erasure when converting Type to Class<T> — kept without @SuppressWarnings per project rules (compiler emits a warning note but builds successfully). Module added to parent POM and codec-bom.

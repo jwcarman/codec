@@ -1,0 +1,8 @@
+LAST_RUN: never
+ITERATION: 0
+SPEC_COMPLETED: none
+WHAT_WAS_DONE: initial setup
+VERIFICATION: n/a
+STATUS: MORE_WORK
+NEXT_SPEC: first file in specs/
+NOTES: First run. Read PRD.md fully before doing anything.

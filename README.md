@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jwcarman/codec/actions/workflows/maven.yml/badge.svg)](https://github.com/jwcarman/codec/actions/workflows/maven.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Java](https://img.shields.io/badge/dynamic/xml?url=https://raw.githubusercontent.com/jwcarman/codec/main/pom.xml&query=//*[local-name()='java.version']/text()&label=Java&color=orange)](https://openjdk.org/)
+[![Java](https://img.shields.io/badge/dynamic/xml?url=https://raw.githubusercontent.com/jwcarman/codec/main/pom.xml&query=//*[local-name()='maven.compiler.release']/text()&label=Java&color=orange)](https://openjdk.org/)
 
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_codec&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=jwcarman_codec)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_codec&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=jwcarman_codec)

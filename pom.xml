@@ -82,6 +82,7 @@
         <sonatype.plugin.version>0.11.0</sonatype.plugin.version>
         <license.plugin.version>5.0.0</license.plugin.version>
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
+        <enforcer.plugin.version>3.6.2</enforcer.plugin.version>
         <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
 
         <!-- License Header Configuration -->
@@ -321,6 +322,66 @@
                                     <formats>
                                         <format>XML</format>
                                     </formats>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>analyze-dependencies</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>analyze-only</goal>
+                                </goals>
+                                <configuration>
+                                    <failOnWarning>true</failOnWarning>
+                                    <ignoredUsedUndeclaredDependencies>
+                                        <!-- Aggregator is declared deliberately; tests compile against junit-jupiter-api. -->
+                                        <ignoredUsedUndeclaredDependency>org.junit.jupiter:junit-jupiter-api</ignoredUsedUndeclaredDependency>
+                                        <!-- Reported whether or not it is declared; arrives via spring-boot-autoconfigure. -->
+                                        <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot</ignoredUsedUndeclaredDependency>
+                                    </ignoredUsedUndeclaredDependencies>
+                                    <ignoredUnusedDeclaredDependencies>
+                                        <!-- The junit-jupiter aggregator supplies the engine at test runtime. -->
+                                        <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot</ignoredUnusedDeclaredDependency>
+                                        <!-- codec-spring-boot-starter ships no code: it is dependencies-only by design. -->
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-core</ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-autoconfigure</ignoredUnusedDeclaredDependency>
+                                    </ignoredUnusedDeclaredDependencies>
+                                    <ignoredNonTestScopedDependencies>
+                                        <!-- Only test code references spring-boot classes directly, but it is a
+                                             compile-scope transitive of spring-boot-autoconfigure, which is required. -->
+                                        <ignoredNonTestScopedDependency>org.springframework.boot:spring-boot</ignoredNonTestScopedDependency>
+                                    </ignoredNonTestScopedDependencies>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>${enforcer.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>enforce-dependency-hygiene</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <dependencyConvergence/>
+                                        <requireUpperBoundDeps/>
+                                        <banDuplicatePomDependencyVersions/>
+                                        <banDynamicVersions>
+                                            <!-- Bans ranges and LATEST/RELEASE. Snapshots are allowed: the reactor
+                                                 depends on its own SNAPSHOT version during development. -->
+                                            <allowSnapshots>true</allowSnapshots>
+                                        </banDynamicVersions>
+                                    </rules>
                                 </configuration>
                             </execution>
                         </executions>

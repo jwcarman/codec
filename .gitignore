@@ -11,3 +11,4 @@ target/
 .settings/
 .classpath
 .factorypath
+site/

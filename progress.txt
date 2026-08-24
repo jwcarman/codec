@@ -1,8 +1,0 @@
-LAST_RUN: 2026-04-07T07:58:00-04:00
-ITERATION: 4
-SPEC_COMPLETED: 004-codec-protobuf.md
-WHAT_WAS_DONE: Created codec-protobuf module with ProtobufCodecFactory, ProtobufCodec, ProtobufCodecAutoConfiguration, ProtobufCodecProperties, auto-config registration, and 11 passing tests covering round-trips (simple message, nested types, empty messages), TypeRef support, IllegalArgumentException for non-protobuf types, parseFrom caching, thread safety, and auto-config wiring with ConditionalOnMissingBean. Uses protobuf-java 3.25.5 with protobuf-maven-plugin for test proto compilation.
-VERIFICATION: ./mvnw verify — BUILD SUCCESS, 50 tests run (15 core + 12 jackson + 12 gson + 11 protobuf), 0 failures; ./mvnw spotless:check — PASS (applied via spotless:apply before verify)
-STATUS: DONE
-NEXT_SPEC: none
-NOTES: protobuf-java 3.25.5 is not managed by Spring Boot BOM — version is specified explicitly in codec-protobuf/pom.xml. The protobuf-maven-plugin (xolstice 0.6.1) with os-maven-plugin (1.7.1) handles test proto compilation. protobuf-java 3.25.5 uses sun.misc.Unsafe internally which triggers deprecation warnings on Java 25 — this is a protobuf-java issue, not ours. The unchecked cast in ProtobufCodecFactory (asClass) is unavoidable due to Java type erasure, matching the pattern used in GsonCodecFactory and JacksonCodecFactory.

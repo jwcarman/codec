@@ -19,8 +19,11 @@ choose their serialization backend by dropping a module on the classpath.
 - Clean SPI: `Codec<T>` (encode/decode) and `CodecFactory` (produce codecs for any type)
 - `TypeRef<T>` for full generic type support (avoids type erasure)
 - Mix-and-match backends — Jackson, Gson, Protobuf, etc.
-- Spring Boot auto-configuration — drop a backend on the classpath, it registers
+- Spring Boot auto-configuration — via `codec-spring-boot-starter`; backend
+  modules stay Spring-free, and adding a backend to the classpath registers it
 - In-memory/passthrough fallback for `String` and `byte[]`
+- Codec composition — `codec.andThen(byteTransform)` layers a `Codec<byte[]>`
+  (compression, encryption, etc.) onto any `Codec<T>`; gzip ships built in
 - Published to Maven Central with BOM for version alignment
 
 ## Non-Goals
@@ -28,7 +31,7 @@ choose their serialization backend by dropping a module on the classpath.
 - Schema registry integration
 - Schema evolution/migration tools
 - Streaming serialization (large payloads)
-- Compression (consumers handle that)
+- Compression beyond built-in gzip (other algorithms and encryption are consumer-supplied `Codec<byte[]>` transforms via `andThen`)
 
 ---
 

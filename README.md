@@ -40,13 +40,30 @@ Use the BOM for version alignment:
 </dependencyManagement>
 ```
 
-Then add the backend you want:
+For Spring Boot applications, add the starter (it brings the auto-configuration),
+then the backend you want:
 
 ```xml
-<!-- Jackson (JSON) -->
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-spring-boot-starter</artifactId>
+</dependency>
+```
+
+Outside Spring, skip the starter and just add a backend — construct its factory
+directly (e.g. `new JacksonCodecFactory(objectMapper)`). Backend choices:
+
+```xml
+<!-- Jackson 3 (JSON) -->
 <dependency>
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-jackson</artifactId>
+</dependency>
+
+<!-- Jackson 2 (JSON, for projects still on com.fasterxml Jackson) -->
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-jackson2</artifactId>
 </dependency>
 
 <!-- Gson (JSON) -->
@@ -92,14 +109,37 @@ For generic types, use `TypeRef`:
 Codec<List<Person>> codec = codecFactory.create(new TypeRef<List<Person>>() {});
 ```
 
+### 3. Compose codecs
+
+Layer any `Codec<byte[]>` transform (compression, encryption, …) onto a codec
+with `andThen`. Encoding applies transforms left to right; decoding inverts
+them automatically. Gzip ships built in:
+
+```java
+Codec<Person> codec = codecFactory.create(Person.class).andThen(new GzipCodec());
+```
+
+Bring your own transform by implementing `Codec<byte[]>` — `encode` is the
+forward direction (e.g. encrypt), `decode` its inverse:
+
+```java
+Codec<Person> codec =
+    codecFactory.create(Person.class)
+        .andThen(new GzipCodec())
+        .andThen(new AesCodec(key)); // your own Codec<byte[]>
+```
+
 ## Modules
 
 | Module | Backend | Artifact |
 |--------|---------|----------|
 | Core | SPI interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
-| Jackson | Jackson JSON | `codec-jackson` |
+| Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
+| Jackson 2 | Jackson 2.x JSON (`com.fasterxml.jackson`) | `codec-jackson2` |
 | Gson | Gson JSON | `codec-gson` |
 | Protobuf | Protocol Buffers | `codec-protobuf` |
+| Auto-configure | Spring Boot auto-configuration for all backends | `codec-autoconfigure` |
+| Starter | Spring Boot starter (core + auto-configure) | `codec-spring-boot-starter` |
 
 ## Core SPI
 
@@ -146,11 +186,14 @@ making it safe to use as a map key for caching codecs.
 
 ## Auto-Configuration
 
-Each backend module provides Spring Boot auto-configuration. Drop the dependency
-on the classpath and a `CodecFactory` bean is registered automatically.
+The `codec-spring-boot-starter` (via `codec-autoconfigure`) registers a
+`CodecFactory` bean for whichever backend is on the classpath. The backend
+modules themselves are Spring-free.
 
-Jackson uses the application's existing `ObjectMapper`. Gson creates a default
-`Gson` instance if none is available.
+When several backends are present, precedence is Jackson 3 → Jackson 2 → Gson →
+Protobuf, and defining your own `CodecFactory` bean always wins. The Jackson and
+Gson configurations reuse the application's `ObjectMapper`/`Gson` bean when one
+exists, falling back to a default instance otherwise.
 
 ## Building
 

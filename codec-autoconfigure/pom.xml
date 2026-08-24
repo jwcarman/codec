@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.jwcarman.codec</groupId>
         <artifactId>codec-parent</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>0.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>codec-autoconfigure</artifactId>

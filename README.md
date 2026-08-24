@@ -119,6 +119,10 @@ them automatically. Gzip ships built in:
 Codec<Person> codec = codecFactory.create(Person.class).andThen(new GzipCodec());
 ```
 
+To guard against decompression bombs, `GzipCodec` refuses to decode payloads
+that expand beyond 64 MiB by default; pass a byte limit to the constructor
+(`new GzipCodec(maxDecodedSize)`) to raise or lower the cap.
+
 Bring your own transform by implementing `Codec<byte[]>` — `encode` is the
 forward direction (e.g. encrypt), `decode` its inverse:
 

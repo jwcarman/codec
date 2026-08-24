@@ -25,6 +25,21 @@ import org.jwcarman.codec.spi.Codec;
 
 public class GzipCodec implements Codec<byte[]> {
 
+  private static final long DEFAULT_MAX_DECODED_SIZE = 64L * 1024 * 1024;
+
+  private final long maxDecodedSize;
+
+  public GzipCodec() {
+    this(DEFAULT_MAX_DECODED_SIZE);
+  }
+
+  public GzipCodec(long maxDecodedSize) {
+    if (maxDecodedSize <= 0) {
+      throw new IllegalArgumentException("maxDecodedSize must be positive: " + maxDecodedSize);
+    }
+    this.maxDecodedSize = maxDecodedSize;
+  }
+
   @Override
   public byte[] encode(byte[] value) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -39,7 +54,19 @@ public class GzipCodec implements Codec<byte[]> {
   @Override
   public byte[] decode(byte[] bytes) {
     try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(bytes))) {
-      return gzip.readAllBytes();
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      byte[] buffer = new byte[8192];
+      long total = 0;
+      int read;
+      while ((read = gzip.read(buffer)) != -1) {
+        total += read;
+        if (total > maxDecodedSize) {
+          throw new IllegalStateException(
+              "Decoded size exceeds the maximum of " + maxDecodedSize + " bytes");
+        }
+        out.write(buffer, 0, read);
+      }
+      return out.toByteArray();
     } catch (IOException e) {
       throw new UncheckedIOException("Unable to gunzip data", e);
     }

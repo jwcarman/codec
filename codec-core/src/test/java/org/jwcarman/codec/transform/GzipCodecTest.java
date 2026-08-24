@@ -94,6 +94,33 @@ class GzipCodecTest {
   }
 
   @Nested
+  class Decoded_size_cap {
+
+    @Test
+    void rejects_payloads_expanding_beyond_the_cap() {
+      byte[] bomb = codec.encode(new byte[100_000]);
+      GzipCodec capped = new GzipCodec(16);
+
+      assertThatExceptionOfType(IllegalStateException.class)
+          .isThrownBy(() -> capped.decode(bomb))
+          .withMessageContaining("16");
+    }
+
+    @Test
+    void allows_payloads_exactly_at_the_cap() {
+      byte[] input = "nineteen bytes long".getBytes(StandardCharsets.UTF_8);
+      GzipCodec capped = new GzipCodec(input.length);
+
+      assertThat(capped.decode(capped.encode(input))).isEqualTo(input);
+    }
+
+    @Test
+    void rejects_a_non_positive_cap() {
+      assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new GzipCodec(0));
+    }
+  }
+
+  @Nested
   class Composed_with_and_then {
 
     @Test

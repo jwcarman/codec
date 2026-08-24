@@ -1,0 +1,4 @@
+org.jwcarman.codec.autoconfigure.JacksonCodecAutoConfiguration
+org.jwcarman.codec.autoconfigure.Jackson2CodecAutoConfiguration
+org.jwcarman.codec.autoconfigure.GsonCodecAutoConfiguration
+org.jwcarman.codec.autoconfigure.ProtobufCodecAutoConfiguration

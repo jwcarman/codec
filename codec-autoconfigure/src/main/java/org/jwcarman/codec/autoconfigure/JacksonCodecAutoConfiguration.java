@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.protobuf;
+package org.jwcarman.codec.autoconfigure;
 
-import com.google.protobuf.GeneratedMessage;
+import org.jwcarman.codec.jackson.JacksonCodecFactory;
 import org.jwcarman.codec.spi.CodecFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import tools.jackson.databind.ObjectMapper;
 
 @AutoConfiguration
-@ConditionalOnClass(GeneratedMessage.class)
-@EnableConfigurationProperties(ProtobufCodecProperties.class)
-public class ProtobufCodecAutoConfiguration {
+@ConditionalOnClass({ObjectMapper.class, JacksonCodecFactory.class})
+public class JacksonCodecAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
-  public ProtobufCodecFactory protobufCodecFactory() {
-    return new ProtobufCodecFactory();
+  public JacksonCodecFactory jacksonCodecFactory(ObjectProvider<ObjectMapper> objectMapper) {
+    return new JacksonCodecFactory(objectMapper.getIfAvailable(ObjectMapper::new));
   }
 }

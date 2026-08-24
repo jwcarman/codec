@@ -21,13 +21,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.5</version>
-        <relativePath/>
-    </parent>
-
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
@@ -61,10 +54,25 @@
     </scm>
 
     <properties>
-        <java.version>25</java.version>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spotless.version>3.4.0</spotless.version>
         <jacocoArgLine></jacocoArgLine>
+
+        <!-- Dependency versions -->
+        <spring-boot.version>4.0.5</spring-boot.version>
+
+        <!-- Build plugin versions -->
+        <compiler.plugin.version>3.14.1</compiler.plugin.version>
+        <surefire.plugin.version>3.5.5</surefire.plugin.version>
+        <failsafe.plugin.version>3.5.5</failsafe.plugin.version>
+        <dependency.plugin.version>3.9.0</dependency.plugin.version>
+        <clean.plugin.version>3.5.0</clean.plugin.version>
+        <resources.plugin.version>3.3.1</resources.plugin.version>
+        <jar.plugin.version>3.4.2</jar.plugin.version>
+        <install.plugin.version>3.1.4</install.plugin.version>
+        <deploy.plugin.version>3.1.4</deploy.plugin.version>
 
         <!-- Publishing plugin versions -->
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
@@ -88,9 +96,24 @@
         <module>codec-bom</module>
         <module>codec-core</module>
         <module>codec-jackson</module>
+        <module>codec-jackson2</module>
         <module>codec-gson</module>
         <module>codec-protobuf</module>
+        <module>codec-autoconfigure</module>
+        <module>codec-spring-boot-starter</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -105,6 +128,55 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${clean.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${resources.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${compiler.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${failsafe.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${dependency.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${jar.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${install.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${deploy.plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -137,22 +209,6 @@
                 </executions>
                 <configuration>
                     <argLine>@{jacocoArgLine} -javaagent:"${org.mockito:mockito-core:jar}" -javaagent:"${net.bytebuddy:byte-buddy-agent:jar}" -Xshare:off</argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.springframework.boot</groupId>
-                            <artifactId>spring-boot-configuration-processor</artifactId>
-                        </path>
-                        <path>
-                            <groupId>org.springframework.boot</groupId>
-                            <artifactId>spring-boot-autoconfigure-processor</artifactId>
-                        </path>
-                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
@@ -330,7 +386,6 @@ limitations under the License.]]></inlineHeader>
                                         <exclude>**/*.sh</exclude>
                                         <exclude>**/*.md</exclude>
                                         <exclude>docs/**</exclude>
-                                        <exclude>specs/**</exclude>
                                     </excludes>
                                 </licenseSet>
                             </licenseSets>

@@ -7,3 +7,7 @@ target/
 *.swo
 .env
 .flattened-pom.xml
+.project
+.settings/
+.classpath
+.factorypath

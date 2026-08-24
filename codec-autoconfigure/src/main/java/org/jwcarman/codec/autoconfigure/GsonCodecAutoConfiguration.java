@@ -13,24 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.jackson;
+package org.jwcarman.codec.autoconfigure;
 
+import com.google.gson.Gson;
+import org.jwcarman.codec.gson.GsonCodecFactory;
 import org.jwcarman.codec.spi.CodecFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import tools.jackson.databind.ObjectMapper;
 
-@AutoConfiguration
-@ConditionalOnClass(ObjectMapper.class)
-@EnableConfigurationProperties(JacksonCodecProperties.class)
-public class JacksonCodecAutoConfiguration {
+@AutoConfiguration(
+    after = {JacksonCodecAutoConfiguration.class, Jackson2CodecAutoConfiguration.class})
+@ConditionalOnClass({Gson.class, GsonCodecFactory.class})
+public class GsonCodecAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
-  public JacksonCodecFactory jacksonCodecFactory(ObjectMapper objectMapper) {
-    return new JacksonCodecFactory(objectMapper);
+  public GsonCodecFactory gsonCodecFactory(ObjectProvider<Gson> gson) {
+    return new GsonCodecFactory(gson.getIfAvailable(Gson::new));
   }
 }

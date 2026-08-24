@@ -21,10 +21,16 @@ import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
 
+/** Produces JSON codecs backed by a shared {@link Gson} instance. */
 public class GsonCodecFactory implements CodecFactory {
 
   private final Gson gson;
 
+  /**
+   * Creates a factory that uses the given Gson instance for all codecs it produces.
+   *
+   * @param gson the Gson instance to serialize and deserialize with
+   */
   public GsonCodecFactory(Gson gson) {
     this.gson = gson;
   }

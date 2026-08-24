@@ -20,7 +20,12 @@ import com.google.gson.reflect.TypeToken;
 import java.nio.charset.StandardCharsets;
 import org.jwcarman.codec.spi.Codec;
 
-public class GsonCodec<T> implements Codec<T> {
+/**
+ * JSON codec backed by {@link Gson}, exchanging UTF-8 bytes.
+ *
+ * @param <T> the type this codec converts
+ */
+class GsonCodec<T> implements Codec<T> {
 
   private final Gson gson;
   private final TypeToken<T> typeToken;

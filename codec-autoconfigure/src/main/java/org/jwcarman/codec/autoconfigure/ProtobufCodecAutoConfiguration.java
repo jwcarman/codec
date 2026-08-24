@@ -23,6 +23,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * Auto-configures a {@link ProtobufCodecFactory} when the Protocol Buffers backend is on the
+ * classpath and no other {@link CodecFactory} bean exists. Lowest-precedence backend.
+ */
 @AutoConfiguration(
     after = {
       JacksonCodecAutoConfiguration.class,
@@ -32,6 +36,11 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({GeneratedMessage.class, ProtobufCodecFactory.class})
 public class ProtobufCodecAutoConfiguration {
 
+  /**
+   * Creates the factory.
+   *
+   * @return the codec factory
+   */
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
   public ProtobufCodecFactory protobufCodecFactory() {

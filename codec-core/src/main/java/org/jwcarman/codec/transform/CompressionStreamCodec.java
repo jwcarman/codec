@@ -23,14 +23,33 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import org.jwcarman.codec.spi.Codec;
 
+/**
+ * Base class for stream-based compression transforms, intended for use with {@link
+ * Codec#andThen(Codec)}.
+ *
+ * <p>Subclasses supply the compressing and decompressing streams; this class owns the buffering
+ * and, critically, the decompression-bomb guard: {@link #decode(byte[])} refuses to inflate past
+ * the configured maximum decoded size ({@value #DEFAULT_MAX_DECODED_SIZE} bytes by default). {@code
+ * encode} and {@code decode} are final so the guard cannot be bypassed.
+ *
+ * <p>Any stream-based compression library can be adapted by overriding the two factory methods,
+ * e.g. wrapping zstd or lz4 streams from a third-party dependency.
+ */
 public abstract class CompressionStreamCodec implements Codec<byte[]> {
 
+  /** Default maximum decoded size (64 MiB). */
   protected static final long DEFAULT_MAX_DECODED_SIZE = 64L * 1024 * 1024;
 
   private static final int BUFFER_SIZE = 8192;
 
   private final long maxDecodedSize;
 
+  /**
+   * Creates a codec that refuses to decode payloads expanding beyond the given size.
+   *
+   * @param maxDecodedSize maximum decoded size in bytes; must be positive
+   * @throws IllegalArgumentException if {@code maxDecodedSize} is not positive
+   */
   protected CompressionStreamCodec(long maxDecodedSize) {
     if (maxDecodedSize <= 0) {
       throw new IllegalArgumentException("maxDecodedSize must be positive: " + maxDecodedSize);
@@ -38,8 +57,22 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
     this.maxDecodedSize = maxDecodedSize;
   }
 
+  /**
+   * Wraps the sink in a stream that compresses everything written to it.
+   *
+   * @param sink the stream receiving compressed bytes
+   * @return the compressing stream; closing it must also release any native resources it holds
+   * @throws IOException if the stream cannot be created
+   */
   protected abstract OutputStream compressing(OutputStream sink) throws IOException;
 
+  /**
+   * Wraps the source in a stream that decompresses everything read from it.
+   *
+   * @param source the stream supplying compressed bytes
+   * @return the decompressing stream
+   * @throws IOException if the stream cannot be created
+   */
   protected abstract InputStream decompressing(InputStream source) throws IOException;
 
   @Override

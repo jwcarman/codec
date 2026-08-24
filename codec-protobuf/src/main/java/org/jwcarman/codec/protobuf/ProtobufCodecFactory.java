@@ -23,6 +23,10 @@ import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
 
+/**
+ * Produces codecs for Protocol Buffers messages ({@link GeneratedMessage} subclasses), using each
+ * message type's own {@link Parser}. Parameterized types are not supported.
+ */
 public class ProtobufCodecFactory implements CodecFactory {
 
   @Override

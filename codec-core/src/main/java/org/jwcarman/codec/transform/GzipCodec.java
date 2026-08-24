@@ -21,12 +21,26 @@ import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * Compresses with the gzip format (RFC 1952): DEFLATE data wrapped in a gzip header and CRC-32
+ * trailer.
+ *
+ * <p>Prefer this over {@link DeflateCodec} when the bytes must interoperate with external gzip
+ * tooling; prefer {@link DeflateCodec} to save roughly twelve bytes of framing per payload.
+ */
 public class GzipCodec extends CompressionStreamCodec {
 
+  /** Creates a codec with the default decoded-size cap of 64 MiB. */
   public GzipCodec() {
     super(DEFAULT_MAX_DECODED_SIZE);
   }
 
+  /**
+   * Creates a codec with a custom decoded-size cap.
+   *
+   * @param maxDecodedSize maximum decoded size in bytes; must be positive
+   * @throws IllegalArgumentException if {@code maxDecodedSize} is not positive
+   */
   public GzipCodec(long maxDecodedSize) {
     super(maxDecodedSize);
   }

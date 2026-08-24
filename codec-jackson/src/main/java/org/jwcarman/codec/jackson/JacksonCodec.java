@@ -19,7 +19,12 @@ import org.jwcarman.codec.spi.Codec;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
 
-public class JacksonCodec<T> implements Codec<T> {
+/**
+ * JSON codec backed by a Jackson 3.x {@link ObjectMapper}.
+ *
+ * @param <T> the type this codec converts
+ */
+class JacksonCodec<T> implements Codec<T> {
 
   private final ObjectMapper objectMapper;
   private final JavaType javaType;

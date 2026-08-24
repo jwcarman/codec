@@ -24,11 +24,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * Auto-configures a {@link GsonCodecFactory} when the Gson backend is on the classpath and no other
+ * {@link CodecFactory} bean exists. Yields to both Jackson backends.
+ */
 @AutoConfiguration(
     after = {JacksonCodecAutoConfiguration.class, Jackson2CodecAutoConfiguration.class})
 @ConditionalOnClass({Gson.class, GsonCodecFactory.class})
 public class GsonCodecAutoConfiguration {
 
+  /**
+   * Creates the factory, reusing the application's {@link Gson} bean when one exists.
+   *
+   * @param gson provider of the application's Gson instance, if any
+   * @return the codec factory
+   */
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
   public GsonCodecFactory gsonCodecFactory(ObjectProvider<Gson> gson) {

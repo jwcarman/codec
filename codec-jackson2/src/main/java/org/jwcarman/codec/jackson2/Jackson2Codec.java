@@ -22,7 +22,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.jwcarman.codec.spi.Codec;
 
-public class Jackson2Codec<T> implements Codec<T> {
+/**
+ * JSON codec backed by a Jackson 2.x {@link ObjectMapper}, wrapping Jackson's checked exceptions in
+ * {@link UncheckedIOException}.
+ *
+ * @param <T> the type this codec converts
+ */
+class Jackson2Codec<T> implements Codec<T> {
 
   private final ObjectMapper objectMapper;
   private final JavaType javaType;

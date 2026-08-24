@@ -20,6 +20,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.jwcarman.codec.spi.Codec;
 
+/**
+ * Codec for a Protocol Buffers message type, encoding with the message's wire format and decoding
+ * with its {@link Parser}.
+ *
+ * @param <T> the message type this codec converts
+ */
 class ProtobufCodec<T extends GeneratedMessage> implements Codec<T> {
 
   private final Parser<T> parser;

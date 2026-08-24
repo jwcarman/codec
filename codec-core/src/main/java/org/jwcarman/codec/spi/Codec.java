@@ -17,11 +17,47 @@ package org.jwcarman.codec.spi;
 
 import java.util.Objects;
 
+/**
+ * Converts values of type {@code T} to and from {@code byte[]}.
+ *
+ * <p>Implementations must be symmetric: {@code decode(encode(value))} yields a value equal to the
+ * original. Codecs are expected to be thread-safe.
+ *
+ * @param <T> the type this codec converts
+ */
 public interface Codec<T> {
+
+  /**
+   * Encodes a value to bytes.
+   *
+   * @param value the value to encode
+   * @return the encoded bytes
+   */
   byte[] encode(T value);
 
+  /**
+   * Decodes bytes back into a value.
+   *
+   * @param bytes the bytes to decode
+   * @return the decoded value
+   */
   T decode(byte[] bytes);
 
+  /**
+   * Layers a byte-level transform (compression, encryption, etc.) onto this codec.
+   *
+   * <p>The returned codec applies {@code transform.encode} after this codec's {@code encode}, and
+   * {@code transform.decode} before this codec's {@code decode}. Chained transforms compose outward
+   * on encode and unwind automatically in reverse order on decode:
+   *
+   * {@snippet lang = java :
+   * Codec<Person> codec = factory.create(Person.class).andThen(new GzipCodec()).andThen(aes);
+   * }
+   *
+   * @param transform the byte transform to apply after encoding (and invert before decoding)
+   * @return a codec of the same type with the transform applied
+   * @throws NullPointerException if {@code transform} is null
+   */
   default Codec<T> andThen(Codec<byte[]> transform) {
     Objects.requireNonNull(transform, "transform must not be null");
     Codec<T> self = this;

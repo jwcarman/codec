@@ -22,18 +22,42 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
+/**
+ * Compresses with the zlib format (RFC 1950): DEFLATE data wrapped in a two-byte header and
+ * Adler-32 checksum.
+ *
+ * <p>Same algorithm as {@link GzipCodec} with roughly twelve bytes less framing per payload —
+ * useful for high volumes of small messages. Prefer {@link GzipCodec} when the bytes must
+ * interoperate with external gzip tooling.
+ */
 public class DeflateCodec extends CompressionStreamCodec {
 
   private final int level;
 
+  /** Creates a codec with the default compression level and decoded-size cap of 64 MiB. */
   public DeflateCodec() {
     this(Deflater.DEFAULT_COMPRESSION, DEFAULT_MAX_DECODED_SIZE);
   }
 
+  /**
+   * Creates a codec with the default compression level and a custom decoded-size cap.
+   *
+   * @param maxDecodedSize maximum decoded size in bytes; must be positive
+   * @throws IllegalArgumentException if {@code maxDecodedSize} is not positive
+   */
   public DeflateCodec(long maxDecodedSize) {
     this(Deflater.DEFAULT_COMPRESSION, maxDecodedSize);
   }
 
+  /**
+   * Creates a codec with a specific compression level and decoded-size cap.
+   *
+   * @param level compression level: {@link Deflater#DEFAULT_COMPRESSION} (-1), or 0 (stored) to 9
+   *     (best compression)
+   * @param maxDecodedSize maximum decoded size in bytes; must be positive
+   * @throws IllegalArgumentException if {@code level} is outside -1..9 or {@code maxDecodedSize} is
+   *     not positive
+   */
   public DeflateCodec(int level, long maxDecodedSize) {
     if (level < Deflater.DEFAULT_COMPRESSION || level > Deflater.BEST_COMPRESSION) {
       throw new IllegalArgumentException("level must be between -1 and 9: " + level);
@@ -44,20 +68,19 @@ public class DeflateCodec extends CompressionStreamCodec {
 
   @Override
   protected OutputStream compressing(OutputStream sink) throws IOException {
-    return new DeflaterOutputStream(sink, new Deflater(level)) {
-      @Override
-      public void close() throws IOException {
-        try {
-          super.close();
-        } finally {
-          def.end();
-        }
-      }
-    };
+    return new LeveledDeflaterOutputStream(sink, level);
   }
 
   @Override
   protected InputStream decompressing(InputStream source) throws IOException {
     return new InflaterInputStream(source);
+  }
+
+  private static final class LeveledDeflaterOutputStream extends DeflaterOutputStream {
+
+    private LeveledDeflaterOutputStream(OutputStream sink, int level) {
+      super(sink);
+      def.setLevel(level);
+    }
   }
 }

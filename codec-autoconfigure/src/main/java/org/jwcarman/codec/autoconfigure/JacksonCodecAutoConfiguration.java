@@ -24,10 +24,20 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Auto-configures a {@link JacksonCodecFactory} when the Jackson 3.x backend is on the classpath
+ * and no other {@link CodecFactory} bean exists. Highest-precedence backend.
+ */
 @AutoConfiguration
 @ConditionalOnClass({ObjectMapper.class, JacksonCodecFactory.class})
 public class JacksonCodecAutoConfiguration {
 
+  /**
+   * Creates the factory, reusing the application's {@link ObjectMapper} bean when one exists.
+   *
+   * @param objectMapper provider of the application's mapper, if any
+   * @return the codec factory
+   */
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
   public JacksonCodecFactory jacksonCodecFactory(ObjectProvider<ObjectMapper> objectMapper) {

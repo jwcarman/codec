@@ -21,10 +21,16 @@ import org.jwcarman.codec.spi.TypeRef;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
 
+/** Produces JSON codecs backed by a shared Jackson 3.x {@link ObjectMapper}. */
 public class JacksonCodecFactory implements CodecFactory {
 
   private final ObjectMapper objectMapper;
 
+  /**
+   * Creates a factory that uses the given mapper for all codecs it produces.
+   *
+   * @param objectMapper the mapper to serialize and deserialize with
+   */
   public JacksonCodecFactory(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }

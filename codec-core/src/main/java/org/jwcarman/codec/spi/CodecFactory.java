@@ -15,9 +15,25 @@
  */
 package org.jwcarman.codec.spi;
 
+/** Produces {@link Codec} instances for arbitrary types, backed by a serialization library. */
 public interface CodecFactory {
+
+  /**
+   * Creates a codec for the given type reference, supporting full generic types.
+   *
+   * @param typeRef the type to create a codec for
+   * @param <T> the codec's value type
+   * @return a codec for the type
+   */
   <T> Codec<T> create(TypeRef<T> typeRef);
 
+  /**
+   * Creates a codec for a non-generic class.
+   *
+   * @param type the class to create a codec for
+   * @param <T> the codec's value type
+   * @return a codec for the class
+   */
   default <T> Codec<T> create(Class<T> type) {
     return create(TypeRef.of(type));
   }

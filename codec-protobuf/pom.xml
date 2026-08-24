@@ -32,6 +32,7 @@
     <description>Protocol Buffers backend for Codec</description>
 
     <properties>
+        <module.name>org.jwcarman.codec.protobuf</module.name>
         <protobuf.version>4.35.0</protobuf.version>
     </properties>
 

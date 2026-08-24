@@ -31,6 +31,10 @@
     <name>Codec Spring Boot Starter</name>
     <description>Spring Boot starter for Codec — add a backend module to activate it</description>
 
+    <properties>
+        <module.name>org.jwcarman.codec.starter</module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>

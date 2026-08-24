@@ -31,6 +31,10 @@
     <name>Codec Auto-Configuration</name>
     <description>Spring Boot auto-configuration for Codec backends</description>
 
+    <properties>
+        <module.name>org.jwcarman.codec.autoconfigure</module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>

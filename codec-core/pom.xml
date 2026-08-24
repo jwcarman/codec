@@ -31,6 +31,10 @@
     <name>Codec Core</name>
     <description>SPI, TypeRef, built-in codecs, and auto-configuration</description>
 
+    <properties>
+        <module.name>org.jwcarman.codec.core</module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

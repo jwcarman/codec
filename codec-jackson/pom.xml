@@ -31,6 +31,10 @@
     <name>Codec Jackson</name>
     <description>Jackson ObjectMapper backend for Codec</description>
 
+    <properties>
+        <module.name>org.jwcarman.codec.jackson</module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>

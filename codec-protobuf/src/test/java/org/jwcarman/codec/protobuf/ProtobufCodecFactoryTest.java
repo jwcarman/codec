@@ -18,6 +18,7 @@ package org.jwcarman.codec.protobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.protobuf.GeneratedMessage;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -91,6 +92,15 @@ class ProtobufCodecFactoryTest {
     assertThatThrownBy(() -> factory.create(typeRef))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("do not support parameterized types");
+  }
+
+  abstract static class BrokenMessage extends GeneratedMessage {}
+
+  @Test
+  void shouldThrowWhenParserReflectionFails() {
+    assertThatThrownBy(() -> factory.create(BrokenMessage.class))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Failed to get parser for");
   }
 
   @Test

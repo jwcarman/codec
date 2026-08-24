@@ -17,9 +17,14 @@ package org.jwcarman.codec.transform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mockConstruction;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +53,18 @@ class GzipCodecTest {
       byte[] encoded = codec.encode(input);
 
       assertThat(encoded).hasSizeLessThan(input.length);
+    }
+
+    @Test
+    void wraps_io_failures_in_unchecked_io_exception() {
+      try (var _ =
+          mockConstruction(
+              GZIPOutputStream.class,
+              (mock, context) ->
+                  doThrow(new IOException("boom")).when(mock).write(any(byte[].class)))) {
+        assertThatExceptionOfType(UncheckedIOException.class)
+            .isThrownBy(() -> codec.encode(new byte[] {1, 2, 3}));
+      }
     }
   }
 

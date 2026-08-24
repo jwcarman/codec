@@ -87,6 +87,19 @@ class Jackson2CodecFactoryTest {
   }
 
   @Nested
+  class Encoding_unsupported_values {
+
+    @Test
+    void wraps_jackson_failures_in_unchecked_io_exception() {
+      Codec<Object> codec = factory.create(Object.class);
+      Object unserializable = new Object();
+
+      assertThatExceptionOfType(UncheckedIOException.class)
+          .isThrownBy(() -> codec.encode(unserializable));
+    }
+  }
+
+  @Nested
   class Decoding_invalid_input {
 
     @Test

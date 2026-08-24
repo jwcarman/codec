@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+- `codec-bom` no longer inherits from `codec-parent`. Because the parent imports
+  `spring-boot-dependencies` for its own build, the BOM was re-exporting all of
+  Spring Boot's dependency management — 1921 managed entries, of which only 7
+  were Codec's own — to every consumer that imported it, silently overriding
+  their own versions for JUnit, AssertJ, Jackson, Guava and more. The BOM now
+  manages exactly the seven Codec artifacts and nothing else. Consumers who were
+  unknowingly relying on a leaked version must now pin it themselves.
+
 ### Fixed
 - `codec-core`'s published description no longer claims auto-configuration,
   which moved to `codec-autoconfigure` in 0.2.0

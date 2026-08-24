@@ -57,20 +57,20 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spotless.version>3.4.0</spotless.version>
+        <spotless.version>3.10.0</spotless.version>
         <jacocoArgLine></jacocoArgLine>
 
         <!-- Dependency versions -->
         <spring-boot.version>4.0.5</spring-boot.version>
 
         <!-- Build plugin versions -->
-        <compiler.plugin.version>3.14.1</compiler.plugin.version>
-        <surefire.plugin.version>3.5.5</surefire.plugin.version>
-        <failsafe.plugin.version>3.5.5</failsafe.plugin.version>
-        <dependency.plugin.version>3.9.0</dependency.plugin.version>
+        <compiler.plugin.version>3.15.0</compiler.plugin.version>
+        <surefire.plugin.version>3.5.6</surefire.plugin.version>
+        <failsafe.plugin.version>3.5.6</failsafe.plugin.version>
+        <dependency.plugin.version>3.11.0</dependency.plugin.version>
         <clean.plugin.version>3.5.0</clean.plugin.version>
-        <resources.plugin.version>3.3.1</resources.plugin.version>
-        <jar.plugin.version>3.4.2</jar.plugin.version>
+        <resources.plugin.version>3.5.0</resources.plugin.version>
+        <jar.plugin.version>3.5.1</jar.plugin.version>
         <install.plugin.version>3.1.4</install.plugin.version>
         <deploy.plugin.version>3.1.4</deploy.plugin.version>
 
@@ -80,8 +80,8 @@
         <source.plugin.version>3.4.0</source.plugin.version>
         <sonatype.plugin.version>0.11.0</sonatype.plugin.version>
         <license.plugin.version>5.0.0</license.plugin.version>
-        <jacoco.plugin.version>0.8.14</jacoco.plugin.version>
-        <sonar.plugin.version>5.5.0.6356</sonar.plugin.version>
+        <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
+        <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
 
         <!-- License Header Configuration -->
         <license.owner>James Carman</license.owner>

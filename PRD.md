@@ -192,7 +192,7 @@ A spec is done when ALL of the following are true:
 ```
 groupId:     org.jwcarman.codec
 artifactId:  codec-parent
-version:     1.0.0-SNAPSHOT
+version:     0.2.0-SNAPSHOT
 Java:        25
 Spring Boot: 4.x
 ```

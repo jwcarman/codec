@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.jwcarman.codec</groupId>
         <artifactId>codec-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>codec-jackson</artifactId>

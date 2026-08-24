@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-24
+
+### Breaking changes
+- Removed unused dependencies from the published compile surface. The parent
+  declared `slf4j-api` in `<dependencies>`, so it landed on every artifact
+  including `codec-bom`; `codec-core` additionally carried
+  `spring-boot-autoconfigure`, left over from before auto-configuration moved
+  to `codec-autoconfigure`. Neither was used: nothing in the codebase logs, and
+  `codec-core` has no Spring imports. **`codec-core` now publishes with zero
+  transitive dependencies.** Consumers who were relying on either transitive
+  must now declare it directly.
+
+### Changed
+- `codec-jackson2` declares `jackson-core` explicitly rather than inheriting it
+  transitively from `jackson-databind`
+- `codec-autoconfigure` declares `spring-context` and `spring-beans`, which it
+  compiles against, plus the four engine jars it references for
+  `@ConditionalOnClass` as optional dependencies; it previously relied on
+  transitives of optional dependencies
+- `protobuf.version` moved to the parent pom alongside every other version
+  property
+
+### Added
+- CI-only dependency hygiene gates in the `ci` profile:
+  `dependency:analyze-only` with `failOnWarning`, and `maven-enforcer-plugin`
+  with `dependencyConvergence`, `requireUpperBoundDeps`,
+  `banDuplicatePomDependencyVersions`, and `banDynamicVersions`. The default
+  build is unaffected.
+
+### Requirements
+- Spring Boot 4.1.1 (from 4.0.5)
+- protobuf-java 4.36.0 (from 4.35.0)
+
+### Documentation
+- MkDocs Material documentation site deployed to GitHub Pages, linked from the
+  README
+
 ## [0.2.0] - 2026-08-23
 
 ### Breaking changes
@@ -62,5 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maven Central publishing workflow
 - Dependabot for automated dependency updates
 
+[0.3.0]: https://github.com/jwcarman/codec/releases/tag/0.3.0
 [0.2.0]: https://github.com/jwcarman/codec/releases/tag/0.2.0
 [0.1.0]: https://github.com/jwcarman/codec/releases/tag/0.1.0

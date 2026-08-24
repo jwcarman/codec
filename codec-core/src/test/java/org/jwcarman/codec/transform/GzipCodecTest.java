@@ -47,7 +47,7 @@ class GzipCodecTest {
 
       byte[] encoded = codec.encode(input);
 
-      assertThat(encoded.length).isLessThan(input.length);
+      assertThat(encoded).hasSizeLessThan(input.length);
     }
   }
 

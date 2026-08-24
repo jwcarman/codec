@@ -119,9 +119,16 @@ them automatically. Gzip ships built in:
 Codec<Person> codec = codecFactory.create(Person.class).andThen(new GzipCodec());
 ```
 
-To guard against decompression bombs, `GzipCodec` refuses to decode payloads
+Two compression transforms ship built in: `GzipCodec` (gzip framing, best for
+interop) and `DeflateCodec` (zlib framing, ~12 bytes less overhead per payload,
+with an optional compression level: `new DeflateCodec(Deflater.BEST_COMPRESSION,
+maxDecodedSize)`). Both extend `CompressionStreamCodec`, which you can subclass
+to wrap any stream-based compression library in two one-line methods.
+
+To guard against decompression bombs, both codecs refuse to decode payloads
 that expand beyond 64 MiB by default; pass a byte limit to the constructor
-(`new GzipCodec(maxDecodedSize)`) to raise or lower the cap.
+(e.g. `new GzipCodec(maxDecodedSize)`) to raise or lower the cap. The cap is
+enforced by `CompressionStreamCodec`, so subclasses inherit it automatically.
 
 Bring your own transform by implementing `Codec<byte[]>` — `encode` is the
 forward direction (e.g. encrypt), `decode` its inverse:

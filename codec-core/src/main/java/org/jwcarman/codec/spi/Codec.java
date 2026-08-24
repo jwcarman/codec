@@ -15,8 +15,26 @@
  */
 package org.jwcarman.codec.spi;
 
+import java.util.Objects;
+
 public interface Codec<T> {
   byte[] encode(T value);
 
   T decode(byte[] bytes);
+
+  default Codec<T> andThen(Codec<byte[]> transform) {
+    Objects.requireNonNull(transform, "transform must not be null");
+    Codec<T> self = this;
+    return new Codec<>() {
+      @Override
+      public byte[] encode(T value) {
+        return transform.encode(self.encode(value));
+      }
+
+      @Override
+      public T decode(byte[] bytes) {
+        return self.decode(transform.decode(bytes));
+      }
+    };
+  }
 }

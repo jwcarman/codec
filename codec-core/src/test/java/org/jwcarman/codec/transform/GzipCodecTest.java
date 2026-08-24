@@ -1,0 +1,106 @@
+/*
+ * Copyright © 2026 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.jwcarman.codec.transform;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.DisplayNameGeneration;
+import org.junit.jupiter.api.DisplayNameGenerator;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.Codec;
+
+@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+class GzipCodecTest {
+
+  private final GzipCodec codec = new GzipCodec();
+
+  @Nested
+  class Encode {
+
+    @Test
+    void produces_gzip_formatted_output() {
+      byte[] encoded = codec.encode("hello".getBytes(StandardCharsets.UTF_8));
+
+      assertThat(encoded).startsWith((byte) 0x1f, (byte) 0x8b);
+    }
+
+    @Test
+    void compresses_repetitive_input() {
+      byte[] input = "abc".repeat(1000).getBytes(StandardCharsets.UTF_8);
+
+      byte[] encoded = codec.encode(input);
+
+      assertThat(encoded.length).isLessThan(input.length);
+    }
+  }
+
+  @Nested
+  class Decode {
+
+    @Test
+    void round_trips_arbitrary_bytes() {
+      byte[] input = "the quick brown fox".getBytes(StandardCharsets.UTF_8);
+
+      assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
+    }
+
+    @Test
+    void round_trips_empty_input() {
+      byte[] input = new byte[0];
+
+      assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
+    }
+
+    @Test
+    void rejects_non_gzip_input() {
+      byte[] garbage = {1, 2, 3, 4};
+
+      assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(garbage));
+    }
+  }
+
+  @Nested
+  class Composed_with_and_then {
+
+    @Test
+    void round_trips_through_a_base_codec() {
+      Codec<String> utf8 =
+          new Codec<>() {
+            @Override
+            public byte[] encode(String value) {
+              return value.getBytes(StandardCharsets.UTF_8);
+            }
+
+            @Override
+            public String decode(byte[] bytes) {
+              return new String(bytes, StandardCharsets.UTF_8);
+            }
+          };
+
+      Codec<String> composed = utf8.andThen(new GzipCodec());
+      String value = "compress me ".repeat(100);
+
+      byte[] encoded = composed.encode(value);
+
+      assertThat(encoded).startsWith((byte) 0x1f, (byte) 0x8b);
+      assertThat(composed.decode(encoded)).isEqualTo(value);
+    }
+  }
+}

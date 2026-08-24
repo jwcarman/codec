@@ -35,23 +35,22 @@ public class DeflateCodec extends CompressionStreamCodec {
   }
 
   public DeflateCodec(int level, long maxDecodedSize) {
-    super(maxDecodedSize);
     if (level < Deflater.DEFAULT_COMPRESSION || level > Deflater.BEST_COMPRESSION) {
       throw new IllegalArgumentException("level must be between -1 and 9: " + level);
     }
+    super(maxDecodedSize);
     this.level = level;
   }
 
   @Override
   protected OutputStream compressing(OutputStream sink) throws IOException {
-    Deflater deflater = new Deflater(level);
-    return new DeflaterOutputStream(sink, deflater) {
+    return new DeflaterOutputStream(sink, new Deflater(level)) {
       @Override
       public void close() throws IOException {
         try {
           super.close();
         } finally {
-          deflater.end();
+          def.end();
         }
       }
     };

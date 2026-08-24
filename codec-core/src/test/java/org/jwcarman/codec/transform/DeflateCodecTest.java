@@ -61,7 +61,7 @@ class DeflateCodecTest {
       byte[] best = new DeflateCodec(Deflater.BEST_COMPRESSION, Long.MAX_VALUE).encode(input);
       byte[] none = new DeflateCodec(Deflater.NO_COMPRESSION, Long.MAX_VALUE).encode(input);
 
-      assertThat(best.length).isLessThan(none.length);
+      assertThat(best).hasSizeLessThan(none.length);
     }
 
     @Test

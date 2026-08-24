@@ -29,7 +29,7 @@
 
     <artifactId>codec-core</artifactId>
     <name>Codec Core</name>
-    <description>SPI, TypeRef, built-in codecs, and auto-configuration</description>
+    <description>SPI, TypeRef, and built-in codecs</description>
 
     <properties>
         <module.name>org.jwcarman.codec.core</module.name>

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-24
+
 ### Breaking changes
 - `codec-bom` no longer inherits from `codec-parent`. Because the parent imports
   `spring-boot-dependencies` for its own build, the BOM was re-exporting all of
@@ -112,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maven Central publishing workflow
 - Dependabot for automated dependency updates
 
+[0.4.0]: https://github.com/jwcarman/codec/releases/tag/0.4.0
 [0.3.0]: https://github.com/jwcarman/codec/releases/tag/0.3.0
 [0.2.0]: https://github.com/jwcarman/codec/releases/tag/0.2.0
 [0.1.0]: https://github.com/jwcarman/codec/releases/tag/0.1.0

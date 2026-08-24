@@ -61,7 +61,7 @@
         <jacocoArgLine></jacocoArgLine>
 
         <!-- Dependency versions -->
-        <spring-boot.version>4.0.5</spring-boot.version>
+        <spring-boot.version>4.1.1</spring-boot.version>
         <protobuf.version>4.35.0</protobuf.version>
 
         <!-- Build plugin versions -->

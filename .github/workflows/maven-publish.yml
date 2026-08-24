@@ -23,8 +23,11 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      # processAllModules is required: codec-bom is deliberately parentless, and versions:set walks
+      # parent references, so without it the BOM keeps its -SNAPSHOT version and publishes that way.
+      # Maven Central artifacts are immutable, so this cannot be corrected after the fact.
       - name: Set version
-        run: mvn versions:set -DnewVersion=${{ github.event.release.tag_name }}
+        run: mvn versions:set -DnewVersion=${{ github.event.release.tag_name }} -DprocessAllModules=true
 
       - name: Publish package
         run: mvn -P release --batch-mode deploy -DskipTests

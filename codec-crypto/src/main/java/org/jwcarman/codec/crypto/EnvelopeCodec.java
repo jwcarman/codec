@@ -18,6 +18,7 @@ package org.jwcarman.codec.crypto;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Objects;
@@ -104,6 +105,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
   private final byte[] aad;
   private final Predicate<String> allowedKeyIds;
   private final SecureRandom random;
+  private final Provider jceProvider;
 
   private EnvelopeCodec(Builder builder) {
     this.provider = builder.provider;
@@ -112,6 +114,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     this.allowedKeyIds =
         builder.allowedKeyIds != null ? builder.allowedKeyIds : builder.provider::allowsKeyId;
     this.random = builder.random;
+    this.jceProvider = builder.jceProvider;
   }
 
   /**
@@ -152,7 +155,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     header.put(nonce);
 
     try {
-      Cipher cipher = Cipher.getInstance(GCM_TRANSFORM);
+      Cipher cipher = newCipher(GCM_TRANSFORM, jceProvider);
       cipher.init(Cipher.ENCRYPT_MODE, dataKey.key(), new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
       cipher.updateAAD(message, 0, headerLength);
       if (aad != null) {
@@ -202,7 +205,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     SecretKey dek = unwrapDataKey(keyId, wrapped);
     byte[] nonce = Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
     try {
-      Cipher cipher = Cipher.getInstance(GCM_TRANSFORM);
+      Cipher cipher = newCipher(GCM_TRANSFORM, jceProvider);
       cipher.init(Cipher.DECRYPT_MODE, dek, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
       cipher.updateAAD(bytes, 0, headerLength);
       if (aad != null) {
@@ -260,6 +263,25 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     return ((bytes[offset] & 0xFF) << 8) | (bytes[offset + 1] & 0xFF);
   }
 
+  private static void checkTransform(String transform, Provider provider) {
+    try {
+      newCipher(transform, provider);
+    } catch (GeneralSecurityException e) {
+      throw new IllegalStateException(
+          "provider "
+              + (provider == null ? "<default>" : provider.getName())
+              + " cannot supply "
+              + transform,
+          e);
+    }
+  }
+
+  static Cipher newCipher(String transform, Provider provider) throws GeneralSecurityException {
+    return provider == null
+        ? Cipher.getInstance(transform)
+        : Cipher.getInstance(transform, provider);
+  }
+
   /** Builder for {@link EnvelopeCodec}. */
   public static final class Builder {
 
@@ -268,6 +290,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     private byte[] aad;
     private Predicate<String> allowedKeyIds;
     private SecureRandom random = new SecureRandom();
+    private Provider jceProvider;
 
     private Builder(DataKeyProvider provider) {
       this.provider = Objects.requireNonNull(provider, "provider must not be null");
@@ -325,11 +348,31 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     }
 
     /**
+     * Sets the {@link Provider} used to look up the {@code AES/GCM/NoPadding} {@link Cipher} for
+     * every encode and decode, so a FIPS-validated or otherwise pinned provider can be selected per
+     * codec instead of being installed as the JVM's globally highest-priority provider.
+     *
+     * <p>Resolved once at {@link #build()} time: if the provider cannot supply the transform,
+     * {@code build()} throws {@link IllegalStateException} immediately rather than letting the
+     * misconfiguration surface later as a {@link DecryptionException} on the first message.
+     *
+     * @param provider the {@link Provider} to use; defaults to the JDK's default provider lookup
+     * @return this builder
+     */
+    public Builder provider(Provider provider) {
+      this.jceProvider = Objects.requireNonNull(provider, "provider must not be null");
+      return this;
+    }
+
+    /**
      * Builds the {@link EnvelopeCodec}.
      *
      * @return a new {@link EnvelopeCodec}
+     * @throws IllegalStateException if a provider was set and cannot supply {@code
+     *     AES/GCM/NoPadding}
      */
     public EnvelopeCodec build() {
+      checkTransform(GCM_TRANSFORM, jceProvider);
       return new EnvelopeCodec(this);
     }
   }

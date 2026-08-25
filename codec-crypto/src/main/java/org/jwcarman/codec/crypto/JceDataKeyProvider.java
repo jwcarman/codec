@@ -16,6 +16,7 @@
 package org.jwcarman.codec.crypto;
 
 import java.security.GeneralSecurityException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +55,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
   private final String currentKeyId;
   private final Map<String, SecretKey> keks;
   private final SecureRandom random;
+  private final Provider provider;
 
   /**
    * Creates a provider using a default {@link SecureRandom} instance.
@@ -62,7 +64,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
    * @param keks the AES-256 key-encryption keys this provider trusts, keyed by id
    */
   public JceDataKeyProvider(String currentKeyId, Map<String, SecretKey> keks) {
-    this(currentKeyId, keks, new SecureRandom());
+    this(currentKeyId, keks, new SecureRandom(), null);
   }
 
   /**
@@ -73,6 +75,11 @@ public final class JceDataKeyProvider implements DataKeyProvider {
    * @param random the source of randomness for generated data keys
    */
   public JceDataKeyProvider(String currentKeyId, Map<String, SecretKey> keks, SecureRandom random) {
+    this(currentKeyId, keks, random, null);
+  }
+
+  private JceDataKeyProvider(
+      String currentKeyId, Map<String, SecretKey> keks, SecureRandom random, Provider provider) {
     Objects.requireNonNull(currentKeyId, "currentKeyId must not be null");
     Objects.requireNonNull(keks, "keks must not be null");
     this.random = Objects.requireNonNull(random, "random must not be null");
@@ -99,6 +106,23 @@ public final class JceDataKeyProvider implements DataKeyProvider {
           }
         });
     this.currentKeyId = currentKeyId;
+    this.provider = provider;
+    try {
+      wrapCipher();
+    } catch (GeneralSecurityException e) {
+      throw new IllegalStateException(
+          "provider "
+              + (provider == null ? "<default>" : provider.getName())
+              + " cannot supply "
+              + WRAP_TRANSFORM,
+          e);
+    }
+  }
+
+  private Cipher wrapCipher() throws GeneralSecurityException {
+    return provider == null
+        ? Cipher.getInstance(WRAP_TRANSFORM)
+        : Cipher.getInstance(WRAP_TRANSFORM, provider);
   }
 
   @Override
@@ -107,7 +131,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
     random.nextBytes(dekBytes);
     SecretKey dek = new SecretKeySpec(dekBytes, AES);
     try {
-      Cipher cipher = Cipher.getInstance(WRAP_TRANSFORM);
+      Cipher cipher = wrapCipher();
       cipher.init(Cipher.WRAP_MODE, keks.get(currentKeyId));
       return new DataKey(currentKeyId, dek, cipher.wrap(dek));
     } catch (GeneralSecurityException e) {
@@ -122,7 +146,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
       throw DecryptionException.cryptographic(null);
     }
     try {
-      Cipher cipher = Cipher.getInstance(WRAP_TRANSFORM);
+      Cipher cipher = wrapCipher();
       cipher.init(Cipher.UNWRAP_MODE, kek);
       return (SecretKey) cipher.unwrap(wrapped, AES, Cipher.SECRET_KEY);
     } catch (GeneralSecurityException e) {
@@ -133,5 +157,67 @@ public final class JceDataKeyProvider implements DataKeyProvider {
   @Override
   public boolean allowsKeyId(String keyId) {
     return keks.containsKey(keyId);
+  }
+
+  /**
+   * Starts building a {@link JceDataKeyProvider}.
+   *
+   * @param currentKeyId the id of the KEK, present in {@code keks}, used to wrap new data keys
+   * @param keks the AES-256 key-encryption keys this provider trusts, keyed by id
+   * @return a new {@link Builder}
+   */
+  public static Builder builder(String currentKeyId, Map<String, SecretKey> keks) {
+    return new Builder(currentKeyId, keks);
+  }
+
+  /** Builder for {@link JceDataKeyProvider}. */
+  public static final class Builder {
+    private final String currentKeyId;
+    private final Map<String, SecretKey> keks;
+    private SecureRandom random = new SecureRandom();
+    private Provider provider;
+
+    private Builder(String currentKeyId, Map<String, SecretKey> keks) {
+      this.currentKeyId = Objects.requireNonNull(currentKeyId, "currentKeyId must not be null");
+      this.keks = Objects.requireNonNull(keks, "keks must not be null");
+    }
+
+    /**
+     * Sets the source of randomness used to generate data keys.
+     *
+     * @param random the {@link SecureRandom} to use; defaults to a new instance
+     * @return this builder
+     */
+    public Builder secureRandom(SecureRandom random) {
+      this.random = Objects.requireNonNull(random, "random must not be null");
+      return this;
+    }
+
+    /**
+     * Sets the {@link Provider} used to look up the {@code AESWrap} {@link Cipher} for wrapping and
+     * unwrapping data keys, so a FIPS-validated or otherwise pinned provider can be selected per
+     * provider instance instead of being installed as the JVM's globally highest-priority provider.
+     *
+     * <p>Resolved once at {@link #build()} time: if the provider cannot supply the transform,
+     * {@code build()} throws {@link IllegalStateException} immediately rather than letting the
+     * misconfiguration surface later as a {@link DecryptionException} on the first unwrap.
+     *
+     * @param provider the {@link Provider} to use; defaults to the JDK's default provider lookup
+     * @return this builder
+     */
+    public Builder provider(Provider provider) {
+      this.provider = Objects.requireNonNull(provider, "provider must not be null");
+      return this;
+    }
+
+    /**
+     * Builds the {@link JceDataKeyProvider}.
+     *
+     * @return a new {@link JceDataKeyProvider}
+     * @throws IllegalStateException if a provider was set and cannot supply {@code AESWrap}
+     */
+    public JceDataKeyProvider build() {
+      return new JceDataKeyProvider(currentKeyId, keks, random, provider);
+    }
   }
 }

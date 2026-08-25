@@ -66,34 +66,37 @@ class EnvelopeCodecDecodeTest {
   class Structural_rejection {
     @Test
     void rejects_all_zero_input_on_bad_magic() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(new byte[37]));
+          .isThrownBy(() -> codec.decode(new byte[37]));
     }
 
     @Test
     void rejects_empty_input_as_too_short() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(new byte[0]))
+          .isThrownBy(() -> codec.decode(new byte[0]))
           .withMessageContaining("too short");
     }
 
     @Test
     void rejects_a_single_byte_as_too_short() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(new byte[] {0x4A}))
+          .isThrownBy(() -> codec.decode(new byte[] {0x4A}))
           .withMessageContaining("too short");
     }
 
     @Test
     void rejects_null_input() {
-      assertThatNullPointerException()
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(null));
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      assertThatNullPointerException().isThrownBy(() -> codec.decode(null));
     }
 
     @Test
     void encode_rejects_null_input() {
-      assertThatNullPointerException()
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().encode(null));
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      assertThatNullPointerException().isThrownBy(() -> codec.encode(null));
     }
 
     @Test
@@ -101,8 +104,9 @@ class EnvelopeCodecDecodeTest {
       byte[] shortMessage = new byte[10];
       shortMessage[0] = 0x4A;
       shortMessage[1] = 0x43;
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(shortMessage))
+          .isThrownBy(() -> codec.decode(shortMessage))
           .withMessageContaining("too short");
     }
 
@@ -110,8 +114,9 @@ class EnvelopeCodecDecodeTest {
     void rejects_bad_magic_with_a_structural_message() {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
       message[0] = 0x00;
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("magic");
     }
 
@@ -119,8 +124,9 @@ class EnvelopeCodecDecodeTest {
     void rejects_an_unknown_version() {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
       message[2] = 0x02;
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("version");
     }
 
@@ -128,8 +134,9 @@ class EnvelopeCodecDecodeTest {
     void rejects_an_unknown_algorithm() {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
       message[3] = 0x7F;
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("algorithm");
     }
 
@@ -138,8 +145,8 @@ class EnvelopeCodecDecodeTest {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
       message[4] = (byte) 0xFF;
       message[5] = (byte) 0xFF;
-      assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message));
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      assertThatExceptionOfType(DecryptionException.class).isThrownBy(() -> codec.decode(message));
     }
 
     @Test
@@ -147,9 +154,9 @@ class EnvelopeCodecDecodeTest {
       // At length exactly 2, the `bytes.length < 2` too-short check must NOT fire (2 < 2 is
       // false), so the bad-magic check below it is reached instead; kills a `< 2` -> `<= 2`
       // boundary mutant on that check.
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(
-              () -> EnvelopeCodec.builder(provider()).build().decode(new byte[] {0x00, 0x00}))
+          .isThrownBy(() -> codec.decode(new byte[] {0x00, 0x00}))
           .withMessageContaining("magic");
     }
 
@@ -164,8 +171,9 @@ class EnvelopeCodecDecodeTest {
       message[1] = 0x43;
       message[2] = 0x01; // format version
       message[3] = 0x01; // AES-256-GCM
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("keyId");
     }
 
@@ -200,8 +208,9 @@ class EnvelopeCodecDecodeTest {
         message[i] = 'a';
       }
       // bytes 37..38 (wrappedLength) left as 0 -> invalid
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("wrapped key length");
     }
 
@@ -220,8 +229,9 @@ class EnvelopeCodecDecodeTest {
       message[3] = 0x01;
       message[4] = 0;
       message[5] = 100; // keyIdLength = 100, far larger than the 40-byte buffer
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("keyId");
     }
 
@@ -241,8 +251,9 @@ class EnvelopeCodecDecodeTest {
       message[3] = 0x01;
       message[4] = 0;
       message[5] = 34; // keyIdLength = 34
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("keyId");
     }
 
@@ -265,8 +276,9 @@ class EnvelopeCodecDecodeTest {
       message[9] = 0;
       message[10] = 1; // wrappedLength = 1
       message[11] = 5; // 1-byte wrapped payload
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessage("Unable to decrypt data");
     }
 
@@ -286,8 +298,9 @@ class EnvelopeCodecDecodeTest {
       message[6] = 'k';
       message[7] = 0;
       message[8] = 20; // wrappedLength = 20 -> headerLength = 20 + 1 + 20 = 41
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessageContaining("wrapped key length");
     }
 
@@ -303,8 +316,9 @@ class EnvelopeCodecDecodeTest {
       message[3] = 0x01;
       message[4] = 1;
       message[5] = 0; // keyIdLength = 256 if read big-endian
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessage("invalid keyId length: 256");
     }
   }
@@ -359,8 +373,8 @@ class EnvelopeCodecDecodeTest {
             }
           };
       byte[] message = EnvelopeCodec.builder(denying).build().encode(new byte[] {1});
-      assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(denying).build().decode(message));
+      EnvelopeCodec codec = EnvelopeCodec.builder(denying).build();
+      assertThatExceptionOfType(DecryptionException.class).isThrownBy(() -> codec.decode(message));
       assertThat(unwraps).hasValue(0);
     }
 
@@ -422,8 +436,9 @@ class EnvelopeCodecDecodeTest {
             }
           };
       byte[] message = EnvelopeCodec.builder(flaky).build().encode(new byte[] {1});
+      EnvelopeCodec codec = EnvelopeCodec.builder(flaky).build();
       assertThatExceptionOfType(KeyAccessException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(flaky).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withCauseInstanceOf(RuntimeException.class);
     }
 
@@ -435,8 +450,9 @@ class EnvelopeCodecDecodeTest {
       java.util.Arrays.fill(otherKek, (byte) 9);
       JceDataKeyProvider wrongKeys =
           new JceDataKeyProvider("kek", Map.of("kek", new SecretKeySpec(otherKek, "AES")));
+      EnvelopeCodec codec = EnvelopeCodec.builder(wrongKeys).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(wrongKeys).build().decode(message))
+          .isThrownBy(() -> codec.decode(message))
           .withMessage("Unable to decrypt data");
     }
   }
@@ -501,8 +517,8 @@ class EnvelopeCodecDecodeTest {
 
       String message = rejectionMessageFor(keyId);
 
-      assertThat(message).isEqualTo("keyId is not allowed: a?b?c?d");
       assertThat(message)
+          .isEqualTo("keyId is not allowed: a?b?c?d")
           .doesNotContain("\u0085")
           .doesNotContain("\u2028")
           .doesNotContain("\u202E");

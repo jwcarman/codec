@@ -26,7 +26,7 @@ without a flag day. See "Future suites" below.
 - `JceDataKeyProvider.builder(String currentKeyId, Map<String, SecretKey> keks)`
   returning a builder with `.secureRandom(SecureRandom)`,
   `.provider(Provider)`, `.build()`. The two existing constructors remain and
-  delegate. The provider governs the `AESWrap` lookups.
+  delegate. The provider governs the `AES/KW/NoPadding` lookups.
 - Fail fast: both builders resolve their transform against the provider at
   build/construction time and throw `IllegalStateException` naming the
   transform if the provider cannot supply it. A configuration error must not

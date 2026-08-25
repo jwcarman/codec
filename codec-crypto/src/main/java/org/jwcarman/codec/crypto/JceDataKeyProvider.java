@@ -32,7 +32,7 @@ import javax.crypto.spec.SecretKeySpec;
  * <p>The constructor takes a {@code Map<String, SecretKey>} of AES-256 KEKs keyed by id, plus the
  * id of the current wrapping KEK. Generated data-encryption keys (DEKs) are AES-256, drawn from
  * {@link SecureRandom}, and wrapped with AES key-wrap ({@code AESWrap}, RFC 3394): unlike GCM,
- * AESWrap needs no nonce, so wrapping the same DEK under the same KEK always produces the same
+ * AES-KW needs no nonce, so wrapping the same DEK under the same KEK always produces the same
  * ciphertext, and its integrity check value (ICV) causes unwrap of a tampered or foreign-key blob
  * to fail rather than silently return garbage key material.
  *
@@ -62,7 +62,7 @@ import javax.crypto.spec.SecretKeySpec;
 public final class JceDataKeyProvider implements DataKeyProvider {
 
   private static final String AES = "AES";
-  private static final String WRAP_TRANSFORM = "AESWrap";
+  private static final String WRAP_TRANSFORM = "AES/KW/NoPadding";
   private static final int DEK_LENGTH_BYTES = 32;
 
   /**

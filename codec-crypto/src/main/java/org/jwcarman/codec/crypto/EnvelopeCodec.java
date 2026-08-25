@@ -208,9 +208,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
           nonce,
           Arrays.copyOf(bytes, headerLength),
           aad,
-          bytes,
-          headerLength,
-          bytes.length - headerLength);
+          Arrays.copyOfRange(bytes, headerLength, bytes.length));
     } catch (GeneralSecurityException e) {
       throw DecryptionException.cryptographic(e);
     }
@@ -268,19 +266,6 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     return ((bytes[offset] & 0xFF) << 8) | (bytes[offset + 1] & 0xFF);
   }
 
-  private static void checkTransform(String transform, Provider provider) {
-    try {
-      newCipher(transform, provider);
-    } catch (GeneralSecurityException e) {
-      throw new IllegalStateException(
-          "provider "
-              + (provider == null ? "<default>" : provider.getName())
-              + " cannot supply "
-              + transform,
-          e);
-    }
-  }
-
   static Cipher newCipher(String transform, Provider provider) throws GeneralSecurityException {
     return provider == null
         ? Cipher.getInstance(transform)
@@ -329,9 +314,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
    * @param nonce the GCM nonce
    * @param headerAad the header bytes to authenticate, applied first
    * @param extraAad additional AAD to authenticate after {@code headerAad}, or {@code null}
-   * @param data the buffer containing the ciphertext followed by the authentication tag
-   * @param offset the offset of the ciphertext within {@code data}
-   * @param length the length, in bytes, of the ciphertext plus tag
+   * @param ciphertext the ciphertext followed by the authentication tag
    * @return the decrypted plaintext
    * @throws GeneralSecurityException if the provider cannot supply the transform or tag
    *     verification fails
@@ -342,9 +325,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       byte[] nonce,
       byte[] headerAad,
       byte[] extraAad,
-      byte[] data,
-      int offset,
-      int length)
+      byte[] ciphertext)
       throws GeneralSecurityException {
     Cipher cipher = newCipher(GCM_TRANSFORM, provider);
     cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
@@ -352,7 +333,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     if (extraAad != null) {
       cipher.updateAAD(extraAad);
     }
-    return cipher.doFinal(data, offset, length);
+    return cipher.doFinal(ciphertext);
   }
 
   /** Builder for {@link EnvelopeCodec}. */
@@ -447,6 +428,19 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     public EnvelopeCodec build() {
       checkTransform(GCM_TRANSFORM, jceProvider);
       return new EnvelopeCodec(this);
+    }
+
+    private static void checkTransform(String transform, Provider provider) {
+      try {
+        newCipher(transform, provider);
+      } catch (GeneralSecurityException e) {
+        throw new IllegalStateException(
+            "provider "
+                + (provider == null ? "<default>" : provider.getName())
+                + " cannot supply "
+                + transform,
+            e);
+      }
     }
   }
 }

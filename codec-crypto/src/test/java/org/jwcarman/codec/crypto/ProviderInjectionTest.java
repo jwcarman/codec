@@ -149,7 +149,7 @@ class ProviderInjectionTest {
       assertThatIllegalStateException()
           .isThrownBy(
               () -> JceDataKeyProvider.builder("kek", keks()).provider(new EmptyProvider()).build())
-          .withMessageContaining("AESWrap")
+          .withMessageContaining("AES/KW/NoPadding")
           // Names the explicitly-supplied provider rather than falling back to "<default>": kills
           // a `provider == null` negated-conditional mutant in the constructor's message-building.
           .withMessageContaining("Empty");

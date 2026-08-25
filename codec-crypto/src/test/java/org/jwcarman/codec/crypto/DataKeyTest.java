@@ -65,7 +65,7 @@ class DataKeyTest {
     void key_id_length_is_measured_in_utf8_bytes_not_chars() {
       String multibyte = "é".repeat(40000); // 80000 UTF-8 bytes > 65535
       assertThat(multibyte.length()).isLessThan(65536);
-      assertThat(multibyte.getBytes(UTF_8).length).isGreaterThan(65535);
+      assertThat(multibyte.getBytes(UTF_8)).hasSizeGreaterThan(65535);
       assertThatIllegalArgumentException()
           .isThrownBy(() -> new DataKey(multibyte, KEY, new byte[] {1}));
     }

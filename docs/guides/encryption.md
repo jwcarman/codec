@@ -134,7 +134,7 @@ that cliff edge. A consumer that genuinely needs a higher cap implements
 Both `EnvelopeCodec.builder(provider).provider(Provider)` and
 `JceDataKeyProvider.builder(currentKeyId, keks).provider(Provider)` accept an
 optional `java.security.Provider`. When set, every `Cipher.getInstance` call
-the codec (`AES/GCM/NoPadding`) or the provider (`AESWrap`) makes resolves
+the codec (`AES/GCM/NoPadding`) or the provider (`AES/KW/NoPadding`) makes resolves
 against that provider instead of the JDK's default provider lookup:
 
 ```java

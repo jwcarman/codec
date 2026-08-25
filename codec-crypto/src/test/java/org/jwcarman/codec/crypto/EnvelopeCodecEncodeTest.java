@@ -104,15 +104,16 @@ class EnvelopeCodecEncodeTest {
               throw new UnsupportedOperationException();
             }
           };
+      EnvelopeCodec codec = EnvelopeCodec.builder(failing).build();
       assertThatExceptionOfType(EncryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(failing).build().encode(new byte[] {1}))
+          .isThrownBy(() -> codec.encode(new byte[] {1}))
           .withCauseInstanceOf(RuntimeException.class);
     }
 
     @Test
     void rejects_null_input() {
-      assertThatNullPointerException()
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().encode(null));
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      assertThatNullPointerException().isThrownBy(() -> codec.encode(null));
     }
 
     @Test
@@ -129,8 +130,9 @@ class EnvelopeCodecEncodeTest {
               throw new UnsupportedOperationException();
             }
           };
+      EnvelopeCodec codec = EnvelopeCodec.builder(shortKey).build();
       assertThatExceptionOfType(EncryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(shortKey).build().encode(new byte[] {1}));
+          .isThrownBy(() -> codec.encode(new byte[] {1}));
     }
   }
 

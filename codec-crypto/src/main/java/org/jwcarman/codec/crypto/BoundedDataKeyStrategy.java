@@ -18,6 +18,7 @@ package org.jwcarman.codec.crypto;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
 /**
@@ -78,7 +79,7 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
   private final long maxAgeNanos;
   private final LongSupplier ticker;
   private final Object rollLock = new Object();
-  private volatile CachedKey cached;
+  private final AtomicReference<CachedKey> cached = new AtomicReference<>();
 
   private record CachedKey(DataKey key, long issuedAtNanos, AtomicLong remaining) {}
 
@@ -117,17 +118,17 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
 
   @Override
   public DataKey acquire(DataKeyProvider provider) {
-    CachedKey current = cached;
+    CachedKey current = cached.get();
     if (current != null && usable(current)) {
       return current.key();
     }
     synchronized (rollLock) {
-      current = cached;
+      current = cached.get();
       if (current != null && usable(current)) {
         return current.key();
       }
       DataKey fresh = provider.newDataKey();
-      cached = new CachedKey(fresh, ticker.getAsLong(), new AtomicLong(maxMessages - 1));
+      cached.set(new CachedKey(fresh, ticker.getAsLong(), new AtomicLong(maxMessages - 1)));
       return fresh;
     }
   }

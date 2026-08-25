@@ -8,7 +8,7 @@ Never suppress warnings. Do not use `@SuppressWarnings` annotations or any equiv
 
 The single sanctioned exception to this rule is `codec-crypto/spotbugs-exclude.xml`'s
 `CIPHER_INTEGRITY` match on `JceDataKeyProvider.wrapCipher`: find-sec-bugs' `CipherWithNoIntegrityDetector`
-does not recognize AES Key Wrap (RFC 3394, transform `AESWrap`) as integrity-protected, even
+does not recognize AES Key Wrap (RFC 3394, transform `AES/KW/NoPadding`) as integrity-protected, even
 though it is (a 64-bit ICV verified on unwrap) — a documented gap in the detector's known-safe
 list, not a real finding, and specs 005/006 mandate AES-KW as the wrap scheme for this provider.
 See the comment in that file for the full analysis. Any other suppression remains forbidden.

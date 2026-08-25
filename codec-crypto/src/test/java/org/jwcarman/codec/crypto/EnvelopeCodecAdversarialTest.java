@@ -95,8 +95,8 @@ class EnvelopeCodecAdversarialTest {
               .aad("tenant-1".getBytes(UTF_8))
               .build()
               .encode("x".getBytes(UTF_8));
-      assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message));
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      assertThatExceptionOfType(DecryptionException.class).isThrownBy(() -> codec.decode(message));
     }
 
     @Test
@@ -137,8 +137,9 @@ class EnvelopeCodecAdversarialTest {
     @Test
     void gzip_output_fed_directly_to_decode_is_rejected_fast_on_magic() {
       byte[] gzipped = new GzipCodec().encode("not encrypted".getBytes(UTF_8));
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(gzipped))
+          .isThrownBy(() -> codec.decode(gzipped))
           .withMessageContaining("magic");
     }
   }

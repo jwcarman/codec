@@ -25,7 +25,7 @@
 
     (a) Why this is a false positive, not a real finding:
 
-        RFC 3394 AES Key Wrap (the "AESWrap" JCA transform used by
+        RFC 3394 AES Key Wrap (the "AES/KW/NoPadding" JCA transform used by
         JceDataKeyProvider.wrapCipher()) DOES provide data integrity: it appends a 64-bit
         Integrity Check Value (the fixed A6A6A6A6A6A6A6A6 initial value carried through the wrap
         transform, RFC 3394 §2.2.3) to every wrapped blob, and unwrap fails — throwing, which
@@ -49,7 +49,7 @@
             transform.startsWith("RSA")
             transform.equals("ECIES")
 
-        "AESWrap" (the JDK's standard JCA name for AES Key Wrap; "AESWrapPad" has the identical
+        "AES/KW/NoPadding" (the JDK's standard JCA name for AES Key Wrap; "AESWrapPad" has the identical
         problem) matches none of the three: the regex requires a slash-delimited AEAD mode
         segment that key-wrap transforms don't have. The detector's known-safe list covers AEAD
         bulk-cipher modes and RSA/ECIES only — it has no entry for key-wrap constructions, which

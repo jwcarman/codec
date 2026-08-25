@@ -55,7 +55,7 @@ class EnvelopeCodecMutationFuzzTest {
       // A mutation that is accepted must still yield the original plaintext — anything else is a
       // forgery.
       assertThat(out).isEqualTo(plaintext);
-    } catch (DecryptionException expected) {
+    } catch (DecryptionException _) {
       // documented outcome
     }
   }

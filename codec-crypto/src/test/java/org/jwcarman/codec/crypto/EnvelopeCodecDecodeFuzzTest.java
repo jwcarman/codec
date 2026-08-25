@@ -32,7 +32,7 @@ class EnvelopeCodecDecodeFuzzTest {
   void decode_only_throws_the_documented_exceptions(byte[] input) {
     try {
       EnvelopeCodecFuzzSupport.codec().decode(input);
-    } catch (DecryptionException expected) {
+    } catch (DecryptionException _) {
       // documented outcome
     }
     // any other Throwable escapes and Jazzer records it as a finding

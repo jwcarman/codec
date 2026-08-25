@@ -139,9 +139,7 @@ class GcmKnownAnswerTest {
                 HEX.parseHex(v.iv()),
                 HEX.parseHex(v.aad()),
                 null,
-                data,
-                0,
-                data.length);
+                data);
         assertThat(HEX.formatHex(pt)).as(v.source()).isEqualTo(v.pt());
       }
     }
@@ -163,9 +161,7 @@ class GcmKnownAnswerTest {
                         HEX.parseHex(v.iv()),
                         HEX.parseHex(v.aad()),
                         null,
-                        data,
-                        0,
-                        data.length));
+                        data));
       }
     }
   }

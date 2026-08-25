@@ -139,7 +139,7 @@ first bill.
 In-process provider for consumers without a KMS. Holds one or more KEKs
 (`SecretKey`, AES-256) supplied at construction as a `Map<String, SecretKey>`
 plus the id of the current wrapping KEK; generates AES-256 DEKs from
-`SecureRandom`; wraps with AES key-wrap (`AESWrap`, RFC 3394 — deterministic,
+`SecureRandom`; wraps with AES key-wrap (`AES/KW/NoPadding`, RFC 3394 — deterministic,
 no nonce management, integrity-checked via its ICV). New messages wrap under
 the current KEK; `unwrap` resolves any KEK in the map and throws for any keyId
 not in the map — the map IS the allowlist, satisfying the security contract.
@@ -166,8 +166,8 @@ Scheme values `0x02` and above are reserved for future wrap algorithms.
 Map<String, SecretKey> keks)` returns a builder exposing
 `.secureRandom(SecureRandom)`, `.provider(java.security.Provider)`, and
 `.build()`; the two public constructors remain and delegate to it. The
-provider, when set, governs the `AESWrap` `Cipher` lookups this provider
-makes. Fail fast: the builder resolves `AESWrap` against the given provider
+provider, when set, governs the `AES/KW/NoPadding` `Cipher` lookups this provider
+makes. Fail fast: the builder resolves `AES/KW/NoPadding` against the given provider
 at construction time and throws `IllegalStateException` naming the transform
 if the provider cannot supply it — a configuration error must not surface
 later as a `DecryptionException` ("your data is bad"). Rationale: this lets a
@@ -295,7 +295,7 @@ algorithm id, and keyId cannot be modified on a ciphertext that subsequently
 verifies. It does NOT protect anything pre-verification — see the decode
 order and the DataKeyProvider security contract. (The nonce is authenticated by
 GCM's own construction regardless of AAD; the wrapped DEK, if tampered with,
-fails at unwrap — AESWrap's ICV or the KMS's integrity check — before tag
+fails at unwrap — AES-KW's ICV or the KMS's integrity check — before tag
 verification is reached.)
 
 Deliberate exclusions:
@@ -325,7 +325,7 @@ Consistent with the rest of the codebase: every failure throws, nothing logs.
 - `DecryptionException` (extends `IllegalArgumentException`): "this data is
   bad." Structural failures (bad magic, unknown version/algorithm, bounds
   violations, disallowed keyId) carry stage-specific messages; cryptographic
-  rejections (tag mismatch, unwrap *rejection* — AESWrap ICV failure, KMS
+  rejections (tag mismatch, unwrap *rejection* — AES-KW ICV failure, KMS
   invalid-ciphertext) share one indistinguishable message. Scope of that claim:
   exception *content* only. The timing side channel is unavoidable — a KMS
   unwrap round trip and a local tag check differ observably, and structural
@@ -382,7 +382,7 @@ All three live in `org.jwcarman.codec.crypto`.
 - AAD: mismatch between encode-side and decode-side AAD fails; absent-vs-present
   fails both directions; `.aad(new byte[0])` is rejected at build time.
 - Error taxonomy: a provider throwing a timeout from `unwrap` surfaces as
-  `KeyAccessException`, not `DecryptionException`; AESWrap ICV failure surfaces
+  `KeyAccessException`, not `DecryptionException`; AES-KW ICV failure surfaces
   as `DecryptionException`.
 - `DataKey`: mutation of the array passed to the constructor, or of the array
   returned by the accessor, does not affect the record.

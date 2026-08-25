@@ -34,7 +34,7 @@ import org.jwcarman.codec.spi.TypeRef;
  *
  * <p><strong>Class registration is mandatory.</strong> Fory refuses to serialize or deserialize a
  * class that has not been registered, which is what closes the deserialization-gadget class of
- * attacks. This factory never relaxes that: build the {@link BaseFory} with {@code
+ * attacks. This factory never relaxes that: build the {@link ThreadSafeFory} with {@code
  * requireClassRegistration(true)} (the library default, and what {@link #of(Class[])} does) and
  * register every type a codec will carry, including the element types of collections.
  *

@@ -155,13 +155,10 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     header.put(nonce);
 
     try {
-      Cipher cipher = newCipher(GCM_TRANSFORM, jceProvider);
-      cipher.init(Cipher.ENCRYPT_MODE, dataKey.key(), new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
-      cipher.updateAAD(message, 0, headerLength);
-      if (aad != null) {
-        cipher.updateAAD(aad);
-      }
-      cipher.doFinal(value, 0, value.length, message, headerLength);
+      byte[] sealed =
+          gcmEncrypt(
+              jceProvider, dataKey.key(), nonce, Arrays.copyOf(message, headerLength), aad, value);
+      System.arraycopy(sealed, 0, message, headerLength, sealed.length);
     } catch (GeneralSecurityException e) {
       throw new EncryptionException("Unable to encrypt data", e);
     }
@@ -205,13 +202,15 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     SecretKey dek = unwrapDataKey(keyId, wrapped);
     byte[] nonce = Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
     try {
-      Cipher cipher = newCipher(GCM_TRANSFORM, jceProvider);
-      cipher.init(Cipher.DECRYPT_MODE, dek, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
-      cipher.updateAAD(bytes, 0, headerLength);
-      if (aad != null) {
-        cipher.updateAAD(aad);
-      }
-      return cipher.doFinal(bytes, headerLength, bytes.length - headerLength);
+      return gcmDecrypt(
+          jceProvider,
+          dek,
+          nonce,
+          Arrays.copyOf(bytes, headerLength),
+          aad,
+          bytes,
+          headerLength,
+          bytes.length - headerLength);
     } catch (GeneralSecurityException e) {
       throw DecryptionException.cryptographic(e);
     }
@@ -280,6 +279,74 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     return provider == null
         ? Cipher.getInstance(transform)
         : Cipher.getInstance(transform, provider);
+  }
+
+  /**
+   * Encrypts {@code plaintext} under AES-256-GCM, authenticating {@code headerAad} followed by
+   * {@code extraAad} (when non-null) as additional authenticated data.
+   *
+   * @param provider the {@link Provider} to resolve the {@code AES/GCM/NoPadding} {@link Cipher}
+   *     from, or {@code null} for the JDK's default provider lookup
+   * @param key the AES-256 key to encrypt under
+   * @param nonce the GCM nonce
+   * @param headerAad the header bytes to authenticate, applied first
+   * @param extraAad additional AAD to authenticate after {@code headerAad}, or {@code null}
+   * @param plaintext the plaintext to encrypt
+   * @return the ciphertext followed by the authentication tag
+   * @throws GeneralSecurityException if the provider cannot supply the transform or encryption
+   *     fails
+   */
+  static byte[] gcmEncrypt(
+      Provider provider,
+      SecretKey key,
+      byte[] nonce,
+      byte[] headerAad,
+      byte[] extraAad,
+      byte[] plaintext)
+      throws GeneralSecurityException {
+    Cipher cipher = newCipher(GCM_TRANSFORM, provider);
+    cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
+    cipher.updateAAD(headerAad);
+    if (extraAad != null) {
+      cipher.updateAAD(extraAad);
+    }
+    return cipher.doFinal(plaintext);
+  }
+
+  /**
+   * Decrypts {@code data[offset, offset + length)} under AES-256-GCM, authenticating {@code
+   * headerAad} followed by {@code extraAad} (when non-null) as additional authenticated data.
+   *
+   * @param provider the {@link Provider} to resolve the {@code AES/GCM/NoPadding} {@link Cipher}
+   *     from, or {@code null} for the JDK's default provider lookup
+   * @param key the AES-256 key to decrypt under
+   * @param nonce the GCM nonce
+   * @param headerAad the header bytes to authenticate, applied first
+   * @param extraAad additional AAD to authenticate after {@code headerAad}, or {@code null}
+   * @param data the buffer containing the ciphertext followed by the authentication tag
+   * @param offset the offset of the ciphertext within {@code data}
+   * @param length the length, in bytes, of the ciphertext plus tag
+   * @return the decrypted plaintext
+   * @throws GeneralSecurityException if the provider cannot supply the transform or tag
+   *     verification fails
+   */
+  static byte[] gcmDecrypt(
+      Provider provider,
+      SecretKey key,
+      byte[] nonce,
+      byte[] headerAad,
+      byte[] extraAad,
+      byte[] data,
+      int offset,
+      int length)
+      throws GeneralSecurityException {
+    Cipher cipher = newCipher(GCM_TRANSFORM, provider);
+    cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
+    cipher.updateAAD(headerAad);
+    if (extraAad != null) {
+      cipher.updateAAD(extraAad);
+    }
+    return cipher.doFinal(data, offset, length);
   }
 
   /** Builder for {@link EnvelopeCodec}. */

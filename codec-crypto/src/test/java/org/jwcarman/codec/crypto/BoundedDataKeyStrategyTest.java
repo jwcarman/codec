@@ -115,6 +115,19 @@ class BoundedDataKeyStrategyTest {
     }
 
     @Test
+    void a_cached_key_survives_the_nano_time_wraparound() {
+      CountingProvider provider = new CountingProvider();
+      AtomicLong nanos = new AtomicLong(Long.MAX_VALUE - 5);
+      BoundedDataKeyStrategy strategy =
+          new BoundedDataKeyStrategy(1_000, Duration.ofSeconds(10), nanos::get);
+      DataKey before = strategy.acquire(provider);
+      nanos.set(Long.MIN_VALUE + 100); // elapsed via subtraction: ~105ns, far under maxAge
+      DataKey after = strategy.acquire(provider);
+      assertThat(after).isEqualTo(before);
+      assertThat(provider.calls).hasValue(1);
+    }
+
+    @Test
     void provider_failure_during_roll_propagates_and_never_reuses_the_expired_key() {
       CountingProvider provider = new CountingProvider();
       BoundedDataKeyStrategy strategy =

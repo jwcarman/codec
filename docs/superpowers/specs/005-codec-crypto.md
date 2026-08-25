@@ -280,7 +280,7 @@ length fields are read as **unsigned** 16-bit values.
 | 8+k+w   | nonce                              | 12    |
 | 20+k+w  | ciphertext ‖ GCM tag               | n+16  |
 
-Overhead: `36 + k + w` bytes. Roughly 90 bytes for JCE with a short keyId
+Overhead: `36 + k + w` bytes. Roughly 80 bytes for JCE with a short keyId
 (w=41, the AES-KW wrap-scheme tag plus payload), ~295 for a KMS ARN plus a
 184-byte wrapped DEK. On small, numerous messages the
 wrapped DEK dominates — the documented motivation for BoundedDataKeyStrategy

@@ -163,7 +163,7 @@ class JceDataKeyProviderTest {
     void unwrap_of_a_tampered_blob_is_a_decryption_exception_with_the_uniform_message() {
       JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
       byte[] wrapped = provider.newDataKey().wrapped();
-      wrapped[0] ^= 1;
+      wrapped[1] ^= 1;
       assertThatExceptionOfType(DecryptionException.class)
           .isThrownBy(() -> provider.unwrap("kek", wrapped))
           .withMessage("Unable to decrypt data");

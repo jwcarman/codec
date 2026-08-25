@@ -43,8 +43,12 @@ import javax.crypto.spec.SecretKeySpec;
  * a new entry, pointing {@code currentKeyId} at it, and keeping the old entry only until every
  * message wrapped under it has been re-encrypted.
  *
- * <p>A constructor overload accepts a {@link SecureRandom} as a test seam; production code should
- * use the single-argument constructor, which defaults to a new {@link SecureRandom} instance.
+ * <p>The two public constructors cover the simple default case: a new {@link SecureRandom}
+ * instance, or a caller-supplied one as a test seam, with {@code AESWrap} resolved via the JDK's
+ * default provider lookup. Use {@link #builder(String, Map)} instead when a {@link
+ * java.security.Provider} needs to be selected explicitly — for example a FIPS-validated provider
+ * pinned to this instance rather than installed globally; the builder also exposes the {@link
+ * SecureRandom} seam via {@code secureRandom(SecureRandom)}.
  */
 public final class JceDataKeyProvider implements DataKeyProvider {
 

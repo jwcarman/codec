@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -40,6 +41,23 @@ class ProviderInjectionTest {
 
     EmptyProvider() {
       super("Empty", "1.0", "registers nothing");
+    }
+  }
+
+  /** Delegates every service lookup to SunJCE but counts them, so operational use is observable. */
+  private static final class CountingProvider extends Provider {
+    private static final long serialVersionUID = 1L;
+
+    final AtomicInteger lookups = new AtomicInteger();
+
+    CountingProvider() {
+      super("Counting", "1.0", "delegates to SunJCE and counts");
+    }
+
+    @Override
+    public Service getService(String type, String algorithm) {
+      lookups.incrementAndGet();
+      return SUN_JCE.getService(type, algorithm);
     }
   }
 
@@ -74,6 +92,35 @@ class ProviderInjectionTest {
           };
       JceDataKeyProvider a = JceDataKeyProvider.builder("kek", keks()).secureRandom(random).build();
       assertThat(a.newDataKey().key().getEncoded()[0]).isEqualTo((byte) 9);
+    }
+  }
+
+  @Nested
+  class Operational_call_sites {
+    @Test
+    void codec_encode_and_decode_use_the_provider_beyond_the_build_time_probe() {
+      CountingProvider counting = new CountingProvider();
+      JceDataKeyProvider keys = new JceDataKeyProvider("kek", keks());
+      EnvelopeCodec codec = EnvelopeCodec.builder(keys).provider(counting).build();
+      int afterBuild = counting.lookups.get();
+
+      byte[] plaintext = "operational call sites".getBytes(UTF_8);
+      codec.decode(codec.encode(plaintext));
+
+      assertThat(counting.lookups.get() - afterBuild).isGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void jce_provider_new_data_key_and_unwrap_use_the_provider_beyond_the_build_time_probe() {
+      CountingProvider counting = new CountingProvider();
+      JceDataKeyProvider keys =
+          JceDataKeyProvider.builder("kek", keks()).provider(counting).build();
+      int afterBuild = counting.lookups.get();
+
+      DataKey dataKey = keys.newDataKey();
+      keys.unwrap(dataKey.keyId(), dataKey.wrapped());
+
+      assertThat(counting.lookups.get() - afterBuild).isGreaterThanOrEqualTo(2);
     }
   }
 

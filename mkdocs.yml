@@ -33,18 +33,21 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: teal
-      accent: deep orange
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: teal
-      accent: deep orange
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  font:
+    text: Source Sans 3
+    code: JetBrains Mono
   features:
     - navigation.tabs
     - navigation.top
@@ -56,12 +59,19 @@ theme:
 markdown_extensions:
   - admonition
   - attr_list
+  - md_in_html
   - toc:
       permalink: true
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.superfences
+
+extra_css:
+  - stylesheets/jwcarman.css
+
+extra_javascript:
+  - javascripts/hex-tape.js
 
 nav:
   - Home: index.md

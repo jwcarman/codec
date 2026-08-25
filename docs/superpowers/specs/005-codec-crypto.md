@@ -256,15 +256,17 @@ Deliberate exclusions:
   contain secrets.
 
 **Decode order and validation:**
-1. Total length ≥ 38 (minimum header with k=1, w=1, plus 16-byte tag for empty
+1. Total length ≥ 2 (enough to read the magic bytes).
+2. Magic, else reject (fast, clear rejection of non-encrypted input) — checked
+   as soon as those 2 bytes exist, before the full minimum-length check below.
+3. Total length ≥ 38 (minimum header with k=1, w=1, plus 16-byte tag for empty
    plaintext).
-2. Magic, else reject (fast, clear rejection of non-encrypted input).
-3. Version and algorithm against known values.
-4. keyId length ≥ 1 and in-bounds for the remaining buffer; same for wrapped
+4. Version and algorithm against known values.
+5. keyId length ≥ 1 and in-bounds for the remaining buffer; same for wrapped
    length; ciphertext region ≥ 16 bytes. All bounds checked before allocation.
-5. `allowedKeyIds` predicate on the parsed keyId.
-6. `provider.unwrap` — the first point key material or a provider is touched.
-7. GCM decrypt + tag verification.
+6. `allowedKeyIds` predicate on the parsed keyId.
+7. `provider.unwrap` — the first point key material or a provider is touched.
+8. GCM decrypt + tag verification.
 
 ## Error handling
 

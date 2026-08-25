@@ -159,11 +159,14 @@ public final class EnvelopeCodec implements Codec<byte[]> {
   @Override
   public byte[] decode(byte[] bytes) {
     Objects.requireNonNull(bytes, "bytes must not be null");
-    if (bytes.length < MIN_MESSAGE_LENGTH) {
+    if (bytes.length < 2) {
       throw new DecryptionException("message too short: " + bytes.length + " bytes");
     }
     if (bytes[0] != MAGIC_0 || bytes[1] != MAGIC_1) {
       throw new DecryptionException("bad magic: not an envelope");
+    }
+    if (bytes.length < MIN_MESSAGE_LENGTH) {
+      throw new DecryptionException("message too short: " + bytes.length + " bytes");
     }
     if (bytes[2] != FORMAT_VERSION) {
       throw new DecryptionException("unknown format version: " + bytes[2]);

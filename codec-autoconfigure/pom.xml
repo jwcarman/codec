@@ -73,6 +73,12 @@
         </dependency>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>
+            <artifactId>codec-jsonb</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jwcarman.codec</groupId>
             <artifactId>codec-protobuf</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
@@ -90,6 +96,11 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json.bind</groupId>
+            <artifactId>jakarta.json.bind-api</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -113,6 +124,11 @@
             <artifactId>spring-boot-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse</groupId>
+            <artifactId>yasson</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -132,4 +148,29 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>analyze-dependencies</id>
+                                <configuration>
+                                    <!-- Yasson is the JSON-B provider, discovered through
+                                         ServiceLoader at runtime; no bytecode references it. -->
+                                    <usedDependencies>
+                                        <usedDependency>org.eclipse:yasson</usedDependency>
+                                    </usedDependencies>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

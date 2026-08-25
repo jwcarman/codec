@@ -79,6 +79,7 @@ nav:
   - Guides:
       - Getting Started: guides/getting-started.md
       - Codec Composition: guides/composition.md
+      - Jackson Dataformats: guides/dataformats.md
       - Encryption: guides/encryption.md
       - Threat Model: guides/threat-model.md
       - Spring Boot: guides/spring-boot.md

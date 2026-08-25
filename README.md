@@ -150,7 +150,10 @@ Codec<Person> codec =
 | Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
 | Jackson 2 | Jackson 2.x JSON (`com.fasterxml.jackson`) | `codec-jackson2` |
 | Gson | Gson JSON | `codec-gson` |
+| JSON-B | Jakarta JSON Binding | `codec-jsonb` |
 | Protobuf | Protocol Buffers | `codec-protobuf` |
+| Crypto | AES-256-GCM envelope encryption transform | `codec-crypto` |
+| Zstandard | Zstandard compression transform | `codec-zstd` |
 | Auto-configure | Spring Boot auto-configuration for all backends | `codec-autoconfigure` |
 | Starter | Spring Boot starter (core + auto-configure) | `codec-spring-boot-starter` |
 
@@ -204,9 +207,10 @@ The `codec-spring-boot-starter` (via `codec-autoconfigure`) registers a
 modules themselves are Spring-free.
 
 When several backends are present, precedence is Jackson 3 → Jackson 2 → Gson →
-Protobuf, and defining your own `CodecFactory` bean always wins. The Jackson and
-Gson configurations reuse the application's `ObjectMapper`/`Gson` bean when one
-exists, falling back to a default instance otherwise.
+JSON-B → Protobuf, and defining your own `CodecFactory` bean always wins. The
+Jackson, Gson, and JSON-B configurations reuse the application's
+`ObjectMapper`/`Gson`/`Jsonb` bean when one exists, falling back to a default
+instance otherwise.
 
 ## Building
 

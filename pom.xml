@@ -63,6 +63,7 @@
         <!-- Dependency versions -->
         <spring-boot.version>4.1.1</spring-boot.version>
         <protobuf.version>4.36.0</protobuf.version>
+        <zstd-jni.version>1.5.7-3</zstd-jni.version>
 
         <!-- Build plugin versions -->
         <compiler.plugin.version>3.15.0</compiler.plugin.version>
@@ -101,7 +102,9 @@
         <module>codec-jackson</module>
         <module>codec-jackson2</module>
         <module>codec-gson</module>
+        <module>codec-jsonb</module>
         <module>codec-protobuf</module>
+        <module>codec-zstd</module>
         <module>codec-autoconfigure</module>
         <module>codec-spring-boot-starter</module>
     </modules>

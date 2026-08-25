@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `codec-jsonb`: Jakarta JSON Binding backend (`JsonbCodecFactory`) with Spring
+  Boot auto-configuration; backend precedence is now Jackson 3 → Jackson 2 →
+  Gson → JSON-B → Protobuf
+- `codec-zstd`: Zstandard compression transform (`ZstdCodec`) with configurable
+  level and the same decompression-bomb cap as the built-in transforms
+- `Base64Codec` in `codec-core`: a text-safe transform (basic, URL-safe, URL-safe
+  without padding, MIME) for chains whose output must live in text columns,
+  JSON strings, or URLs
+- Tests proving CBOR, Smile, YAML, and XML work as Jackson backends by mapper
+  swap, and a Jackson Dataformats guide documenting it
+
 ## [0.5.0] - 2026-08-25
 
 ### Added

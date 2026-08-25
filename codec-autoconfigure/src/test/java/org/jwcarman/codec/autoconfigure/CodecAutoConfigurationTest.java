@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.gson.GsonCodecFactory;
 import org.jwcarman.codec.jackson.JacksonCodecFactory;
 import org.jwcarman.codec.jackson2.Jackson2CodecFactory;
+import org.jwcarman.codec.jsonb.JsonbCodecFactory;
 import org.jwcarman.codec.protobuf.ProtobufCodecFactory;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
@@ -48,6 +49,7 @@ class CodecAutoConfigurationTest {
                   JacksonCodecAutoConfiguration.class,
                   Jackson2CodecAutoConfiguration.class,
                   GsonCodecAutoConfiguration.class,
+                  JsonbCodecAutoConfiguration.class,
                   ProtobufCodecAutoConfiguration.class));
 
   @Nested
@@ -87,13 +89,29 @@ class CodecAutoConfigurationTest {
     }
 
     @Test
-    void protobuf_wins_when_only_protobuf_is_present() {
+    void jsonb_wins_when_both_jacksons_and_gson_are_absent() {
       contextRunner
           .withClassLoader(
               new FilteredClassLoader(
                   ObjectMapper.class,
                   com.fasterxml.jackson.databind.ObjectMapper.class,
                   com.google.gson.Gson.class))
+          .run(
+              context -> {
+                assertThat(context).hasSingleBean(CodecFactory.class);
+                assertThat(context).hasSingleBean(JsonbCodecFactory.class);
+              });
+    }
+
+    @Test
+    void protobuf_wins_when_only_protobuf_is_present() {
+      contextRunner
+          .withClassLoader(
+              new FilteredClassLoader(
+                  ObjectMapper.class,
+                  com.fasterxml.jackson.databind.ObjectMapper.class,
+                  com.google.gson.Gson.class,
+                  jakarta.json.bind.Jsonb.class))
           .run(
               context -> {
                 assertThat(context).hasSingleBean(CodecFactory.class);
@@ -109,6 +127,7 @@ class CodecAutoConfigurationTest {
                   ObjectMapper.class,
                   com.fasterxml.jackson.databind.ObjectMapper.class,
                   com.google.gson.Gson.class,
+                  jakarta.json.bind.Jsonb.class,
                   com.google.protobuf.GeneratedMessage.class))
           .run(context -> assertThat(context).doesNotHaveBean(CodecFactory.class));
     }

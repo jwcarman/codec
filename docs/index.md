@@ -59,15 +59,15 @@ tiny and pushes the backend decision to the classpath.
 
     ---
 
-    Jackson 3.x, Jackson 2.x, Gson, and Protocol Buffers, each in its own
-    Spring-free module.
+    Jackson 3.x, Jackson 2.x, Gson, JSON-B, and Protocol Buffers, each in its
+    own Spring-free module — plus CBOR, Smile, YAML, and XML by mapper swap.
 
 -   **Composition**
 
     ---
 
-    Layer compression or encryption onto any codec with `andThen`. Gzip and
-    deflate ship built in, with decompression-bomb protection.
+    Layer compression, encryption, or Base64 onto any codec with `andThen`.
+    Gzip, deflate, and zstd ship with decompression-bomb protection.
 
 -   **Envelope encryption**
 
@@ -93,8 +93,10 @@ tiny and pushes the backend decision to the classpath.
 | `codec-jackson` | Jackson 3.x (`tools.jackson`) JSON backend |
 | `codec-jackson2` | Jackson 2.x (`com.fasterxml.jackson`) JSON backend |
 | `codec-gson` | Gson JSON backend |
+| `codec-jsonb` | Jakarta JSON Binding (JSON-B) backend |
 | `codec-protobuf` | Protocol Buffers backend |
 | `codec-crypto` | AES-256-GCM envelope encryption with pluggable key management |
+| `codec-zstd` | Zstandard compression transform |
 | `codec-autoconfigure` | Spring Boot auto-configuration for all backends |
 | `codec-spring-boot-starter` | Starter bundling core + auto-configuration |
 | `codec-bom` | Bill of materials for version alignment |

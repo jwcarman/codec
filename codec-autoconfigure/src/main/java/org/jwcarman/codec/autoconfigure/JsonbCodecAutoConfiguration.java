@@ -15,36 +15,35 @@
  */
 package org.jwcarman.codec.autoconfigure;
 
-import com.google.protobuf.GeneratedMessage;
-import org.jwcarman.codec.protobuf.ProtobufCodecFactory;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import org.jwcarman.codec.jsonb.JsonbCodecFactory;
 import org.jwcarman.codec.spi.CodecFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Auto-configures a {@link ProtobufCodecFactory} when the Protocol Buffers backend is on the
- * classpath and no other {@link CodecFactory} bean exists. Lowest-precedence backend.
+ * Registers a {@link JsonbCodecFactory} when the JSON-B backend and API are on the classpath and no
+ * other backend has claimed the {@link CodecFactory} slot. Ordered after the Jackson and Gson
+ * auto-configurations so the documented precedence holds; reuses the application's {@link Jsonb}
+ * bean when one exists (Spring Boot's own JSON-B auto-configuration provides one), otherwise builds
+ * a default instance.
  */
 @AutoConfiguration(
     after = {
       JacksonCodecAutoConfiguration.class,
       Jackson2CodecAutoConfiguration.class,
-      GsonCodecAutoConfiguration.class,
-      JsonbCodecAutoConfiguration.class
+      GsonCodecAutoConfiguration.class
     })
-@ConditionalOnClass({GeneratedMessage.class, ProtobufCodecFactory.class})
-public class ProtobufCodecAutoConfiguration {
+@ConditionalOnClass({Jsonb.class, JsonbCodecFactory.class})
+public class JsonbCodecAutoConfiguration {
 
-  /**
-   * Creates the factory.
-   *
-   * @return the codec factory
-   */
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
-  public ProtobufCodecFactory protobufCodecFactory() {
-    return new ProtobufCodecFactory();
+  public JsonbCodecFactory jsonbCodecFactory(ObjectProvider<Jsonb> jsonb) {
+    return new JsonbCodecFactory(jsonb.getIfAvailable(JsonbBuilder::create));
   }
 }

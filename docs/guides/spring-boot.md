@@ -23,7 +23,8 @@ present, precedence is deterministic:
 1. Jackson 3.x (`codec-jackson`)
 2. Jackson 2.x (`codec-jackson2`)
 3. Gson (`codec-gson`)
-4. Protocol Buffers (`codec-protobuf`)
+4. JSON-B (`codec-jsonb`)
+5. Protocol Buffers (`codec-protobuf`)
 
 The normal setup is exactly one backend; the ordering just makes the unusual
 case (a backend arriving transitively from another library) predictable.
@@ -42,7 +43,7 @@ CodecFactory codecFactory(ObjectMapper mapper) {
 
 ## Bean reuse
 
-The Jackson and Gson configurations reuse the application's existing
-`ObjectMapper` / `Gson` bean when one exists — so your configured modules,
-serialization features, and naming strategies apply to codecs too. When no such
-bean exists, a default instance is created instead.
+The Jackson, Gson, and JSON-B configurations reuse the application's existing
+`ObjectMapper` / `Gson` / `Jsonb` bean when one exists — so your configured
+modules, serialization features, and naming strategies apply to codecs too. When
+no such bean exists, a default instance is created instead.

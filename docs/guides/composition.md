@@ -33,12 +33,21 @@ runs decrypt → gunzip → JSON.
 
 ## Built-in compression
 
-Two transforms ship in `codec-core`:
+Two transforms ship in `codec-core`, and a third in its own module:
 
-| Transform | Format | When to use |
-|-----------|--------|-------------|
-| `GzipCodec` | gzip (RFC 1952) | Interoperating with external gzip tooling |
-| `DeflateCodec` | zlib (RFC 1950) | High volumes of small payloads — ~12 bytes less framing |
+| Transform | Module | Format | When to use |
+|-----------|--------|--------|-------------|
+| `GzipCodec` | `codec-core` | gzip (RFC 1952) | Interoperating with external gzip tooling |
+| `DeflateCodec` | `codec-core` | zlib (RFC 1950) | High volumes of small payloads — ~12 bytes less framing |
+| `ZstdCodec` | `codec-zstd` | Zstandard (RFC 8878) | The default choice for caches and queues: faster than gzip at every level and usually smaller |
+
+`ZstdCodec` lives in `codec-zstd` because it is backed by `zstd-jni`, which
+bundles native libraries for the common platforms. Its level is configurable:
+
+```java
+new ZstdCodec();          // the library's default level
+new ZstdCodec(19);        // smaller and slower
+```
 
 `DeflateCodec` also exposes the compression level:
 
@@ -48,13 +57,33 @@ new DeflateCodec(Deflater.BEST_COMPRESSION, maxDecodedSize);
 
 ### Decompression-bomb protection
 
-Both transforms refuse to decode payloads that expand beyond a cap — 64 MiB by
-default — throwing `IllegalStateException` instead of exhausting memory on
+All three transforms refuse to decode payloads that expand beyond a cap — 64 MiB
+by default — throwing `IllegalStateException` instead of exhausting memory on
 hostile input. Pass a byte limit to the constructor to tune it:
 
 ```java
 new GzipCodec(1024 * 1024);  // refuse anything expanding past 1 MiB
 ```
+
+## Text-safe output
+
+`Base64Codec` turns any bytes into ASCII-only bytes, for chains whose output
+must live somewhere that mangles raw bytes — a text column, a JSON string
+field, a URL. Put it **last**: it expands by a third, so compress and encrypt
+first.
+
+```java
+Codec<Order> codec = codecFactory.create(Order.class)
+    .andThen(new GzipCodec())
+    .andThen(Base64Codec.urlSafeWithoutPadding());
+
+String token = new String(codec.encode(order), StandardCharsets.US_ASCII);
+```
+
+Four variants: `basic()`, `urlSafe()`, `urlSafeWithoutPadding()` (the usual
+choice for tokens and query strings), and `mime()`. Decoding is strict —
+input outside the variant's alphabet is rejected rather than decoded to
+garbage.
 
 ## Custom transforms
 

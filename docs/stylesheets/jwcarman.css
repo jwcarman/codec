@@ -2,12 +2,15 @@
  * jwcarman docs theme — shared across the jwcarman OSS documentation sites.
  *
  * Tokens: Ink (header, dark ground), Cobalt (links, actions), Signal (amber —
- * rationed to the hex tape's write head while it sweeps, focus rings and
- * dark-mode link hover), Paper and Slate (light and dark page grounds).
+ * rationed to focus rings, dark-mode link hover, and whatever per-project
+ * signature element a site chooses), Paper and Slate (light and dark page
+ * grounds).
  *
- * Portable by construction: copy this file and hex-tape.js, paste the theme
- * block into mkdocs.yml, and give the landing page a .jw-hero with a .jw-tape
- * carrying the project's name in data-word.
+ * This file is the shared theme and carries nothing project-specific. To
+ * adopt it: copy it, paste the theme block into mkdocs.yml, and give the
+ * landing page a .jw-hero (title, .jw-hero__tagline, .jw-hero__actions).
+ * A site's signature element, if it has one, lives in its own stylesheet
+ * next to this one (codec's hex tape is in codec.css).
  */
 
 @import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap");
@@ -163,72 +166,6 @@
 
 .md-typeset .jw-hero__actions .md-button {
   margin: 0.35rem 0.6rem 0 0;
-}
-
-/* ---------- The hex tape: the project's name as its bytes ---------- */
-
-.jw-tape {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 1.1rem 0 1.4rem;
-  font-family: var(--md-code-font-family);
-}
-
-.jw-tape__cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 2.7rem;
-  padding: 0.4rem 0.5rem 0.3rem;
-  border: 1px solid rgba(23, 27, 58, 0.25);
-  border-radius: 0.25rem;
-  line-height: 1.1;
-  color: var(--md-default-fg-color);
-  transition:
-    border-color 0.35s ease,
-    background-color 0.35s ease,
-    color 0.35s ease;
-}
-
-[data-md-color-scheme="slate"] .jw-tape__cell {
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.jw-tape__cell b {
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.jw-tape__cell i {
-  margin-top: 0.2rem;
-  font-size: 0.78rem;
-  font-style: normal;
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.jw-tape__cell.is-set {
-  border-color: rgba(58, 75, 199, 0.55);
-}
-
-/* The write head: lit only while it passes, never at rest. */
-.jw-tape__cell.is-head {
-  background-color: var(--jw-signal);
-  border-color: var(--jw-signal);
-  color: var(--jw-ink);
-  transition: none;
-}
-
-.jw-tape__cell.is-head i {
-  opacity: 0.9;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .jw-tape__cell {
-    transition: none;
-  }
 }
 
 /* ---------- Feature cards ---------- */

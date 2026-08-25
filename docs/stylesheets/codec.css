@@ -1,0 +1,71 @@
+/*
+ * codec-specific styles layered on the shared jwcarman theme: the hex tape on
+ * the landing page (the project's name rendered as its bytes, swept once on
+ * load by a write head). Rendered by javascripts/hex-tape.js.
+ */
+
+/* ---------- The hex tape: the project's name as its bytes ---------- */
+
+.jw-tape {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.1rem 0 1.4rem;
+  font-family: var(--md-code-font-family);
+}
+
+.jw-tape__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 2.7rem;
+  padding: 0.4rem 0.5rem 0.3rem;
+  border: 1px solid rgba(23, 27, 58, 0.25);
+  border-radius: 0.25rem;
+  line-height: 1.1;
+  color: var(--md-default-fg-color);
+  transition:
+    border-color 0.35s ease,
+    background-color 0.35s ease,
+    color 0.35s ease;
+}
+
+[data-md-color-scheme="slate"] .jw-tape__cell {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.jw-tape__cell b {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.jw-tape__cell i {
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.jw-tape__cell.is-set {
+  border-color: rgba(58, 75, 199, 0.55);
+}
+
+/* The write head: lit only while it passes, never at rest. */
+.jw-tape__cell.is-head {
+  background-color: var(--jw-signal);
+  border-color: var(--jw-signal);
+  color: var(--jw-ink);
+  transition: none;
+}
+
+.jw-tape__cell.is-head i {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jw-tape__cell {
+    transition: none;
+  }
+}

@@ -27,12 +27,12 @@
         <version>0.7.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>codec-spring-boot-starter</artifactId>
-    <name>Codec Spring Boot Starter</name>
-    <description>Spring Boot starter for Codec — add a backend module to activate it</description>
+    <artifactId>codec-transforms</artifactId>
+    <name>Codec Transforms</name>
+    <description>Zero-dependency byte transforms for Codec composition: compression and encodings</description>
 
     <properties>
-        <module.name>org.jwcarman.codec.starter</module.name>
+        <module.name>org.jwcarman.codec.transforms</module.name>
     </properties>
 
     <dependencies>
@@ -42,14 +42,19 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.jwcarman.codec</groupId>
-            <artifactId>codec-transforms</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jwcarman.codec</groupId>
-            <artifactId>codec-autoconfigure</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

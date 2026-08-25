@@ -21,7 +21,7 @@ import com.github.luben.zstd.ZstdOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.jwcarman.codec.transform.CompressionStreamCodec;
+import org.jwcarman.codec.transform.compress.CompressionStreamCodec;
 
 /**
  * Zstandard (RFC 8878) compression as a {@code Codec<byte[]>} transform, for use with {@code

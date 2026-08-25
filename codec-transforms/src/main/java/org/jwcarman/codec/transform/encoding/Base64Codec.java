@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.transform;
+package org.jwcarman.codec.transform.encoding;
 
 import java.util.Base64;
 import java.util.Objects;

@@ -31,14 +31,29 @@ runs decrypt → gunzip → JSON.
     Ciphertext does not compress, so put compression before encryption in the
     chain.
 
+## The transforms module
+
+The zero-dependency transforms live in `codec-transforms` (the starter includes
+it; without Spring, add it next to `codec-core`):
+
+```xml
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-transforms</artifactId>
+</dependency>
+```
+
+Two packages, by kind: `org.jwcarman.codec.transform.compress` and
+`org.jwcarman.codec.transform.encoding`.
+
 ## Built-in compression
 
-Two transforms ship in `codec-core`, and a third in its own module:
+Two transforms ship in `codec-transforms`, and a third in its own module:
 
 | Transform | Module | Format | When to use |
 |-----------|--------|--------|-------------|
-| `GzipCodec` | `codec-core` | gzip (RFC 1952) | Interoperating with external gzip tooling |
-| `DeflateCodec` | `codec-core` | zlib (RFC 1950) | High volumes of small payloads — ~12 bytes less framing |
+| `GzipCodec` | `codec-transforms` | gzip (RFC 1952) | Interoperating with external gzip tooling |
+| `DeflateCodec` | `codec-transforms` | zlib (RFC 1950) | High volumes of small payloads — ~12 bytes less framing |
 | `ZstdCodec` | `codec-zstd` | Zstandard (RFC 8878) | The default choice for caches and queues: faster than gzip at every level and usually smaller |
 
 `ZstdCodec` lives in `codec-zstd` because it is backed by `zstd-jni`, which
@@ -84,6 +99,12 @@ Four variants: `basic()`, `urlSafe()`, `urlSafeWithoutPadding()` (the usual
 choice for tokens and query strings), and `mime()`. Decoding is strict —
 input outside the variant's alphabet is rejected rather than decoded to
 garbage.
+
+`HexCodec` (RFC 4648 base16) is the readable alternative: twice the size of
+the input, but a person can read and paste it — identifiers, checksums, keys
+in configuration. `lowerCase()` is the usual form; `upperCase()` matches the
+RFC's examples; decoding accepts either and rejects odd-length or non-hex
+input.
 
 ## Custom transforms
 

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+- The built-in transforms moved out of `codec-core` into a new
+  `codec-transforms` module, and into packages by kind:
+  `org.jwcarman.codec.transform.compress` (`CompressionStreamCodec`,
+  `GzipCodec`, `DeflateCodec`) and `org.jwcarman.codec.transform.encoding`
+  (`Base64Codec`). `codec-core` is now the SPI alone. Migration: add
+  `codec-transforms` (the Spring Boot starter already includes it) and update
+  the imports. `codec-zstd` now depends on `codec-transforms`.
+
+### Added
+- `HexCodec` in `codec-transforms` (RFC 4648 base16): lower- or upper-case
+  output, strict case-insensitive decoding
+
 ## [0.6.0] - 2026-08-25
 
 ### Added

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.transform;
+package org.jwcarman.codec.transform.encoding;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class Base64CodecTest {

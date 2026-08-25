@@ -147,6 +147,7 @@ Codec<Person> codec =
 | Module | Backend | Artifact |
 |--------|---------|----------|
 | Core | SPI interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
+| Transforms | Zero-dependency byte transforms: gzip, deflate, Base64, hex | `codec-transforms` |
 | Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
 | Jackson 2 | Jackson 2.x JSON (`com.fasterxml.jackson`) | `codec-jackson2` |
 | Gson | Gson JSON | `codec-gson` |

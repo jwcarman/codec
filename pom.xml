@@ -99,6 +99,7 @@
     <modules>
         <module>codec-bom</module>
         <module>codec-core</module>
+        <module>codec-transforms</module>
         <module>codec-crypto</module>
         <module>codec-jackson</module>
         <module>codec-jackson2</module>
@@ -399,6 +400,7 @@ limitations under the License.]]></inlineHeader>
                                         <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
                                         <!-- codec-spring-boot-starter ships no code: it is dependencies-only by design. -->
                                         <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-core</ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-transforms</ignoredUnusedDeclaredDependency>
                                         <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-autoconfigure</ignoredUnusedDeclaredDependency>
                                     </ignoredUnusedDeclaredDependencies>
                                     <ignoredNonTestScopedDependencies>

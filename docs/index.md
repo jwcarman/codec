@@ -67,8 +67,8 @@ tiny and pushes the backend decision to the classpath.
 
     ---
 
-    Layer compression, encryption, or Base64 onto any codec with `andThen`.
-    Gzip, deflate, and zstd ship with decompression-bomb protection.
+    Layer compression, encryption, or a text-safe encoding onto any codec with
+    `andThen`. Gzip, deflate, and zstd ship with decompression-bomb protection.
 
 -   **Envelope encryption**
 
@@ -90,7 +90,8 @@ tiny and pushes the backend decision to the classpath.
 
 | Module | What it is |
 |--------|------------|
-| `codec-core` | The SPI: `Codec`, `CodecFactory`, `TypeRef`, and the compression transforms |
+| `codec-core` | The SPI: `Codec`, `CodecFactory`, `TypeRef` — nothing else |
+| `codec-transforms` | Zero-dependency `Codec<byte[]>` transforms: gzip, deflate, Base64, hex |
 | `codec-jackson` | Jackson 3.x (`tools.jackson`) JSON backend |
 | `codec-jackson2` | Jackson 2.x (`com.fasterxml.jackson`) JSON backend |
 | `codec-gson` | Gson JSON backend |

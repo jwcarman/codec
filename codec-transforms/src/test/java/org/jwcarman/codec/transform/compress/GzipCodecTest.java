@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.transform;
+package org.jwcarman.codec.transform.compress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.Deflater;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.Codec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-class DeflateCodecTest {
+class GzipCodecTest {
 
-  private final DeflateCodec codec = new DeflateCodec();
+  private final GzipCodec codec = new GzipCodec();
 
   @Nested
   class Encode {
 
     @Test
-    void produces_zlib_formatted_output() {
+    void produces_gzip_formatted_output() {
       byte[] encoded = codec.encode("hello".getBytes(StandardCharsets.UTF_8));
 
-      assertThat(encoded[0]).isEqualTo((byte) 0x78);
+      assertThat(encoded).startsWith((byte) 0x1f, (byte) 0x8b);
     }
 
     @Test
@@ -48,15 +48,6 @@ class DeflateCodecTest {
       byte[] encoded = codec.encode(input);
 
       assertThat(encoded).hasSizeLessThan(input.length);
-    }
-
-    @Test
-    void honors_the_compression_level() {
-      byte[] input = "abc".repeat(1000).getBytes(StandardCharsets.UTF_8);
-      byte[] best = new DeflateCodec(Deflater.BEST_COMPRESSION, Long.MAX_VALUE).encode(input);
-      byte[] none = new DeflateCodec(Deflater.NO_COMPRESSION, Long.MAX_VALUE).encode(input);
-
-      assertThat(best).hasSizeLessThan(none.length);
     }
   }
 
@@ -78,7 +69,7 @@ class DeflateCodecTest {
     }
 
     @Test
-    void rejects_non_deflate_input() {
+    void rejects_non_gzip_input() {
       byte[] garbage = {1, 2, 3, 4};
 
       assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(garbage));
@@ -91,7 +82,7 @@ class DeflateCodecTest {
     @Test
     void rejects_payloads_expanding_beyond_the_cap() {
       byte[] bomb = codec.encode(new byte[100_000]);
-      DeflateCodec capped = new DeflateCodec(16);
+      GzipCodec capped = new GzipCodec(16);
 
       assertThatExceptionOfType(IllegalStateException.class)
           .isThrownBy(() -> capped.decode(bomb))
@@ -101,31 +92,42 @@ class DeflateCodecTest {
     @Test
     void allows_payloads_exactly_at_the_cap() {
       byte[] input = "nineteen bytes long".getBytes(StandardCharsets.UTF_8);
-      DeflateCodec capped = new DeflateCodec(input.length);
+      GzipCodec capped = new GzipCodec(input.length);
 
       assertThat(capped.decode(capped.encode(input))).isEqualTo(input);
     }
 
     @Test
     void rejects_a_non_positive_cap() {
-      assertThatExceptionOfType(IllegalArgumentException.class)
-          .isThrownBy(() -> new DeflateCodec(0));
+      assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new GzipCodec(0));
     }
   }
 
   @Nested
-  class Compression_level_validation {
+  class Composed_with_and_then {
 
     @Test
-    void rejects_a_level_above_nine() {
-      assertThatExceptionOfType(IllegalArgumentException.class)
-          .isThrownBy(() -> new DeflateCodec(10, 1024));
-    }
+    void round_trips_through_a_base_codec() {
+      Codec<String> utf8 =
+          new Codec<>() {
+            @Override
+            public byte[] encode(String value) {
+              return value.getBytes(StandardCharsets.UTF_8);
+            }
 
-    @Test
-    void rejects_a_level_below_default_sentinel() {
-      assertThatExceptionOfType(IllegalArgumentException.class)
-          .isThrownBy(() -> new DeflateCodec(-2, 1024));
+            @Override
+            public String decode(byte[] bytes) {
+              return new String(bytes, StandardCharsets.UTF_8);
+            }
+          };
+
+      Codec<String> composed = utf8.andThen(new GzipCodec());
+      String value = "compress me ".repeat(100);
+
+      byte[] encoded = composed.encode(value);
+
+      assertThat(encoded).startsWith((byte) 0x1f, (byte) 0x8b);
+      assertThat(composed.decode(encoded)).isEqualTo(value);
     }
   }
 }

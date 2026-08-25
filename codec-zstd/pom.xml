@@ -38,6 +38,11 @@
     <dependencies>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>
+            <artifactId>codec-transforms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jwcarman.codec</groupId>
             <artifactId>codec-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -57,4 +62,32 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>analyze-dependencies</id>
+                                <configuration>
+                                    <!-- ZstdCodec is a Codec through CompressionStreamCodec: javac needs
+                                         codec-core on the main compile classpath for the supertype chain,
+                                         but the emitted bytecode references only the direct superclass,
+                                         so the analyzer sees codec-core used by the tests alone and asks
+                                         for test scope — which would remove it from the main compile. -->
+                                    <ignoredNonTestScopedDependencies>
+                                        <ignoredNonTestScopedDependency>org.jwcarman.codec:codec-core</ignoredNonTestScopedDependency>
+                                    </ignoredNonTestScopedDependencies>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

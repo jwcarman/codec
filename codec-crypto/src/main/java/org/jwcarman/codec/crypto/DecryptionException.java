@@ -35,14 +35,32 @@ public class DecryptionException extends IllegalArgumentException {
 
   private static final String CRYPTOGRAPHIC_FAILURE = "Unable to decrypt data";
 
+  /**
+   * Creates a structural rejection with a stage-specific message.
+   *
+   * @param message what the decoder rejected; must not reveal key material
+   */
   public DecryptionException(String message) {
     super(message);
   }
 
+  /**
+   * Creates a rejection carrying the underlying cause.
+   *
+   * @param message what the decoder rejected; must not reveal key material
+   * @param cause the underlying failure, may be {@code null}
+   */
   public DecryptionException(String message, Throwable cause) {
     super(message, cause);
   }
 
+  /**
+   * Creates a cryptographic rejection with the uniform message shared by every tag, unwrap and
+   * scheme failure, so that callers cannot distinguish them by content.
+   *
+   * @param cause the underlying failure, may be {@code null}
+   * @return the exception to throw
+   */
   public static DecryptionException cryptographic(Throwable cause) {
     return new DecryptionException(CRYPTOGRAPHIC_FAILURE, cause);
   }

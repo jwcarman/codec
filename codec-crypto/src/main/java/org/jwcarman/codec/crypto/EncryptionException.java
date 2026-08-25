@@ -24,10 +24,21 @@ package org.jwcarman.codec.crypto;
  */
 public class EncryptionException extends IllegalStateException {
 
+  /**
+   * Creates an encode-side failure.
+   *
+   * @param message what failed; must not reveal key material
+   */
   public EncryptionException(String message) {
     super(message);
   }
 
+  /**
+   * Creates an encode-side failure carrying the underlying cause.
+   *
+   * @param message what failed; must not reveal key material
+   * @param cause the underlying failure
+   */
   public EncryptionException(String message, Throwable cause) {
     super(message, cause);
   }

@@ -28,6 +28,12 @@ package org.jwcarman.codec.crypto;
  */
 public class KeyAccessException extends IllegalStateException {
 
+  /**
+   * Creates a key-infrastructure availability failure.
+   *
+   * @param message what was unavailable
+   * @param cause the provider's failure, preserved for diagnosis
+   */
   public KeyAccessException(String message, Throwable cause) {
     super(message, cause);
   }

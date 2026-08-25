@@ -146,6 +146,35 @@ not in the map — the map IS the allowlist, satisfying the security contract.
 A constructor overload accepts a `SecureRandom` (test seam; production uses a
 default instance).
 
+The transient DEK byte array generated for each `newDataKey()` call is zeroed
+after `SecretKeySpec` copies it, so key material does not linger in a byte
+array beyond its useful lifetime.
+
+**Wrap-scheme tag:** the blob returned as `DataKey.wrapped()` is
+`[scheme:1][payload]` — a one-byte wrap-scheme tag followed by the wrap
+payload. Scheme `0x01` = AES-KW (RFC 3394) over the 32-byte DEK: payload 40
+bytes, blob 41 bytes. `unwrap` rejects a blob shorter than 2 bytes or tagged
+with an unrecognized scheme via `DecryptionException.cryptographic` (the
+uniform message) — indistinguishable from any other cryptographic rejection.
+This tag is invisible to `EnvelopeCodec` (the blob stays opaque to it) and
+unreleased at the time it was introduced, so no migration was needed; it gives
+this zero-dependency provider the same wrap-algorithm migration story a
+KMS-backed provider gets for free from its own versioned ciphertext format.
+Scheme values `0x02` and above are reserved for future wrap algorithms.
+
+**Provider injection:** `JceDataKeyProvider.builder(String currentKeyId,
+Map<String, SecretKey> keks)` returns a builder exposing
+`.secureRandom(SecureRandom)`, `.provider(java.security.Provider)`, and
+`.build()`; the two public constructors remain and delegate to it. The
+provider, when set, governs the `AESWrap` `Cipher` lookups this provider
+makes. Fail fast: the builder resolves `AESWrap` against the given provider
+at construction time and throws `IllegalStateException` naming the transform
+if the provider cannot supply it — a configuration error must not surface
+later as a `DecryptionException` ("your data is bad"). Rationale: this lets a
+FIPS-validated provider (e.g. BC-FIPS) be selected per instance without
+installing it as the JVM's globally highest-priority provider. All primitives
+this module uses are FIPS-approved (AES-GCM, AES-KW).
+
 ### EnvelopeCodec (implements Codec<byte[]>)
 
 Owns the wire format, nonce generation, the GCM calls, and decode-side keyId
@@ -159,8 +188,19 @@ EnvelopeCodec.builder(provider)          // required
     .aad(byte[])                         // default: none; defensively copied
     .allowedKeyIds(Predicate<String>)    // default: provider.allowsKeyId (see below)
     .secureRandom(SecureRandom)          // default: new SecureRandom(); test seam
+    .provider(java.security.Provider)    // default: JDK provider lookup
     .build();
 ```
+
+**Provider injection:** `.provider(Provider)` is optional; when set, every
+`Cipher.getInstance` call the codec makes passes the given provider instead of
+relying on JDK provider lookup. Fail fast, matching `JceDataKeyProvider`'s
+builder: the transform is resolved against the provider at `build()` time, and
+`build()` throws `IllegalStateException` naming the transform if the provider
+cannot supply it, rather than letting the misconfiguration surface later as a
+`DecryptionException`. Rationale: a FIPS-validated provider (e.g. BC-FIPS) can
+be pinned per codec instance without installing it as the JVM's globally
+highest-priority provider; AES-GCM is FIPS-approved.
 
 Decode-side admission, evaluated against the wire keyId before `unwrap`: the
 builder's `allowedKeyIds` predicate when set, otherwise the provider's
@@ -199,6 +239,15 @@ salamander"). The keyId allowlist mitigates the practical variants; algorithm
 id `0x02` is **reserved** for a key-committing suite (GCM plus key-commitment
 tag) should the threat model ever warrant it.
 
+**Future suites:** algorithm id `0x02` is reserved for an AES-256-GCM
+key-committing suite (AWS Encryption SDK v2 construction: per-message
+32-byte salt, HKDF-SHA256-derived encryption and commitment keys, commitment
+verified constant-time before GCM). It would occupy a suite-defined block
+between the nonce and the ciphertext, authenticated as part of the header
+AAD. Not built now: the single-wrapped-DEK envelope with keyId admission does
+not expose the multi-recipient surface that motivated AWS's default; the id
+byte preserves the option.
+
 ### Post-quantum considerations
 
 The v1 envelope is symmetric end-to-end: AES-256-GCM payload encryption,
@@ -231,8 +280,9 @@ length fields are read as **unsigned** 16-bit values.
 | 8+k+w   | nonce                              | 12    |
 | 20+k+w  | ciphertext ‖ GCM tag               | n+16  |
 
-Overhead: `36 + k + w` bytes. Roughly 90 bytes for JCE with a short keyId,
-~295 for a KMS ARN plus a 184-byte wrapped DEK. On small, numerous messages the
+Overhead: `36 + k + w` bytes. Roughly 90 bytes for JCE with a short keyId
+(w=41, the AES-KW wrap-scheme tag plus payload), ~295 for a KMS ARN plus a
+184-byte wrapped DEK. On small, numerous messages the
 wrapped DEK dominates — the documented motivation for BoundedDataKeyStrategy
 on encode and for the provider caching contract on decode.
 

@@ -63,7 +63,7 @@ class EnvelopeCodecEncodeTest {
 
       int wOffset = 6 + k;
       int w = ((message[wOffset] & 0xFF) << 8) | (message[wOffset + 1] & 0xFF);
-      assertThat(w).isEqualTo(40); // AESWrap of a 32-byte DEK
+      assertThat(w).isEqualTo(41); // scheme tag + AESWrap of a 32-byte DEK
 
       // header(20 + k + w) + ciphertext(5) + tag(16)
       assertThat(message).hasSize(20 + k + w + 5 + 16);

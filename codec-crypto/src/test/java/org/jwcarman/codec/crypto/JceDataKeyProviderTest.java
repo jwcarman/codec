@@ -169,4 +169,34 @@ class JceDataKeyProviderTest {
           .withMessage("Unable to decrypt data");
     }
   }
+
+  @Nested
+  class Wrap_scheme {
+    @Test
+    void wrapped_blob_carries_the_aes_kw_scheme_tag_and_is_41_bytes() {
+      JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
+      byte[] wrapped = provider.newDataKey().wrapped();
+      assertThat(wrapped).hasSize(41);
+      assertThat(wrapped[0]).isEqualTo(JceDataKeyProvider.WRAP_SCHEME_AES_KW);
+    }
+
+    @Test
+    void an_unknown_scheme_tag_is_rejected_with_the_uniform_message() {
+      JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
+      byte[] wrapped = provider.newDataKey().wrapped();
+      wrapped[0] = 0x7F;
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> provider.unwrap("kek", wrapped))
+          .withMessage("Unable to decrypt data");
+    }
+
+    @Test
+    void a_one_byte_blob_is_rejected_with_the_uniform_message() {
+      JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(
+              () -> provider.unwrap("kek", new byte[] {JceDataKeyProvider.WRAP_SCHEME_AES_KW}))
+          .withMessage("Unable to decrypt data");
+    }
+  }
 }

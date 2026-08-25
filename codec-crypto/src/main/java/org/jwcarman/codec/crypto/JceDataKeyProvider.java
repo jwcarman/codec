@@ -18,6 +18,7 @@ package org.jwcarman.codec.crypto;
 import java.security.GeneralSecurityException;
 import java.security.Provider;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import javax.crypto.Cipher;
@@ -34,6 +35,14 @@ import javax.crypto.spec.SecretKeySpec;
  * AESWrap needs no nonce, so wrapping the same DEK under the same KEK always produces the same
  * ciphertext, and its integrity check value (ICV) causes unwrap of a tampered or foreign-key blob
  * to fail rather than silently return garbage key material.
+ *
+ * <p>The blob returned as {@link DataKey#wrapped()} is {@code [scheme:1][payload]}: a one-byte
+ * wrap-scheme tag ({@link #WRAP_SCHEME_AES_KW}, {@code 0x01}) followed by the AES-KW payload — 41
+ * bytes total for a 32-byte DEK. This is invisible to {@code EnvelopeCodec}, which treats the whole
+ * blob as opaque; it exists so this provider has the same wrap-algorithm migration story a
+ * KMS-backed provider gets from its own versioned ciphertext format. Scheme values {@code 0x02} and
+ * above are reserved for future wrap algorithms; {@link #unwrap(String, byte[])} rejects any blob
+ * shorter than 2 bytes or tagged with an unrecognized scheme.
  *
  * <p>The KEK map <strong>is</strong> this provider's allowlist: {@link #allowsKeyId(String)} and
  * {@link #unwrap(String, byte[])} both consult it directly, so any key id absent from the map is
@@ -55,6 +64,14 @@ public final class JceDataKeyProvider implements DataKeyProvider {
   private static final String AES = "AES";
   private static final String WRAP_TRANSFORM = "AESWrap";
   private static final int DEK_LENGTH_BYTES = 32;
+
+  /**
+   * Wrap-scheme tag for the first byte of {@link DataKey#wrapped()} blobs produced by this
+   * provider: AES key-wrap (RFC 3394) over the DEK. Scheme values {@code 0x02} and above are
+   * reserved for future wrap algorithms; {@link #unwrap(String, byte[])} rejects any blob whose
+   * first byte is not a scheme it recognizes.
+   */
+  static final byte WRAP_SCHEME_AES_KW = 0x01;
 
   private final String currentKeyId;
   private final Map<String, SecretKey> keks;
@@ -134,10 +151,15 @@ public final class JceDataKeyProvider implements DataKeyProvider {
     byte[] dekBytes = new byte[DEK_LENGTH_BYTES];
     random.nextBytes(dekBytes);
     SecretKey dek = new SecretKeySpec(dekBytes, AES);
+    Arrays.fill(dekBytes, (byte) 0); // SecretKeySpec holds its own copy
     try {
       Cipher cipher = wrapCipher();
       cipher.init(Cipher.WRAP_MODE, keks.get(currentKeyId));
-      return new DataKey(currentKeyId, dek, cipher.wrap(dek));
+      byte[] payload = cipher.wrap(dek);
+      byte[] blob = new byte[1 + payload.length];
+      blob[0] = WRAP_SCHEME_AES_KW;
+      System.arraycopy(payload, 0, blob, 1, payload.length);
+      return new DataKey(currentKeyId, dek, blob);
     } catch (GeneralSecurityException e) {
       throw new EncryptionException("Unable to wrap data key", e);
     }
@@ -149,10 +171,14 @@ public final class JceDataKeyProvider implements DataKeyProvider {
     if (kek == null) {
       throw DecryptionException.cryptographic(null);
     }
+    if (wrapped.length < 2 || wrapped[0] != WRAP_SCHEME_AES_KW) {
+      throw DecryptionException.cryptographic(null);
+    }
+    byte[] payload = Arrays.copyOfRange(wrapped, 1, wrapped.length);
     try {
       Cipher cipher = wrapCipher();
       cipher.init(Cipher.UNWRAP_MODE, kek);
-      return (SecretKey) cipher.unwrap(wrapped, AES, Cipher.SECRET_KEY);
+      return (SecretKey) cipher.unwrap(payload, AES, Cipher.SECRET_KEY);
     } catch (GeneralSecurityException e) {
       throw DecryptionException.cryptographic(e);
     }

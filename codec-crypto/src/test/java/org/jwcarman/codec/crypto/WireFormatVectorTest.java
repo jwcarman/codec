@@ -53,7 +53,7 @@ class WireFormatVectorTest {
   }
 
   private static final String FROZEN_VECTOR_HEX =
-      "4a43010100036b656b0028246d75815315bd8b40ac141ba1cbca56785ae73cbbafa7fd20f4c91a99312c946edff8132c8259b4202122232425262728292a2bb155c2150fb5797c630c36a1e16ec5fd58ca826105f90dd5de2c473e640feb";
+      "4a43010100036b656b002901246d75815315bd8b40ac141ba1cbca56785ae73cbbafa7fd20f4c91a99312c946edff8132c8259b4202122232425262728292a2bb155c2150fb5797c630c36a1e16ec59cac4b79f69c5cb6458373a94d52f0dd";
 
   @Test
   void the_wire_format_matches_the_frozen_vector_byte_for_byte() {

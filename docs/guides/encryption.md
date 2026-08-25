@@ -12,9 +12,11 @@ Add the module:
 <dependency>
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-crypto</artifactId>
-    <version>0.4.0</version>
+    <version>0.5.0</version>
 </dependency>
 ```
+
+`codec-crypto` ships starting with 0.5.0.
 
 `codec-crypto` has zero external dependencies — all cryptography is JCE, built
 into the JDK. It ships one in-process key provider, `JceDataKeyProvider`, for

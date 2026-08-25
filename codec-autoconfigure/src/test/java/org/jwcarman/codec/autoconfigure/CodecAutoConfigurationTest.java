@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.fory.ForyCodecFactory;
 import org.jwcarman.codec.gson.GsonCodecFactory;
 import org.jwcarman.codec.jackson.JacksonCodecFactory;
 import org.jwcarman.codec.jackson2.Jackson2CodecFactory;
@@ -46,6 +47,7 @@ class CodecAutoConfigurationTest {
       new ApplicationContextRunner()
           .withConfiguration(
               AutoConfigurations.of(
+                  ForyCodecAutoConfiguration.class,
                   JacksonCodecAutoConfiguration.class,
                   Jackson2CodecAutoConfiguration.class,
                   GsonCodecAutoConfiguration.class,
@@ -130,6 +132,42 @@ class CodecAutoConfigurationTest {
                   jakarta.json.bind.Jsonb.class,
                   com.google.protobuf.GeneratedMessage.class))
           .run(context -> assertThat(context).doesNotHaveBean(CodecFactory.class));
+    }
+  }
+
+  @Nested
+  class Fory_is_opt_in {
+
+    @Test
+    void an_explicit_thread_safe_fory_bean_wins_over_every_classpath_backend() {
+      contextRunner
+          .withUserConfiguration(ForyBeanConfig.class)
+          .run(
+              context -> {
+                assertThat(context).hasSingleBean(CodecFactory.class);
+                assertThat(context).hasSingleBean(ForyCodecFactory.class);
+              });
+    }
+
+    @Test
+    void fory_on_the_classpath_without_a_bean_changes_nothing() {
+      contextRunner.run(
+          context -> {
+            assertThat(context).hasSingleBean(CodecFactory.class);
+            assertThat(context).doesNotHaveBean(ForyCodecFactory.class);
+          });
+    }
+  }
+
+  @Configuration(proxyBeanMethods = false)
+  static class ForyBeanConfig {
+
+    @Bean
+    org.apache.fory.ThreadSafeFory threadSafeFory() {
+      return org.apache.fory.Fory.builder()
+          .withLanguage(org.apache.fory.config.Language.JAVA)
+          .requireClassRegistration(true)
+          .buildThreadSafeFory();
     }
   }
 

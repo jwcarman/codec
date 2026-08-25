@@ -56,6 +56,26 @@ The wire format is Fory's own and JVM-specific:
 - The data must outlive the classes that wrote it — use a schema-based format,
   or at minimum Fory's compatible mode, and test the evolution you expect.
 
+## Spring Boot
+
+There is no default Fory the starter could build for you — it needs your
+classes registered — so the auto-configuration is triggered by a bean: define a
+`ThreadSafeFory` bean and `codec-autoconfigure` registers a `ForyCodecFactory`
+from it, ahead of every classpath-detected backend.
+
+```java
+@Bean
+ThreadSafeFory fory() {
+    ThreadSafeFory fory = Fory.builder()
+        .withLanguage(Language.JAVA)
+        .requireClassRegistration(true)
+        .buildThreadSafeFory();
+    fory.register(Person.class);
+    fory.register(Order.class);
+    return fory;
+}
+```
+
 ## Where next
 
 - [Getting Started](getting-started.md) — dependencies and first codec

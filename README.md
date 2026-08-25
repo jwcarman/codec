@@ -208,7 +208,9 @@ The `codec-spring-boot-starter` (via `codec-autoconfigure`) registers a
 modules themselves are Spring-free.
 
 When several backends are present, precedence is Jackson 3 → Jackson 2 → Gson →
-JSON-B → Protobuf, and defining your own `CodecFactory` bean always wins. The
+JSON-B → Protobuf; an application-defined `ThreadSafeFory` bean activates the
+Fory backend ahead of all of them, and defining your own `CodecFactory` bean
+always wins. The
 Jackson, Gson, and JSON-B configurations reuse the application's
 `ObjectMapper`/`Gson`/`Jsonb` bean when one exists, falling back to a default
 instance otherwise.

@@ -20,11 +20,14 @@ Each backend's auto-configuration activates only when both that backend module
 and its underlying library are on the classpath. If several backends are
 present, precedence is deterministic:
 
-1. Jackson 3.x (`codec-jackson`)
-2. Jackson 2.x (`codec-jackson2`)
-3. Gson (`codec-gson`)
-4. JSON-B (`codec-jsonb`)
-5. Protocol Buffers (`codec-protobuf`)
+1. Apache Fory (`codec-fory`) — only when the application defines a
+   `ThreadSafeFory` bean; that bean is read as intent, so it outranks every
+   backend that merely happens to be on the classpath
+2. Jackson 3.x (`codec-jackson`)
+3. Jackson 2.x (`codec-jackson2`)
+4. Gson (`codec-gson`)
+5. JSON-B (`codec-jsonb`)
+6. Protocol Buffers (`codec-protobuf`)
 
 The normal setup is exactly one backend; the ordering just makes the unusual
 case (a backend arriving transitively from another library) predictable.

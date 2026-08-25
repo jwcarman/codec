@@ -79,6 +79,12 @@
         </dependency>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>
+            <artifactId>codec-fory</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jwcarman.codec</groupId>
             <artifactId>codec-protobuf</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
@@ -101,6 +107,12 @@
         <dependency>
             <groupId>jakarta.json.bind</groupId>
             <artifactId>jakarta.json.bind-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.fory</groupId>
+            <artifactId>fory-core</artifactId>
+            <version>${fory.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>

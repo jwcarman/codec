@@ -97,6 +97,7 @@
     <modules>
         <module>codec-bom</module>
         <module>codec-core</module>
+        <module>codec-crypto</module>
         <module>codec-jackson</module>
         <module>codec-jackson2</module>
         <module>codec-gson</module>

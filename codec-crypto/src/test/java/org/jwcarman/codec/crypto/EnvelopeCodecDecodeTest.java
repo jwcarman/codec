@@ -70,6 +70,16 @@ class EnvelopeCodecDecodeTest {
     }
 
     @Test
+    void rejects_a_short_message_with_valid_magic_on_length() {
+      byte[] shortMessage = new byte[10];
+      shortMessage[0] = 0x4A;
+      shortMessage[1] = 0x43;
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(shortMessage))
+          .withMessageContaining("too short");
+    }
+
+    @Test
     void rejects_bad_magic_with_a_structural_message() {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
       message[0] = 0x00;

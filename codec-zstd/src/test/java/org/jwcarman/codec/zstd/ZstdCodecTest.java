@@ -83,8 +83,10 @@ class ZstdCodecTest {
 
     @Test
     void rejects_non_zstandard_input() {
+      byte[] notCompressed = "not compressed".getBytes(UTF_8);
+
       assertThatExceptionOfType(UncheckedIOException.class)
-          .isThrownBy(() -> codec.decode("not compressed".getBytes(UTF_8)));
+          .isThrownBy(() -> codec.decode(notCompressed));
     }
   }
 
@@ -94,9 +96,10 @@ class ZstdCodecTest {
     @Test
     void rejects_payloads_expanding_beyond_the_cap() {
       byte[] bomb = codec.encode(new byte[10_000]);
+      ZstdCodec capped = new ZstdCodec(3, 1_000);
 
       assertThatExceptionOfType(IllegalStateException.class)
-          .isThrownBy(() -> new ZstdCodec(3, 1_000).decode(bomb))
+          .isThrownBy(() -> capped.decode(bomb))
           .withMessageContaining("exceeds the maximum");
     }
 

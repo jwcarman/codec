@@ -116,7 +116,7 @@ class ForyCodecFactoryTest {
       byte[] encoded = factory.create(Person.class).encode(alice);
       byte[] json = "{\"name\":\"Alice\",\"age\":30,\"active\":true}".getBytes(UTF_8);
 
-      assertThat(encoded.length).isLessThanOrEqualTo(json.length);
+      assertThat(encoded).hasSizeLessThanOrEqualTo(json.length);
     }
   }
 

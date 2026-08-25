@@ -133,9 +133,9 @@ class JsonbCodecFactoryTest {
     @Test
     void invalid_json_surfaces_as_a_json_b_exception() {
       Codec<Person> codec = factory.create(Person.class);
+      byte[] notJson = "not json".getBytes(UTF_8);
 
-      assertThatExceptionOfType(JsonbException.class)
-          .isThrownBy(() -> codec.decode("not json".getBytes(UTF_8)));
+      assertThatExceptionOfType(JsonbException.class).isThrownBy(() -> codec.decode(notJson));
     }
 
     @Test

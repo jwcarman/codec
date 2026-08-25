@@ -67,13 +67,13 @@ public class ZstdCodec extends CompressionStreamCodec {
    *     cap is not positive
    */
   public ZstdCodec(int level, long maxDecodedSize) {
-    super(maxDecodedSize);
     int min = Zstd.minCompressionLevel();
     int max = Zstd.maxCompressionLevel();
     if (level < min || level > max) {
       throw new IllegalArgumentException(
           "level must be between " + min + " and " + max + ": " + level);
     }
+    super(maxDecodedSize);
     this.level = level;
   }
 

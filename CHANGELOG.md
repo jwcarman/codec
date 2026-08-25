@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pluggable key management (`DataKeyProvider` SPI — in-process JCE or remote
   KMS), fresh-DEK-per-message default with opt-in bounded caching, and a
   versioned self-describing wire format
+- `codec-crypto`: optional `java.security.Provider` injection on
+  `EnvelopeCodec.Builder` and `JceDataKeyProvider.Builder`, resolved and
+  fail-fast checked at build time, so a FIPS-validated provider can be pinned
+  per instance instead of installed globally
+- `codec-crypto`: `JceDataKeyProvider` wrapped-DEK blobs now carry a
+  wrap-scheme tag (`[scheme:1][payload]`, scheme `0x01` = AES-KW/RFC 3394),
+  giving the zero-dependency provider its own wrap-algorithm migration story
+- `codec-crypto`: assurance program — known-answer tests against NIST CAVP
+  GCM vectors and the RFC 3394 wrap vector, Jazzer decoder fuzz targets with a
+  committed seed corpus and a `-Pfuzz` live-fuzzing profile, PIT mutation
+  testing and SpotBugs+findsecbugs static analysis in the `ci` profile, and a
+  published [threat model](https://jwcarman.github.io/codec/guides/threat-model/)
 
 ## [0.4.0] - 2026-08-24
 

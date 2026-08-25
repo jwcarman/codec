@@ -69,6 +69,7 @@ nav:
       - Getting Started: guides/getting-started.md
       - Codec Composition: guides/composition.md
       - Encryption: guides/encryption.md
+      - Threat Model: guides/threat-model.md
       - Spring Boot: guides/spring-boot.md
   - Reference:
       - Changelog: https://github.com/jwcarman/codec/blob/main/CHANGELOG.md

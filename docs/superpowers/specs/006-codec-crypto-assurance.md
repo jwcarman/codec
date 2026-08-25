@@ -102,9 +102,16 @@ AWS's default; the id byte preserves the option.
 
 - SpotBugs (`spotbugs-maven-plugin`) with `findsecbugs-plugin`, in
   codec-crypto's `ci` profile, `effort=Max`, `threshold=Low`, `failOnError`,
-  `check` goal bound to `verify`. Findings are fixed in code. No exclusion
-  filter file — the repository's no-suppression rule applies; a finding that
-  cannot be resolved structurally is escalated, not filtered.
+  `check` goal bound to `verify`. Findings are fixed in code. The repository's
+  no-suppression rule applies; a finding that cannot be resolved structurally
+  is escalated, not filtered. One maintainer-sanctioned exclusion exists:
+  `CIPHER_INTEGRITY` on `JceDataKeyProvider.wrapCipher` — findsecbugs'
+  integrity detector does not recognize AES key wrap (RFC 3394) as
+  integrity-protected, though its 64-bit ICV is verified on every unwrap, a
+  documented false positive rather than a real finding. It is recorded in
+  `codec-crypto/spotbugs-exclude.xml` and in `CLAUDE.md`, and is the only
+  suppression of any kind anywhere in the repository — no other exclusion is
+  sanctioned.
 
 ### 2.5 Threat model document
 
@@ -126,7 +133,11 @@ AAD span, admission-before-unwrap, uniform failure, bounds, provider contract).
 - [ ] Fuzz regression runs in the suite; live fuzzing ran ≥ 2 minutes with no
       crash (or crashes fixed and corpus extended)
 - [ ] PIT ≥ 85% mutation / ≥ 90% line in ci profile
-- [ ] SpotBugs+findsecbugs clean at threshold Low, no filter file
+- [ ] SpotBugs+findsecbugs clean at threshold Low, with exactly one
+      maintainer-sanctioned exclusion (`CIPHER_INTEGRITY` on
+      `JceDataKeyProvider.wrapCipher`, an AES-KW RFC 3394 ICV false positive)
+      recorded in `codec-crypto/spotbugs-exclude.xml` and `CLAUDE.md` — no
+      other suppression
 - [ ] Threat model page builds strict; encryption.md documents both seams
 - [ ] `./mvnw -Pci -B clean verify` green; codec-crypto compile surface still
       exactly codec-core; no ci allowlist changes

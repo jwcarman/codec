@@ -20,7 +20,13 @@ Add the module:
 
 `codec-crypto` has zero external dependencies — all cryptography is JCE, built
 into the JDK. It ships one in-process key provider, `JceDataKeyProvider`, for
-consumers without a KMS:
+consumers without a KMS. It wraps each DEK with AES key-wrap (RFC 3394) under
+a KEK you supply, and returns a wrapped blob laid out as `[scheme:1][payload]`
+— a one-byte wrap-scheme tag (`0x01` = AES-KW) followed by the 40-byte AES-KW
+payload, 41 bytes total for a 32-byte DEK. The tag is invisible to
+`EnvelopeCodec`, which treats the whole blob as opaque; it exists so this
+provider has its own wrap-algorithm migration story, the way a KMS-backed
+provider gets one for free from its own versioned ciphertext format:
 
 ```java
 SecretKey kek = ...; // an AES-256 key you manage
@@ -122,6 +128,40 @@ that cliff edge. A consumer that genuinely needs a higher cap implements
     DEK and duplicated `SecureRandom` state — which can make nonces repeat
     under that shared key. Prefer `DirectDataKeyStrategy` in such environments,
     or explicitly roll the strategy's key on resume from a snapshot.
+
+## Choosing a JCE provider
+
+Both `EnvelopeCodec.builder(provider).provider(Provider)` and
+`JceDataKeyProvider.builder(currentKeyId, keks).provider(Provider)` accept an
+optional `java.security.Provider`. When set, every `Cipher.getInstance` call
+the codec (`AES/GCM/NoPadding`) or the provider (`AESWrap`) makes resolves
+against that provider instead of the JDK's default provider lookup:
+
+```java
+Provider fips = ...; // e.g. a BC-FIPS provider instance
+
+DataKeyProvider provider =
+    JceDataKeyProvider.builder("kek-2026-08", Map.of("kek-2026-08", kek))
+        .provider(fips)
+        .build();
+
+EnvelopeCodec codec =
+    EnvelopeCodec.builder(provider)
+        .provider(fips)
+        .build();
+```
+
+Both builders resolve their transform against the given provider at
+build/construction time and fail fast: if the provider cannot supply the
+transform, `build()` throws `IllegalStateException` naming the transform,
+rather than letting the misconfiguration surface later as a
+`DecryptionException` on the first message.
+
+!!! note "Why this matters for FIPS"
+    A FIPS-validated provider (e.g. BC-FIPS) can be pinned to a single codec
+    or provider instance this way, without installing it as the JVM's
+    globally highest-priority provider. Every primitive this module uses —
+    AES-256-GCM and AES key wrap — is FIPS-approved.
 
 ## Implementing `DataKeyProvider` against a KMS
 
@@ -281,9 +321,23 @@ rejected the blob as invalid; every other failure — including plain
 availability failures — must propagate as an ordinary runtime exception, which
 `EnvelopeCodec` wraps as `KeyAccessException`.
 
+## Assurance
+
+`codec-crypto` is checked against external references and mechanical
+adversaries, not only against its own tests. The `ci` Maven profile runs
+known-answer tests against NIST and RFC vectors, mutation testing (PIT, 85%
+mutation / 90% line-coverage thresholds), and static security analysis
+(SpotBugs with the findsecbugs plugin) for this module; the `fuzz` profile
+runs the decoder's Jazzer fuzz targets live for a bounded duration. See the
+[Threat Model](threat-model.md) for what this program does and does not cover,
+what's defended and how, and an independent-review checklist for an outside
+cryptographer.
+
 ## Where next
 
 - [Codec Composition](composition.md) — how `andThen` and transform chaining
   work in general
 - [Getting Started](getting-started.md) — adding Codec to a project from
   scratch
+- [Threat Model](threat-model.md) — assets, trust boundaries, and what's
+  defended

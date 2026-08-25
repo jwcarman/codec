@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `codec-crypto`: AES-256-GCM envelope-encryption `Codec<byte[]>` transform with
+  pluggable key management (`DataKeyProvider` SPI — in-process JCE or remote
+  KMS), fresh-DEK-per-message default with opt-in bounded caching, and a
+  versioned self-describing wire format
+
 ## [0.4.0] - 2026-08-24
 
 ### Breaking changes

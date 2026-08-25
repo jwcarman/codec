@@ -68,6 +68,7 @@ nav:
   - Guides:
       - Getting Started: guides/getting-started.md
       - Codec Composition: guides/composition.md
+      - Encryption: guides/encryption.md
       - Spring Boot: guides/spring-boot.md
   - Reference:
       - Changelog: https://github.com/jwcarman/codec/blob/main/CHANGELOG.md

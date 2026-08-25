@@ -21,7 +21,6 @@ choose their serialization backend by dropping a module on the classpath.
 - Mix-and-match backends — Jackson, Gson, Protobuf, etc.
 - Spring Boot auto-configuration — via `codec-spring-boot-starter`; backend
   modules stay Spring-free, and adding a backend to the classpath registers it
-- In-memory/passthrough fallback for `String` and `byte[]`
 - Codec composition — `codec.andThen(byteTransform)` layers a `Codec<byte[]>`
   (compression, encryption, etc.) onto any `Codec<T>`; gzip ships built in
 - Published to Maven Central with BOM for version alignment
@@ -31,7 +30,10 @@ choose their serialization backend by dropping a module on the classpath.
 - Schema registry integration
 - Schema evolution/migration tools
 - Streaming serialization (large payloads)
-- Compression beyond built-in gzip (other algorithms and encryption are consumer-supplied `Codec<byte[]>` transforms via `andThen`)
+- Compression beyond built-in gzip (other algorithms are consumer-supplied
+  `Codec<byte[]>` transforms via `andThen`; encryption is no longer
+  consumer-supplied — `codec-crypto` ships an AES-256-GCM envelope-encryption
+  transform)
 
 ---
 
@@ -54,25 +56,32 @@ choose their serialization backend by dropping a module on the classpath.
 public interface Codec<T> {
     byte[] encode(T value);
     T decode(byte[] bytes);
-    Class<T> type();
+    default Codec<T> andThen(Codec<byte[]> transform) { ... }
 }
 ```
 
 - `encode`: serializes a value to bytes
 - `decode`: deserializes bytes back to the original type
-- `type`: returns the raw class this codec handles
+- `andThen`: layers a byte-level transform (compression, encryption, etc.) onto
+  this codec, applied after `encode` and unwound before `decode`; chained
+  transforms unwind automatically in reverse order
 
 ### CodecFactory — produces codecs for any type
 
 ```java
 public interface CodecFactory {
-    <T> Codec<T> create(Class<T> type);
     <T> Codec<T> create(TypeRef<T> typeRef);
+
+    default <T> Codec<T> create(Class<T> type) {
+        return create(TypeRef.of(type));
+    }
 }
 ```
 
-- `create(Class<T>)`: for simple types without generics
-- `create(TypeRef<T>)`: for generic types (e.g., `new TypeRef<List<String>>() {}`)
+- `create(TypeRef<T>)`: the abstract method; for generic types (e.g.,
+  `new TypeRef<List<String>>() {}`)
+- `create(Class<T>)`: a default method for simple types without generics,
+  delegating to `create(TypeRef<T>)`
 
 ### TypeRef<T> — generic type capture
 
@@ -101,17 +110,15 @@ Codec<List<String>> codec = factory.create(new TypeRef<List<String>>() {});
 ```
 codec/
 ├── codec-bom/                    # BOM for version alignment
-├── codec-core/                   # SPI, TypeRef, StringCodec, auto-config
+├── codec-core/                   # SPI, TypeRef, compression transforms
 │   ├── spi/
 │   │   ├── Codec.java
 │   │   ├── CodecFactory.java
 │   │   └── TypeRef.java
-│   ├── builtin/
-│   │   ├── StringCodec.java
-│   │   └── ByteArrayCodec.java
 │   └── autoconfigure/
 │       └── CodecAutoConfiguration.java
 │
+├── codec-crypto/                 # Envelope-encryption Codec<byte[]> transform
 ├── codec-jackson/                # Jackson ObjectMapper backend
 ├── codec-gson/                   # Gson backend
 ├── codec-protobuf/               # Protobuf backend
@@ -124,17 +131,16 @@ should be on the classpath at a time (auto-config uses @ConditionalOnMissingBean
 
 | Backend | Module |
 |---------|--------|
-| Built-in (String/byte[]) | `codec-core` |
 | Jackson | `codec-jackson` |
 | Gson | `codec-gson` |
 | Protobuf | `codec-protobuf` |
+| Envelope encryption transform | `codec-crypto` |
 
 ### Auto-configuration
 
 Each backend module self-registers via `@AutoConfiguration` with
-`@ConditionalOnClass`. `codec-core` does NOT provide a fallback CodecFactory
-(there's no sensible generic default) — it only provides `StringCodec` and
-`ByteArrayCodec` as convenience beans.
+`@ConditionalOnClass`. `codec-core` does NOT provide a fallback CodecFactory —
+there's no sensible generic default.
 
 ---
 
@@ -204,6 +210,7 @@ Spring Boot: 4.x
 - **Substrate integration** — Substrate's SPIs will eventually accept `Codec<T>` to
   serialize/deserialize journal entries and mailbox values.
 - **Avro** — could be a backend, but schema registry dependency makes it heavier.
-- **MessagePack** — lightweight binary format, good candidate for a future module.
+- **MessagePack** — not a future module: it's a `JsonFactory` swap on the
+  existing Jackson backend, not a new `CodecFactory` implementation.
 - **Kryo** — fast Java serialization, but not cross-language. Worth considering for
   JVM-only deployments.

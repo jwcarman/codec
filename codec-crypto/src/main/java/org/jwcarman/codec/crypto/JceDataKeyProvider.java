@@ -83,6 +83,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
    *
    * @param currentKeyId the id of the KEK, present in {@code keks}, used to wrap new data keys
    * @param keks the AES-256 key-encryption keys this provider trusts, keyed by id
+   * @throws IllegalStateException if the default JCE provider cannot supply the AESWrap transform
    */
   public JceDataKeyProvider(String currentKeyId, Map<String, SecretKey> keks) {
     this(currentKeyId, keks, new SecureRandom(), null);
@@ -94,6 +95,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
    * @param currentKeyId the id of the KEK, present in {@code keks}, used to wrap new data keys
    * @param keks the AES-256 key-encryption keys this provider trusts, keyed by id
    * @param random the source of randomness for generated data keys
+   * @throws IllegalStateException if the default JCE provider cannot supply the AESWrap transform
    */
   public JceDataKeyProvider(String currentKeyId, Map<String, SecretKey> keks, SecureRandom random) {
     this(currentKeyId, keks, random, null);

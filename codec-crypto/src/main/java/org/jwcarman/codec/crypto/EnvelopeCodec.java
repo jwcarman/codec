@@ -241,16 +241,25 @@ public final class EnvelopeCodec implements Codec<byte[]> {
 
   /**
    * Renders an untrusted, wire-supplied keyId safe to embed in an exception message: truncates to
-   * {@value #MAX_ECHOED_KEY_ID_LENGTH} characters and replaces any non-printable character (below
-   * {@code 0x20}, or {@code 0x7F}) with {@code '?'}, so a malicious or corrupted keyId cannot
-   * inject control characters or grow the message without bound.
+   * {@value #MAX_ECHOED_KEY_ID_LENGTH} characters and replaces every ISO control character (C0
+   * below {@code 0x20}, {@code 0x7F}, and the C1 range {@code 0x80}&ndash;{@code 0x9F}), the
+   * Unicode line and paragraph separators ({@code U+2028}, {@code U+2029}), and every Unicode
+   * format character (category Cf, which includes the bidirectional-override characters used to
+   * spoof displayed text direction) with {@code '?'}, so a malicious or corrupted keyId cannot
+   * inject control characters, reorder the surrounding message visually, or grow the message
+   * without bound.
    */
   private static String sanitizeForMessage(String keyId) {
     String truncated = keyId.substring(0, Math.min(keyId.length(), MAX_ECHOED_KEY_ID_LENGTH));
     StringBuilder sanitized = new StringBuilder(truncated.length());
     for (int i = 0; i < truncated.length(); i++) {
       char c = truncated.charAt(i);
-      sanitized.append(c < 0x20 || c == 0x7F ? '?' : c);
+      boolean deny =
+          Character.isISOControl(c)
+              || c == ' '
+              || c == ' '
+              || Character.getType(c) == Character.FORMAT;
+      sanitized.append(deny ? '?' : c);
     }
     return sanitized.toString();
   }

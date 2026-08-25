@@ -86,11 +86,14 @@ combination:
   both driven through the module's own production code paths
   (`EnvelopeCodec.gcmEncrypt`/`gcmDecrypt`, `JceDataKeyProvider.newDataKey`) —
   not a reimplementation alongside it.
-- **Decoder fuzzing**: Jazzer targets in `EnvelopeCodecFuzzTest` assert that
-  `decode` only ever throws `DecryptionException` or `KeyAccessException`, and
-  that encode-then-mutate either round-trips or is rejected. A committed seed
-  corpus runs in regression mode with every normal test run; the `-Pfuzz`
-  Maven profile runs live fuzzing for 120 seconds per target.
+- **Decoder fuzzing**: `EnvelopeCodecDecodeFuzzTest` asserts that `decode`
+  only ever throws `DecryptionException` (the only legitimate outcome from
+  the in-process `JceDataKeyProvider`); `EnvelopeCodecMutationFuzzTest`
+  asserts that encode-then-mutate either round-trips or is rejected. Each
+  target is its own class, run in its own forked JVM, because jazzer-junit
+  fuzzes only the first `@FuzzTest` per JVM. A committed seed corpus runs in
+  regression mode with every normal test run; the `-Pfuzz` Maven profile
+  fuzzes both targets live, 120 seconds each.
 - **Mutation testing**: PIT runs in the `ci` profile with an 85% mutation and
   90% line-coverage threshold. The current score is 147/147 mutations killed,
   a run the maintainer verified stable across repeated runs.

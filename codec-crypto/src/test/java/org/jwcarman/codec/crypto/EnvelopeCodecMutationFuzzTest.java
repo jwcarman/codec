@@ -19,36 +19,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
-import java.util.Map;
-import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Fuzz targets for the decode path. In the normal test run Jazzer replays the committed seed corpus
- * (regression mode); with JAZZER_FUZZ=1 (the {@code fuzz} profile) it fuzzes for real.
+ * Fuzz target for the encode-then-mutate-then-decode path. In the normal test run Jazzer replays
+ * the committed seed corpus (regression mode); with JAZZER_FUZZ=1 (the {@code fuzz} profile) it
+ * fuzzes for real.
+ *
+ * <p>Kept in its own class, separate from {@link EnvelopeCodecDecodeFuzzTest}, because jazzer-junit
+ * 0.24.0 fuzzes only the first {@code @FuzzTest} method it finds per JVM; the {@code fuzz} profile
+ * runs each class in its own forked JVM ({@code reuseForks=false}) so both targets actually fuzz.
  */
-class EnvelopeCodecFuzzTest {
-
-  private static EnvelopeCodec codec() {
-    byte[] kek = new byte[32];
-    java.util.Arrays.fill(kek, (byte) 3);
-    return EnvelopeCodec.builder(
-            new JceDataKeyProvider("kek", Map.of("kek", new SecretKeySpec(kek, "AES"))))
-        .build();
-  }
-
-  @FuzzTest(maxDuration = "120s")
-  void decode_only_throws_the_documented_exceptions(byte[] input) {
-    try {
-      codec().decode(input);
-    } catch (DecryptionException | KeyAccessException expected) {
-      // documented outcomes
-    }
-    // any other Throwable escapes and Jazzer records it as a finding
-  }
+class EnvelopeCodecMutationFuzzTest {
 
   @FuzzTest(maxDuration = "120s")
   void mutated_ciphertext_is_rejected_and_unmutated_round_trips(FuzzedDataProvider data) {
-    EnvelopeCodec codec = codec();
+    EnvelopeCodec codec = EnvelopeCodecFuzzSupport.codec();
     byte[] plaintext = data.consumeBytes(256);
     byte[] message = codec.encode(plaintext);
     int flips = data.consumeInt(0, 4);

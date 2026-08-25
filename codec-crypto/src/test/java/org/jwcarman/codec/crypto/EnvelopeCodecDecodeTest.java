@@ -494,5 +494,18 @@ class EnvelopeCodecDecodeTest {
     void control_characters_below_space_are_replaced_with_a_placeholder() {
       assertThat(rejectionMessageFor("a\u0001b")).isEqualTo("keyId is not allowed: a?b");
     }
+
+    @Test
+    void c1_control_line_separator_and_bidi_override_are_each_replaced_with_a_placeholder() {
+      String keyId = "a\u0085b\u2028c\u202Ed";
+
+      String message = rejectionMessageFor(keyId);
+
+      assertThat(message).isEqualTo("keyId is not allowed: a?b?c?d");
+      assertThat(message)
+          .doesNotContain("\u0085")
+          .doesNotContain("\u2028")
+          .doesNotContain("\u202E");
+    }
   }
 }

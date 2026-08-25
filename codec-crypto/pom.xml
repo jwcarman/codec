@@ -74,7 +74,8 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <test>EnvelopeCodecFuzzTest</test>
+                            <test>*FuzzTest</test>
+                            <reuseForks>false</reuseForks>
                             <environmentVariables>
                                 <JAZZER_FUZZ>1</JAZZER_FUZZ>
                             </environmentVariables>
@@ -132,7 +133,8 @@
                                 <param>org.jwcarman.codec.crypto.*</param>
                             </targetClasses>
                             <excludedTestClasses>
-                                <param>org.jwcarman.codec.crypto.EnvelopeCodecFuzzTest</param>
+                                <param>org.jwcarman.codec.crypto.EnvelopeCodecDecodeFuzzTest</param>
+                                <param>org.jwcarman.codec.crypto.EnvelopeCodecMutationFuzzTest</param>
                             </excludedTestClasses>
                             <mutationThreshold>85</mutationThreshold>
                             <coverageThreshold>90</coverageThreshold>

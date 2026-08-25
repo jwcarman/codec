@@ -105,9 +105,13 @@ class ProviderInjectionTest {
       int afterBuild = counting.lookups.get();
 
       byte[] plaintext = "operational call sites".getBytes(UTF_8);
-      codec.decode(codec.encode(plaintext));
+      byte[] encoded = codec.encode(plaintext);
+      int afterEncode = counting.lookups.get();
+      assertThat(afterEncode - afterBuild).isGreaterThanOrEqualTo(1);
 
-      assertThat(counting.lookups.get() - afterBuild).isGreaterThanOrEqualTo(2);
+      codec.decode(encoded);
+      int afterDecode = counting.lookups.get();
+      assertThat(afterDecode - afterEncode).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -118,9 +122,12 @@ class ProviderInjectionTest {
       int afterBuild = counting.lookups.get();
 
       DataKey dataKey = keys.newDataKey();
-      keys.unwrap(dataKey.keyId(), dataKey.wrapped());
+      int afterNewDataKey = counting.lookups.get();
+      assertThat(afterNewDataKey - afterBuild).isGreaterThanOrEqualTo(1);
 
-      assertThat(counting.lookups.get() - afterBuild).isGreaterThanOrEqualTo(2);
+      keys.unwrap(dataKey.keyId(), dataKey.wrapped());
+      int afterUnwrap = counting.lookups.get();
+      assertThat(afterUnwrap - afterNewDataKey).isGreaterThanOrEqualTo(1);
     }
   }
 

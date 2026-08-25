@@ -84,5 +84,49 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>ci</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>1.25.9</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>1.2.3</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targetClasses>
+                                <param>org.jwcarman.codec.crypto.*</param>
+                            </targetClasses>
+                            <excludedTestClasses>
+                                <param>org.jwcarman.codec.crypto.EnvelopeCodecFuzzTest</param>
+                            </excludedTestClasses>
+                            <mutationThreshold>85</mutationThreshold>
+                            <coverageThreshold>90</coverageThreshold>
+                            <timestampedReports>false</timestampedReports>
+                            <outputFormats>
+                                <param>XML</param>
+                                <param>HTML</param>
+                            </outputFormats>
+                            <failWhenNoMutations>true</failWhenNoMutations>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>mutation-coverage</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

@@ -128,6 +128,34 @@ class BoundedDataKeyStrategyTest {
     }
 
     @Test
+    void rolls_exactly_at_the_age_boundary() {
+      CountingProvider provider = new CountingProvider();
+      AtomicLong nanos = new AtomicLong(0L);
+      BoundedDataKeyStrategy strategy =
+          new BoundedDataKeyStrategy(1_000, Duration.ofSeconds(10), nanos::get);
+      DataKey first = strategy.acquire(provider);
+      nanos.set(Duration.ofSeconds(10).toNanos()); // elapsed == maxAge exactly: must not be usable
+      DataKey second = strategy.acquire(provider);
+      assertThat(second).isNotEqualTo(first);
+      assertThat(provider.calls).hasValue(2);
+    }
+
+    @Test
+    void elapsed_age_is_the_difference_between_ticker_reads_not_their_sum() {
+      CountingProvider provider = new CountingProvider();
+      AtomicLong nanos = new AtomicLong(5_000_000_000L);
+      BoundedDataKeyStrategy strategy =
+          new BoundedDataKeyStrategy(1_000, Duration.ofSeconds(10), nanos::get);
+      DataKey first = strategy.acquire(provider);
+      // Difference is 100ns (well under the 10s cap); the sum of the two ticker reads would exceed
+      // it, so this distinguishes subtraction from addition.
+      nanos.set(5_000_000_100L);
+      DataKey second = strategy.acquire(provider);
+      assertThat(second).isEqualTo(first);
+      assertThat(provider.calls).hasValue(1);
+    }
+
+    @Test
     void provider_failure_during_roll_propagates_and_never_reuses_the_expired_key() {
       CountingProvider provider = new CountingProvider();
       BoundedDataKeyStrategy strategy =

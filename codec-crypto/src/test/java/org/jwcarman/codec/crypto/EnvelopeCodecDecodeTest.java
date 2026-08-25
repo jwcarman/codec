@@ -141,6 +141,172 @@ class EnvelopeCodecDecodeTest {
       assertThatExceptionOfType(DecryptionException.class)
           .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message));
     }
+
+    @Test
+    void a_two_byte_message_with_bad_magic_is_rejected_on_magic_not_length() {
+      // At length exactly 2, the `bytes.length < 2` too-short check must NOT fire (2 < 2 is
+      // false), so the bad-magic check below it is reached instead; kills a `< 2` -> `<= 2`
+      // boundary mutant on that check.
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(
+              () -> EnvelopeCodec.builder(provider()).build().decode(new byte[] {0x00, 0x00}))
+          .withMessageContaining("magic");
+    }
+
+    @Test
+    void a_message_at_exactly_the_minimum_length_passes_the_length_check() {
+      // 38 bytes is FIXED_HEADER_LENGTH(20) + 1 + 1 + TAG_LENGTH_BYTES(16), the minimum valid
+      // message length. At exactly this length, the `bytes.length < MIN_MESSAGE_LENGTH` check
+      // must NOT fire, so decode proceeds to the keyId-length check below it instead; kills a
+      // `<` -> `<=` boundary mutant on that check.
+      byte[] message = new byte[38];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01; // format version
+      message[3] = 0x01; // AES-256-GCM
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessageContaining("keyId");
+    }
+
+    @Test
+    void a_one_byte_key_id_round_trips() {
+      // Exercises keyIdLength == 1, the lower boundary of the keyId-length validity check; kills
+      // a `keyIdLength < 1` -> `<= 1` boundary mutant, which would reject this as invalid.
+      byte[] kek = new byte[32];
+      java.util.Arrays.fill(kek, (byte) 7);
+      JceDataKeyProvider oneCharProvider =
+          new JceDataKeyProvider("k", Map.of("k", new SecretKeySpec(kek, "AES")));
+      EnvelopeCodec codec = EnvelopeCodec.builder(oneCharProvider).build();
+      byte[] plaintext = "x".getBytes(UTF_8);
+      assertThat(codec.decode(codec.encode(plaintext))).isEqualTo(plaintext);
+    }
+
+    @Test
+    void a_message_with_just_enough_bytes_for_the_wrapped_length_field_reads_it() {
+      // bytes.length (39) is exactly 6 + keyIdLength(31) + 2 (the wrapped-length field's own two
+      // bytes, with nothing left over for a payload) and still clears MIN_MESSAGE_LENGTH(38). The
+      // buffer-overrun check on the keyId length must NOT fire (39 > 39 is false), so decode
+      // proceeds to read a wrappedLength of 0 and reject on that check instead; kills a `>` ->
+      // `>=` boundary mutant on the keyId-length check.
+      byte[] message = new byte[39];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01;
+      message[3] = 0x01;
+      message[4] = 0;
+      message[5] = 31; // keyIdLength = 31
+      for (int i = 6; i < 37; i++) {
+        message[i] = 'a';
+      }
+      // bytes 37..38 (wrappedLength) left as 0 -> invalid
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessageContaining("wrapped key length");
+    }
+
+    @Test
+    void a_key_id_length_far_exceeding_the_buffer_is_rejected_not_wrapped_around() {
+      // A keyIdLength of 100 against a 40-byte buffer (which still clears
+      // MIN_MESSAGE_LENGTH(38)) must be rejected at the keyId-length check. A
+      // `6 + keyIdLength + 2` -> `6 - keyIdLength + 2` mutant would make that check pass instead
+      // (a large negative number is never > bytes.length), so decode would instead crash reading
+      // past the end of the buffer while looking for the wrapped-length field -- an
+      // ArrayIndexOutOfBoundsException instead of the documented DecryptionException.
+      byte[] message = new byte[40];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01;
+      message[3] = 0x01;
+      message[4] = 0;
+      message[5] = 100; // keyIdLength = 100, far larger than the 40-byte buffer
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessageContaining("keyId");
+    }
+
+    @Test
+    void a_key_id_length_check_that_just_barely_overruns_the_buffer_is_rejected() {
+      // keyIdLength=34, bytes.length=39: 6+34+2=42 > 39 must throw here. A trailing `+2` -> `-2`
+      // mutant on this same expression computes 6+34-2=38, which is NOT > 39, letting decode fall
+      // through to read the wrapped-length field two bytes past the end of the 39-byte buffer --
+      // an ArrayIndexOutOfBoundsException instead of the documented DecryptionException. This is
+      // deliberately a different keyIdLength/bytes.length pairing from the "far exceeding" test
+      // above, which is dominated by the leading `6 + keyIdLength` term and does not distinguish
+      // this trailing `+2`.
+      byte[] message = new byte[39];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01;
+      message[3] = 0x01;
+      message[4] = 0;
+      message[5] = 34; // keyIdLength = 34
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessageContaining("keyId");
+    }
+
+    @Test
+    void a_minimal_one_byte_wrapped_length_passes_the_length_check() {
+      // wrappedLength == 1 is the lower boundary of the wrapped-length validity check. It must NOT
+      // be rejected there (1 < 1 is false), so decode proceeds to attempt the unwrap and fails
+      // with the uniform cryptographic-failure message instead; kills a `wrappedLength < 1` ->
+      // `<= 1` boundary mutant, which would instead reject with "invalid wrapped key length".
+      byte[] message = new byte[50];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01;
+      message[3] = 0x01;
+      message[4] = 0;
+      message[5] = 3; // keyIdLength = 3
+      message[6] = 'k';
+      message[7] = 'e';
+      message[8] = 'k';
+      message[9] = 0;
+      message[10] = 1; // wrappedLength = 1
+      message[11] = 5; // 1-byte wrapped payload
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessage("Unable to decrypt data");
+    }
+
+    @Test
+    void a_wrapped_length_that_overruns_the_buffer_is_rejected_precisely() {
+      // headerLength(41) + TAG_LENGTH_BYTES(16) = 57 > bytes.length(40) is deliberately close: a
+      // `headerLength + TAG_LENGTH_BYTES` -> `headerLength - TAG_LENGTH_BYTES` mutant computes 25,
+      // which is NOT > 40, so decode would proceed past this check instead of rejecting here.
+      // bytes.length(40) still clears MIN_MESSAGE_LENGTH(38).
+      byte[] message = new byte[40];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01;
+      message[3] = 0x01;
+      message[4] = 0;
+      message[5] = 1; // keyIdLength = 1
+      message[6] = 'k';
+      message[7] = 0;
+      message[8] = 20; // wrappedLength = 20 -> headerLength = 20 + 1 + 20 = 41
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessageContaining("wrapped key length");
+    }
+
+    @Test
+    void the_key_id_length_field_is_read_big_endian() {
+      // bytes[4]=1, bytes[5]=0 is 256 read big-endian ((b0 << 8) | b1), but 1 read big-endian with
+      // shift-right instead of shift-left. Asserting the exact number in the message kills a
+      // "Replaced Shift Left with Shift Right" mutant in readUint16.
+      byte[] message = new byte[38];
+      message[0] = 0x4A;
+      message[1] = 0x43;
+      message[2] = 0x01;
+      message[3] = 0x01;
+      message[4] = 1;
+      message[5] = 0; // keyIdLength = 256 if read big-endian
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(message))
+          .withMessage("invalid keyId length: 256");
+    }
   }
 
   @Nested
@@ -272,6 +438,69 @@ class EnvelopeCodecDecodeTest {
       assertThatExceptionOfType(DecryptionException.class)
           .isThrownBy(() -> EnvelopeCodec.builder(wrongKeys).build().decode(message))
           .withMessage("Unable to decrypt data");
+    }
+  }
+
+  /**
+   * Returns the message of the {@link DecryptionException} thrown when {@code keyId} is denied by
+   * the builder's {@code allowedKeyIds} predicate, so the sanitized echo of {@code keyId} can be
+   * asserted directly.
+   */
+  private static String rejectionMessageFor(String keyId) {
+    byte[] dekBytes = new byte[32];
+    java.util.Arrays.fill(dekBytes, (byte) 3);
+    DataKeyProvider malicious =
+        new DataKeyProvider() {
+          @Override
+          public DataKey newDataKey() {
+            return new DataKey(keyId, new SecretKeySpec(dekBytes, "AES"), new byte[] {1, 2, 3, 4});
+          }
+
+          @Override
+          public SecretKey unwrap(String otherKeyId, byte[] wrapped) {
+            throw new UnsupportedOperationException();
+          }
+        };
+    byte[] message = EnvelopeCodec.builder(malicious).build().encode(new byte[] {1});
+    EnvelopeCodec restrictive = EnvelopeCodec.builder(malicious).allowedKeyIds(id -> false).build();
+    try {
+      restrictive.decode(message);
+      throw new AssertionError("expected a DecryptionException");
+    } catch (DecryptionException e) {
+      return e.getMessage();
+    }
+  }
+
+  @Nested
+  class Key_id_sanitization {
+
+    // Equivalent mutant: PIT's "changed conditional boundary" mutant on
+    // `keyId.length() > MAX_ECHOED_KEY_ID_LENGTH` (`>` -> `>=`) in EnvelopeCodec.sanitizeForMessage
+    // is undetectable. String.substring(0, n) called on a String whose own length is already n
+    // returns content identical to the original (per the JDK's own "beginIndex == 0" shortcut in
+    // String.substring), so truncating-or-not at the exact 64-char boundary produces the same
+    // observable message either way. No test can distinguish the mutant because there is no
+    // difference in behavior to observe.
+
+    @Test
+    void printable_characters_survive_sanitization_verbatim() {
+      assertThat(rejectionMessageFor("abc 123!?")).isEqualTo("keyId is not allowed: abc 123!?");
+    }
+
+    @Test
+    void a_space_character_is_not_treated_as_a_control_character() {
+      assertThat(rejectionMessageFor(" x")).isEqualTo("keyId is not allowed:  x");
+    }
+
+    @Test
+    void the_delete_character_is_replaced_with_a_placeholder() {
+      assertThat(rejectionMessageFor("a" + (char) 0x7F + "b"))
+          .isEqualTo("keyId is not allowed: a?b");
+    }
+
+    @Test
+    void control_characters_below_space_are_replaced_with_a_placeholder() {
+      assertThat(rejectionMessageFor("a\u0001b")).isEqualTo("keyId is not allowed: a?b");
     }
   }
 }

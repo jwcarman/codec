@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -129,6 +131,38 @@ class EnvelopeCodecEncodeTest {
           };
       assertThatExceptionOfType(EncryptionException.class)
           .isThrownBy(() -> EnvelopeCodec.builder(shortKey).build().encode(new byte[] {1}));
+    }
+  }
+
+  @Nested
+  class Strategy_selection {
+    @Test
+    void the_configured_strategy_is_used_instead_of_the_default() {
+      AtomicInteger newDataKeyCalls = new AtomicInteger();
+      JceDataKeyProvider real = provider();
+      DataKeyProvider counting =
+          new DataKeyProvider() {
+            @Override
+            public DataKey newDataKey() {
+              newDataKeyCalls.incrementAndGet();
+              return real.newDataKey();
+            }
+
+            @Override
+            public SecretKey unwrap(String keyId, byte[] wrapped) {
+              return real.unwrap(keyId, wrapped);
+            }
+          };
+      BoundedDataKeyStrategy bounded =
+          new BoundedDataKeyStrategy(10, Duration.ofHours(1), () -> 0L);
+      EnvelopeCodec codec = EnvelopeCodec.builder(counting).strategy(bounded).build();
+      codec.encode("a".getBytes(UTF_8));
+      codec.encode("b".getBytes(UTF_8));
+      // A cached key is reused across both encodes only if builder.strategy(bounded) actually
+      // plugged the bounded strategy in, rather than the default DirectDataKeyStrategy (which
+      // would call newDataKey() every time); this also kills a "replaced return value with null"
+      // mutant on Builder.strategy(), which was previously uncovered.
+      assertThat(newDataKeyCalls).hasValue(1);
     }
   }
 }

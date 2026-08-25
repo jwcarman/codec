@@ -131,7 +131,10 @@ class ProviderInjectionTest {
       JceDataKeyProvider keys = new JceDataKeyProvider("kek", keks());
       assertThatIllegalStateException()
           .isThrownBy(() -> EnvelopeCodec.builder(keys).provider(new EmptyProvider()).build())
-          .withMessageContaining("AES/GCM/NoPadding");
+          .withMessageContaining("AES/GCM/NoPadding")
+          // Names the explicitly-supplied provider rather than falling back to "<default>": kills
+          // a `provider == null` negated-conditional mutant in checkTransform's message-building.
+          .withMessageContaining("Empty");
     }
 
     @Test
@@ -139,7 +142,10 @@ class ProviderInjectionTest {
       assertThatIllegalStateException()
           .isThrownBy(
               () -> JceDataKeyProvider.builder("kek", keks()).provider(new EmptyProvider()).build())
-          .withMessageContaining("AESWrap");
+          .withMessageContaining("AESWrap")
+          // Names the explicitly-supplied provider rather than falling back to "<default>": kills
+          // a `provider == null` negated-conditional mutant in the constructor's message-building.
+          .withMessageContaining("Empty");
     }
   }
 }

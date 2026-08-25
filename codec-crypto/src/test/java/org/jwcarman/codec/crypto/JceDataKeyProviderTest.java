@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Map;
 import javax.crypto.SecretKey;
@@ -90,6 +91,14 @@ class JceDataKeyProviderTest {
 
   @Nested
   class Round_tripping {
+
+    // Equivalent mutant: PIT's "removed call to java/util/Arrays::fill" mutant on the
+    // `Arrays.fill(dekBytes, (byte) 0)` line in JceDataKeyProvider.newDataKey() is undetectable by
+    // any test. dekBytes is a local array that is never read again after the SecretKeySpec copies
+    // its contents, never returned, and never aliased elsewhere; zeroing it is a defense-in-depth
+    // hygiene measure against the bytes lingering in the heap, not a behavior any caller can
+    // observe. No sequence of public-API calls can tell whether that line ran.
+
     @Test
     void a_generated_data_key_unwraps_to_the_same_key_material() {
       JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
@@ -197,6 +206,20 @@ class JceDataKeyProviderTest {
           .isThrownBy(
               () -> provider.unwrap("kek", new byte[] {JceDataKeyProvider.WRAP_SCHEME_AES_KW}))
           .withMessage("Unable to decrypt data");
+    }
+
+    @Test
+    void a_two_byte_blob_with_a_valid_scheme_tag_reaches_the_cipher_not_the_length_guard() {
+      // At exactly 2 bytes (scheme tag + 1 payload byte), the length guard must let this through
+      // to the cipher, which then rejects the malformed 1-byte AESWrap payload with a
+      // GeneralSecurityException cause. A `wrapped.length < 2` boundary mutated to `<= 2` would
+      // instead reject this blob at the guard itself, with a null cause.
+      JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(
+              () -> provider.unwrap("kek", new byte[] {JceDataKeyProvider.WRAP_SCHEME_AES_KW, 0}))
+          .withMessage("Unable to decrypt data")
+          .withCauseInstanceOf(GeneralSecurityException.class);
     }
   }
 }

@@ -69,6 +69,23 @@ class DataKeyTest {
       assertThatIllegalArgumentException()
           .isThrownBy(() -> new DataKey(multibyte, KEY, new byte[] {1}));
     }
+
+    @Test
+    void accepts_a_one_byte_key_id_at_the_lower_bound() {
+      assertThat(new DataKey("k", KEY, new byte[] {1}).keyId()).isEqualTo("k");
+    }
+
+    @Test
+    void accepts_a_key_id_at_exactly_the_uint16_upper_bound() {
+      String maxKeyId = "k".repeat(65535);
+      assertThat(new DataKey(maxKeyId, KEY, new byte[] {1}).keyId()).isEqualTo(maxKeyId);
+    }
+
+    @Test
+    void accepts_wrapped_bytes_at_exactly_the_uint16_upper_bound() {
+      byte[] maxWrapped = new byte[65535];
+      assertThat(new DataKey("kek", KEY, maxWrapped).wrapped()).hasSize(65535);
+    }
   }
 
   @Nested
@@ -105,6 +122,26 @@ class DataKeyTest {
           .hasSameHashCodeAs(new DataKey("kek", other, new byte[] {1, 2}));
       assertThat(new DataKey("kek", KEY, new byte[] {1, 2}))
           .isNotEqualTo(new DataKey("kek", KEY, new byte[] {1, 3}));
+    }
+
+    @Test
+    void is_not_equal_to_an_instance_of_an_unrelated_type() {
+      DataKey dk = new DataKey("kek", KEY, new byte[] {1, 2});
+      assertThat(dk).isNotEqualTo("kek");
+    }
+
+    @Test
+    void is_not_equal_to_null() {
+      DataKey dk = new DataKey("kek", KEY, new byte[] {1, 2});
+      assertThat(dk.equals(null)).isFalse();
+    }
+
+    @Test
+    void hash_code_combines_key_id_and_wrapped_via_the_documented_formula() {
+      byte[] wrapped = {1, 2, 3};
+      DataKey dk = new DataKey("kek", KEY, wrapped);
+      int expected = 31 * "kek".hashCode() + java.util.Arrays.hashCode(wrapped);
+      assertThat(dk.hashCode()).isEqualTo(expected);
     }
 
     @Test

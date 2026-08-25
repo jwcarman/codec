@@ -152,6 +152,7 @@ Codec<Person> codec =
 | Gson | Gson JSON | `codec-gson` |
 | JSON-B | Jakarta JSON Binding | `codec-jsonb` |
 | Protobuf | Protocol Buffers | `codec-protobuf` |
+| Fory | Apache Fory binary (JVM-only, registration required) | `codec-fory` |
 | Crypto | AES-256-GCM envelope encryption transform | `codec-crypto` |
 | Zstandard | Zstandard compression transform | `codec-zstd` |
 | Auto-configure | Spring Boot auto-configuration for all backends | `codec-autoconfigure` |

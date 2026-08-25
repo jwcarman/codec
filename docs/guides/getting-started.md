@@ -40,7 +40,8 @@ For Spring Boot applications, add the starter plus the backend you want:
 ```
 
 Backend choices: `codec-jackson` (Jackson 3.x), `codec-jackson2` (Jackson 2.x),
-`codec-gson`, `codec-jsonb`, `codec-protobuf`. The Jackson backends also cover
+`codec-gson`, `codec-jsonb`, `codec-protobuf`, and `codec-fory` (JVM-only binary,
+see [Apache Fory](fory.md)). The Jackson backends also cover
 CBOR, Smile, YAML, and XML — see [Jackson Dataformats](dataformats.md).
 
 ## Use it

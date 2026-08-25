@@ -59,8 +59,9 @@ tiny and pushes the backend decision to the classpath.
 
     ---
 
-    Jackson 3.x, Jackson 2.x, Gson, JSON-B, and Protocol Buffers, each in its
-    own Spring-free module — plus CBOR, Smile, YAML, and XML by mapper swap.
+    Jackson 3.x, Jackson 2.x, Gson, JSON-B, Protocol Buffers, and Apache Fory,
+    each in its own Spring-free module — plus CBOR, Smile, YAML, and XML by
+    mapper swap.
 
 -   **Composition**
 
@@ -95,6 +96,7 @@ tiny and pushes the backend decision to the classpath.
 | `codec-gson` | Gson JSON backend |
 | `codec-jsonb` | Jakarta JSON Binding (JSON-B) backend |
 | `codec-protobuf` | Protocol Buffers backend |
+| `codec-fory` | Apache Fory binary backend — fast JVM-only serialization with mandatory class registration |
 | `codec-crypto` | AES-256-GCM envelope encryption with pluggable key management |
 | `codec-zstd` | Zstandard compression transform |
 | `codec-autoconfigure` | Spring Boot auto-configuration for all backends |

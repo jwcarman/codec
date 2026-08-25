@@ -63,6 +63,7 @@
         <!-- Dependency versions -->
         <spring-boot.version>4.1.1</spring-boot.version>
         <protobuf.version>4.36.0</protobuf.version>
+        <fory.version>1.1.0</fory.version>
         <zstd-jni.version>1.5.7-3</zstd-jni.version>
 
         <!-- Build plugin versions -->
@@ -105,6 +106,7 @@
         <module>codec-jsonb</module>
         <module>codec-protobuf</module>
         <module>codec-zstd</module>
+        <module>codec-fory</module>
         <module>codec-autoconfigure</module>
         <module>codec-spring-boot-starter</module>
     </modules>

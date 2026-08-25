@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `codec-fory`: Apache Fory backend (`ForyCodecFactory`) for fast JVM-only
+  binary serialization; class registration is mandatory and never relaxed by
+  the module. No auto-configuration — a Fory instance needs your classes
+  registered, so it is wired explicitly
 - `codec-jsonb`: Jakarta JSON Binding backend (`JsonbCodecFactory`) with Spring
   Boot auto-configuration; backend precedence is now Jackson 3 → Jackson 2 →
   Gson → JSON-B → Protobuf

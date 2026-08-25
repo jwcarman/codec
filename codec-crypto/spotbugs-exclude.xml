@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright © 2026 James Carman
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<!--
+    SANCTIONED EXCEPTION — maintainer-approved, narrowly scoped. This is the ONLY exclusion
+    granted anywhere in this repository under the no-suppression rule; the rule's own carve-out
+    is for cases where the project's spec mandates an API the analyzer is wrong about (see
+    CLAUDE.md, Code Quality). Do not add another <Match> to this file, and do not copy this
+    pattern elsewhere, without the maintainer's explicit sign-off.
+
+    (a) Why this is a false positive, not a real finding:
+
+        RFC 3394 AES Key Wrap (the "AESWrap" JCA transform used by
+        JceDataKeyProvider.wrapCipher()) DOES provide data integrity: it appends a 64-bit
+        Integrity Check Value (the fixed A6A6A6A6A6A6A6A6 initial value carried through the wrap
+        transform, RFC 3394 §2.2.3) to every wrapped blob, and unwrap fails — throwing, which
+        JceDataKeyProvider converts to DecryptionException.cryptographic(e) — if that ICV does
+        not verify. Specs 005 ("JceDataKeyProvider") and 006 §1.2 ("Wrap-scheme tag in
+        JceDataKeyProvider") both mandate AES-KW (RFC 3394) as the wrap scheme for this
+        provider; this is not a choice this module is free to change to satisfy an analyzer.
+        AesKeyWrapKnownAnswerTest exercises the wrap/unwrap round trip against the RFC 3394 KAT
+        vectors, and JceDataKeyProviderTest.unwrap_of_a_tampered_blob_is_a_decryption_exception_
+        with_the_uniform_message exercises the ICV-tamper-detection path directly (a corrupted
+        wrapped blob is rejected as a DecryptionException, not silently accepted).
+
+    (b) Why find-sec-bugs flags it anyway:
+
+        Decompiled com.h3xstream.findsecbugs.crypto.CipherWithNoIntegrityDetector from the
+        resolved findsecbugs-plugin 1.14.0 jar. It reports CIPHER_INTEGRITY for any constant
+        Cipher.getInstance(...) transform string unless that string matches one of exactly three
+        hard-coded escape hatches:
+
+            AUTHENTICATED_CIPHER_MODES = Pattern.compile(".*/(CCM|CWC|OCB|EAX|GCM(-SIV)?)/.*")
+            transform.startsWith("RSA")
+            transform.equals("ECIES")
+
+        "AESWrap" (the JDK's standard JCA name for AES Key Wrap; "AESWrapPad" has the identical
+        problem) matches none of the three: the regex requires a slash-delimited AEAD mode
+        segment that key-wrap transforms don't have. The detector's known-safe list covers AEAD
+        bulk-cipher modes and RSA/ECIES only — it has no entry for key-wrap constructions, which
+        are authenticated by a different mechanism (the ICV) than the modes it recognizes. No
+        restructuring of the calling code changes which constant string reaches
+        Cipher.getInstance, so no structural fix is possible; see task-6-report.md for the full
+        analysis.
+
+    (c) Scope: this is the ONLY sanctioned exclusion in this repository. Any further addition to
+        this file, or to any other spotbugs-exclude.xml added to another module, requires the
+        maintainer's explicit approval — it is not a precedent for excluding other findings.
+
+    (d) Upstream: report the gap to https://github.com/find-sec-bugs/find-sec-bugs — the
+        maintainer will file this; this file is not a substitute for that report.
+-->
+<FindBugsFilter>
+    <Match>
+        <Class name="org.jwcarman.codec.crypto.JceDataKeyProvider"/>
+        <Method name="wrapCipher"/>
+        <Bug pattern="CIPHER_INTEGRITY"/>
+    </Match>
+</FindBugsFilter>

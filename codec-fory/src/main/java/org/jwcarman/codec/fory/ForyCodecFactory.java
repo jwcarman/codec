@@ -15,10 +15,12 @@
  */
 package org.jwcarman.codec.fory;
 
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import org.apache.fory.BaseFory;
 import org.apache.fory.Fory;
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.config.Language;
@@ -41,20 +43,28 @@ import org.jwcarman.codec.spi.TypeRef;
  * or for data that must outlive the classes that wrote it — use a schema-based or JSON backend for
  * those.
  *
- * <p>A plain {@link Fory} instance is not thread-safe. Pass a {@link ThreadSafeFory} (as {@link
- * #of(Class[])} builds) unless the codec will only ever be used from one thread.
+ * <p>Codecs must be thread-safe, and a plain {@link Fory} is not, so this factory accepts only a
+ * {@link ThreadSafeFory} — which is what {@link #of(Class[])} builds, and what {@code
+ * Fory.builder()...buildThreadSafeFory()} gives a caller who configures their own.
+ *
+ * <p>{@link #create(TypeRef)} fails fast: if the instance requires registration and the requested
+ * type — or any class named in its type arguments — is not registered, it throws {@link
+ * IllegalArgumentException} at creation rather than letting the first {@code encode} fail in
+ * production. The check walks declared generics ({@code List<Person>} checks {@code Person}); it
+ * cannot see types that only appear at runtime inside registered classes' fields, which Fory itself
+ * still rejects.
  */
 public class ForyCodecFactory implements CodecFactory {
 
-  private final BaseFory fory;
+  private final ThreadSafeFory fory;
 
   /**
-   * Creates a factory over a caller-configured Fory instance.
+   * Creates a factory over a caller-configured thread-safe Fory instance.
    *
-   * @param fory the Fory instance every codec will serialize through; must require class
-   *     registration and should be a {@link ThreadSafeFory} for shared use
+   * @param fory the Fory instance every codec will serialize through; build it with class
+   *     registration required unless you have a specific reason not to
    */
-  public ForyCodecFactory(BaseFory fory) {
+  public ForyCodecFactory(ThreadSafeFory fory) {
     this.fory = Objects.requireNonNull(fory, "fory must not be null");
   }
 
@@ -82,7 +92,60 @@ public class ForyCodecFactory implements CodecFactory {
   @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
     Objects.requireNonNull(typeRef, "typeRef must not be null");
+    requireRegistered(typeRef.getType());
     return new ForyCodec<>(fory, rawClass(typeRef.getType()));
+  }
+
+  /**
+   * Reports whether this factory's Fory instance will serialize values of the given class. True
+   * when registration is not required; when the class is registered; or when the class is not
+   * something Fory serializes by its own identity — a JDK type, an interface, or an abstract class
+   * — because Fory registers the JDK's concrete types itself and decides interfaces and abstract
+   * types by the runtime class of each value.
+   *
+   * @param type the class to check
+   * @return whether codecs from this factory can carry values declared as that class
+   */
+  public boolean supports(Class<?> type) {
+    Objects.requireNonNull(type, "type must not be null");
+    if (!needsRegistration(type)) {
+      return true;
+    }
+    return fory.execute(
+        f -> !f.getConfig().requireClassRegistration() || f.getTypeResolver().isRegistered(type));
+  }
+
+  private static boolean needsRegistration(Class<?> type) {
+    return !type.isPrimitive()
+        && !type.isInterface()
+        && !Modifier.isAbstract(type.getModifiers())
+        && !type.isArray()
+        && !type.getName().startsWith("java.")
+        && !type.getName().startsWith("javax.");
+  }
+
+  private void requireRegistered(Type type) {
+    List<Class<?>> unregistered = new ArrayList<>();
+    collectUnregistered(type, unregistered);
+    if (!unregistered.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Not registered with this Fory instance: "
+              + unregistered.stream().map(Class::getName).toList()
+              + " — register it (ForyCodecFactory.of(...) or fory.register(...)) before creating codecs");
+    }
+  }
+
+  private void collectUnregistered(Type type, List<Class<?>> unregistered) {
+    if (type instanceof Class<?> raw) {
+      if (!supports(raw)) {
+        unregistered.add(raw);
+      }
+    } else if (type instanceof ParameterizedType parameterized) {
+      collectUnregistered(parameterized.getRawType(), unregistered);
+      for (Type argument : parameterized.getActualTypeArguments()) {
+        collectUnregistered(argument, unregistered);
+      }
+    }
   }
 
   private static Class<?> rawClass(Type type) {

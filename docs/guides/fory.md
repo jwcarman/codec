@@ -27,12 +27,26 @@ registered by Fory.
     to `new ForyCodecFactory(fory)`, the factory does not second-guess you —
     the responsibility is yours.
 
+## Creation fails fast
+
+`create(...)` checks the requested type — and every class named in its type
+arguments — against the instance's registrations and throws
+`IllegalArgumentException` at creation if one is missing, rather than letting
+the first `encode` fail later in production. `List<Person>` with an
+unregistered `Person` is caught; so is a bare `Unregistered.class`. JDK types,
+interfaces, and abstract classes are exempt: Fory registers the JDK's concrete
+types itself and decides interfaces by each value's runtime class.
+
+To probe before creating, `factory.supports(SomeClass.class)` answers the same
+question as a boolean.
+
 ## Bring your own Fory
 
-`new ForyCodecFactory(BaseFory)` accepts a caller-configured instance for
+`new ForyCodecFactory(ThreadSafeFory)` accepts a caller-configured instance for
 anything beyond the default — compatible mode for schema evolution, custom
-serializers, or a shared instance. A plain `Fory` is **not thread-safe**; pass a
-`ThreadSafeFory` (what `of(...)` builds) unless the codec is single-threaded.
+serializers, or a shared instance. Codecs must be thread-safe and a plain
+`Fory` is not, so the constructor takes only a `ThreadSafeFory`; build one
+with `Fory.builder()...buildThreadSafeFory()`.
 
 ## When not to use it
 

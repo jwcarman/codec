@@ -15,22 +15,22 @@
  */
 package org.jwcarman.codec.fory;
 
-import org.apache.fory.BaseFory;
+import org.apache.fory.ThreadSafeFory;
 import org.jwcarman.codec.spi.Codec;
 
 /**
- * A codec that serializes through a {@link BaseFory} instance. Fory's format is self-describing —
- * the class of every value is written alongside it — so decoding does not need the static type
- * beyond checking that what came back is what the codec was created for. Fory's own runtime
- * exceptions surface unchanged: an unregistered class, a corrupt payload, or a value of the wrong
- * type is reported by Fory, not translated here.
+ * A codec that serializes through a {@link ThreadSafeFory} instance. Fory's format is
+ * self-describing — the class of every value is written alongside it — so decoding does not need
+ * the static type beyond checking that what came back is what the codec was created for. Fory's own
+ * runtime exceptions surface unchanged: an unregistered class, a corrupt payload, or a value of the
+ * wrong type is reported by Fory, not translated here.
  */
 class ForyCodec<T> implements Codec<T> {
 
-  private final BaseFory fory;
+  private final ThreadSafeFory fory;
   private final Class<?> rawType;
 
-  ForyCodec(BaseFory fory, Class<?> rawType) {
+  ForyCodec(ThreadSafeFory fory, Class<?> rawType) {
     this.fory = fory;
     this.rawType = rawType;
   }

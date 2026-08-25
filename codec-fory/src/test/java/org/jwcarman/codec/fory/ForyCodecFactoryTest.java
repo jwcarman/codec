@@ -18,6 +18,7 @@ package org.jwcarman.codec.fory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatRuntimeException;
 
@@ -28,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.apache.fory.Fory;
+import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.config.Language;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -122,16 +124,36 @@ class ForyCodecFactoryTest {
   class Registration_is_mandatory {
 
     @Test
-    void an_unregistered_class_cannot_be_encoded() {
-      Codec<Unregistered> codec = factory.create(Unregistered.class);
+    void creating_a_codec_for_an_unregistered_class_fails_fast() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> factory.create(Unregistered.class))
+          .withMessageContaining("Unregistered")
+          .withMessageContaining("register");
+    }
 
-      assertThatRuntimeException().isThrownBy(() -> codec.encode(new Unregistered("x")));
+    @Test
+    void an_unregistered_type_argument_is_caught_at_creation() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> factory.create(new TypeRef<List<Unregistered>>() {}))
+          .withMessageContaining("Unregistered");
+    }
+
+    @Test
+    void supports_reports_registration() {
+      assertThat(factory.supports(Person.class)).isTrue();
+      assertThat(factory.supports(List.class)).isTrue();
+      assertThat(factory.supports(String.class)).isTrue();
+      assertThat(factory.supports(Unregistered.class)).isFalse();
     }
 
     @Test
     void a_caller_supplied_fory_without_registration_is_still_a_fory_decision() {
-      Fory permissive =
-          Fory.builder().withLanguage(Language.JAVA).requireClassRegistration(false).build();
+      ThreadSafeFory permissive =
+          Fory.builder()
+              .withLanguage(Language.JAVA)
+              .requireClassRegistration(false)
+              .buildThreadSafeFory();
+      assertThat(new ForyCodecFactory(permissive).supports(Unregistered.class)).isTrue();
       Codec<Unregistered> codec = new ForyCodecFactory(permissive).create(Unregistered.class);
 
       // The factory does not second-guess a caller who explicitly relaxed registration.

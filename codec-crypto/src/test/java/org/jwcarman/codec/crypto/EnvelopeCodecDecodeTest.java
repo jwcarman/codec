@@ -28,6 +28,8 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class EnvelopeCodecDecodeTest {
@@ -110,34 +112,16 @@ class EnvelopeCodecDecodeTest {
           .withMessageContaining("too short");
     }
 
-    @Test
-    void rejects_bad_magic_with_a_structural_message() {
+    @ParameterizedTest(name = "byte {0} set to {1} is rejected with a message naming the {2}")
+    @CsvSource({"0, 0x00, magic", "2, 0x02, version", "3, 0x7F, algorithm"})
+    void rejects_a_corrupted_header_field_with_a_structural_message(
+        int index, int value, String stage) {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
-      message[0] = 0x00;
+      message[index] = (byte) value;
       EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
       assertThatExceptionOfType(DecryptionException.class)
           .isThrownBy(() -> codec.decode(message))
-          .withMessageContaining("magic");
-    }
-
-    @Test
-    void rejects_an_unknown_version() {
-      byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
-      message[2] = 0x02;
-      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
-      assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> codec.decode(message))
-          .withMessageContaining("version");
-    }
-
-    @Test
-    void rejects_an_unknown_algorithm() {
-      byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
-      message[3] = 0x7F;
-      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
-      assertThatExceptionOfType(DecryptionException.class)
-          .isThrownBy(() -> codec.decode(message))
-          .withMessageContaining("algorithm");
+          .withMessageContaining(stage);
     }
 
     @Test

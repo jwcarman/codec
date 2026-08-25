@@ -246,10 +246,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
    * inject control characters or grow the message without bound.
    */
   private static String sanitizeForMessage(String keyId) {
-    String truncated =
-        keyId.length() > MAX_ECHOED_KEY_ID_LENGTH
-            ? keyId.substring(0, MAX_ECHOED_KEY_ID_LENGTH)
-            : keyId;
+    String truncated = keyId.substring(0, Math.min(keyId.length(), MAX_ECHOED_KEY_ID_LENGTH));
     StringBuilder sanitized = new StringBuilder(truncated.length());
     for (int i = 0; i < truncated.length(); i++) {
       char c = truncated.charAt(i);

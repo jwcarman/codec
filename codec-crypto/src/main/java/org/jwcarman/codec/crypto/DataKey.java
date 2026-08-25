@@ -85,6 +85,11 @@ public record DataKey(String keyId, SecretKey key, byte[] wrapped) {
     return keyId.equals(other.keyId) && Arrays.equals(wrapped, other.wrapped);
   }
 
+  /**
+   * Combines {@code keyId} and {@code wrapped} as {@code 31 * keyId.hashCode() +
+   * Arrays.hashCode(wrapped)}, consistent with {@link #equals(Object)} comparing the same two
+   * fields.
+   */
   @Override
   public int hashCode() {
     return 31 * keyId.hashCode() + Arrays.hashCode(wrapped);

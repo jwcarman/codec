@@ -150,8 +150,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
   public DataKey newDataKey() {
     byte[] dekBytes = new byte[DEK_LENGTH_BYTES];
     random.nextBytes(dekBytes);
-    SecretKey dek = new SecretKeySpec(dekBytes, AES);
-    Arrays.fill(dekBytes, (byte) 0); // SecretKeySpec holds its own copy
+    SecretKey dek = aesKeyFrom(dekBytes);
     try {
       Cipher cipher = wrapCipher();
       cipher.init(Cipher.WRAP_MODE, keks.get(currentKeyId));
@@ -163,6 +162,19 @@ public final class JceDataKeyProvider implements DataKeyProvider {
     } catch (GeneralSecurityException e) {
       throw new EncryptionException("Unable to wrap data key", e);
     }
+  }
+
+  /**
+   * Wraps {@code material} in an AES {@link SecretKey} and then zeroes {@code material} in place,
+   * since {@link SecretKeySpec} copies the bytes it is given rather than aliasing the array.
+   *
+   * @param material the raw key bytes; zeroed as a side effect of this call
+   * @return an AES {@link SecretKey} over a copy of {@code material}'s original contents
+   */
+  static SecretKey aesKeyFrom(byte[] material) {
+    SecretKey key = new SecretKeySpec(material, AES);
+    Arrays.fill(material, (byte) 0);
+    return key;
   }
 
   @Override

@@ -92,13 +92,6 @@ class JceDataKeyProviderTest {
   @Nested
   class Round_tripping {
 
-    // Equivalent mutant: PIT's "removed call to java/util/Arrays::fill" mutant on the
-    // `Arrays.fill(dekBytes, (byte) 0)` line in JceDataKeyProvider.newDataKey() is undetectable by
-    // any test. dekBytes is a local array that is never read again after the SecretKeySpec copies
-    // its contents, never returned, and never aliased elsewhere; zeroing it is a defense-in-depth
-    // hygiene measure against the bytes lingering in the heap, not a behavior any caller can
-    // observe. No sequence of public-API calls can tell whether that line ran.
-
     @Test
     void a_generated_data_key_unwraps_to_the_same_key_material() {
       JceDataKeyProvider provider = new JceDataKeyProvider("kek", Map.of("kek", aesKey((byte) 1)));
@@ -148,6 +141,21 @@ class JceDataKeyProviderTest {
           }
         }
       };
+    }
+  }
+
+  @Nested
+  class Key_material_hygiene {
+    @Test
+    void aes_key_from_wraps_the_material_and_then_zeroes_the_source_array() {
+      byte[] material = new byte[32];
+      java.util.Arrays.fill(material, (byte) 42);
+      byte[] original = material.clone();
+
+      SecretKey key = JceDataKeyProvider.aesKeyFrom(material);
+
+      assertThat(key.getEncoded()).isEqualTo(original);
+      assertThat(material).containsOnly(0);
     }
   }
 

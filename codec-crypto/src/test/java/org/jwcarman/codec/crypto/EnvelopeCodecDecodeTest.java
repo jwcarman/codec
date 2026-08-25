@@ -474,14 +474,6 @@ class EnvelopeCodecDecodeTest {
   @Nested
   class Key_id_sanitization {
 
-    // Equivalent mutant: PIT's "changed conditional boundary" mutant on
-    // `keyId.length() > MAX_ECHOED_KEY_ID_LENGTH` (`>` -> `>=`) in EnvelopeCodec.sanitizeForMessage
-    // is undetectable. String.substring(0, n) called on a String whose own length is already n
-    // returns content identical to the original (per the JDK's own "beginIndex == 0" shortcut in
-    // String.substring), so truncating-or-not at the exact 64-char boundary produces the same
-    // observable message either way. No test can distinguish the mutant because there is no
-    // difference in behavior to observe.
-
     @Test
     void printable_characters_survive_sanitization_verbatim() {
       assertThat(rejectionMessageFor("abc 123!?")).isEqualTo("keyId is not allowed: abc 123!?");

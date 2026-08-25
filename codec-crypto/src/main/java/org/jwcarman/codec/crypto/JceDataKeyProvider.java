@@ -76,21 +76,29 @@ public final class JceDataKeyProvider implements DataKeyProvider {
     Objects.requireNonNull(currentKeyId, "currentKeyId must not be null");
     Objects.requireNonNull(keks, "keks must not be null");
     this.random = Objects.requireNonNull(random, "random must not be null");
-    if (keks.isEmpty()) {
+    // Copy first, then validate against the copy: keks is caller-owned and may be a mutable map
+    // shared with other code, so validating a live reference to it would let a concurrent
+    // mutation seat an unvalidated KEK between the check and the assignment.
+    this.keks = Map.copyOf(keks);
+    if (this.keks.isEmpty()) {
       throw new IllegalArgumentException("keks must not be empty");
     }
-    if (!keks.containsKey(currentKeyId)) {
+    if (!this.keks.containsKey(currentKeyId)) {
       throw new IllegalArgumentException("currentKeyId is not in the KEK map: " + currentKeyId);
     }
-    keks.forEach(
+    this.keks.forEach(
         (id, key) -> {
           if (!AES.equals(key.getAlgorithm())) {
             throw new IllegalArgumentException(
-                "KEK " + id + " is not an AES key: " + key.getAlgorithm());
+                "KEK " + id + " is not an AES key: algorithm is " + key.getAlgorithm());
+          }
+          byte[] encoded = key.getEncoded();
+          if (encoded != null && encoded.length != DEK_LENGTH_BYTES) {
+            throw new IllegalArgumentException(
+                "KEK " + id + " is not AES-256: encoded length is " + encoded.length + " bytes");
           }
         });
     this.currentKeyId = currentKeyId;
-    this.keks = Map.copyOf(keks);
   }
 
   @Override

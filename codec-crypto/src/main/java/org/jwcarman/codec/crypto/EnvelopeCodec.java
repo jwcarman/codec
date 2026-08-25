@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.crypto.Cipher;
@@ -94,6 +95,9 @@ public final class EnvelopeCodec implements Codec<byte[]> {
   private static final int FIXED_HEADER_LENGTH = 20;
   private static final int MIN_MESSAGE_LENGTH = FIXED_HEADER_LENGTH + 1 + 1 + TAG_LENGTH_BYTES;
   private static final String GCM_TRANSFORM = "AES/GCM/NoPadding";
+  private static final String DEK_ALGORITHM = "AES";
+  private static final int DEK_LENGTH_BYTES = 32;
+  private static final int MAX_ECHOED_KEY_ID_LENGTH = 64;
 
   private final DataKeyProvider provider;
   private final DataKeyStrategy strategy;
@@ -126,9 +130,12 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     DataKey dataKey;
     try {
       dataKey = strategy.acquire(provider);
+    } catch (EncryptionException e) {
+      throw e;
     } catch (RuntimeException e) {
       throw new EncryptionException("Unable to acquire data key", e);
     }
+    validateAes256(dataKey.key());
     byte[] keyIdBytes = dataKey.keyId().getBytes(StandardCharsets.UTF_8);
     byte[] wrapped = dataKey.wrapped();
     byte[] nonce = new byte[NONCE_LENGTH];
@@ -137,6 +144,8 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     int headerLength = FIXED_HEADER_LENGTH + keyIdBytes.length + wrapped.length;
     byte[] message = new byte[headerLength + value.length + TAG_LENGTH_BYTES];
     ByteBuffer header = ByteBuffer.wrap(message, 0, headerLength);
+    // Field write order is normative wire format: version before algorithm (both are 0x01 today,
+    // so no test can observe a swap, but decode reads them in this order).
     header.put(MAGIC_0).put(MAGIC_1).put(FORMAT_VERSION).put(ALGORITHM_AES_256_GCM);
     header.putShort((short) keyIdBytes.length).put(keyIdBytes);
     header.putShort((short) wrapped.length).put(wrapped);
@@ -186,12 +195,12 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     }
     String keyId = new String(bytes, 6, keyIdLength, StandardCharsets.UTF_8);
     if (!allowedKeyIds.test(keyId)) {
-      throw new DecryptionException("keyId is not allowed: " + keyId);
+      throw new DecryptionException("keyId is not allowed: " + sanitizeForMessage(keyId));
     }
     byte[] wrapped =
-        java.util.Arrays.copyOfRange(bytes, wrappedOffset + 2, wrappedOffset + 2 + wrappedLength);
+        Arrays.copyOfRange(bytes, wrappedOffset + 2, wrappedOffset + 2 + wrappedLength);
     SecretKey dek = unwrapDataKey(keyId, wrapped);
-    byte[] nonce = java.util.Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
+    byte[] nonce = Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
     try {
       Cipher cipher = Cipher.getInstance(GCM_TRANSFORM);
       cipher.init(Cipher.DECRYPT_MODE, dek, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
@@ -205,6 +214,19 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     }
   }
 
+  private static void validateAes256(SecretKey key) {
+    if (!DEK_ALGORITHM.equals(key.getAlgorithm())) {
+      throw new EncryptionException(
+          "Data key algorithm mismatch: expected AES, got " + key.getAlgorithm());
+    }
+    byte[] encoded = key.getEncoded();
+    // A null encoding means an opaque, HSM-backed key: its length cannot be checked here, so it
+    // is trusted to be AES-256 as the provider contract requires.
+    if (encoded != null && encoded.length != DEK_LENGTH_BYTES) {
+      throw new EncryptionException("Data key length mismatch: expected 32 bytes");
+    }
+  }
+
   private SecretKey unwrapDataKey(String keyId, byte[] wrapped) {
     try {
       return provider.unwrap(keyId, wrapped);
@@ -213,6 +235,25 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     } catch (RuntimeException e) {
       throw new KeyAccessException("Key infrastructure unavailable", e);
     }
+  }
+
+  /**
+   * Renders an untrusted, wire-supplied keyId safe to embed in an exception message: truncates to
+   * {@value #MAX_ECHOED_KEY_ID_LENGTH} characters and replaces any non-printable character (below
+   * {@code 0x20}, or {@code 0x7F}) with {@code '?'}, so a malicious or corrupted keyId cannot
+   * inject control characters or grow the message without bound.
+   */
+  private static String sanitizeForMessage(String keyId) {
+    String truncated =
+        keyId.length() > MAX_ECHOED_KEY_ID_LENGTH
+            ? keyId.substring(0, MAX_ECHOED_KEY_ID_LENGTH)
+            : keyId;
+    StringBuilder sanitized = new StringBuilder(truncated.length());
+    for (int i = 0; i < truncated.length(); i++) {
+      char c = truncated.charAt(i);
+      sanitized.append(c < 0x20 || c == 0x7F ? '?' : c);
+    }
+    return sanitized.toString();
   }
 
   private static int readUint16(byte[] bytes, int offset) {

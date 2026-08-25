@@ -208,6 +208,18 @@ runs — so feeding `decode` something that isn't an `EnvelopeCodec` message (a
 plain gzip stream, for example) fails fast on `bad magic`, not on a generic
 length error.
 
+AES-GCM, algorithm id `0x01`, is not key-committing: a sophisticated attacker
+who controls both the ciphertext and (in multi-party scenarios) more than one
+candidate key can in principle construct a single ciphertext that decrypts
+successfully under two different DEKs, each to different plaintext. Because
+the wrapped DEK travels with the message rather than being derived solely from
+a single trusted key, this module does not independently rule that out. The
+keyId allowlist (see [Key rotation](#key-rotation-via-keyids)) mitigates the
+practical variants of this attack by constraining which KEKs — and therefore
+which DEK-unwrap paths — decode will ever consider. Algorithm id `0x02` is
+reserved for a future key-committing suite, should a consumer's threat model
+require one.
+
 ## Ordering and composition
 
 !!! tip "Compress before you encrypt"

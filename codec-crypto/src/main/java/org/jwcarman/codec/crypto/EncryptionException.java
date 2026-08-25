@@ -24,6 +24,10 @@ package org.jwcarman.codec.crypto;
  */
 public class EncryptionException extends IllegalStateException {
 
+  public EncryptionException(String message) {
+    super(message);
+  }
+
   public EncryptionException(String message, Throwable cause) {
     super(message, cause);
   }

@@ -19,8 +19,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.Map;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -103,6 +105,30 @@ class EnvelopeCodecEncodeTest {
       assertThatExceptionOfType(EncryptionException.class)
           .isThrownBy(() -> EnvelopeCodec.builder(failing).build().encode(new byte[] {1}))
           .withCauseInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void rejects_null_input() {
+      assertThatNullPointerException()
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().encode(null));
+    }
+
+    @Test
+    void a_16_byte_aes_data_key_is_rejected_as_not_aes_256() {
+      DataKeyProvider shortKey =
+          new DataKeyProvider() {
+            @Override
+            public DataKey newDataKey() {
+              return new DataKey("kek", new SecretKeySpec(new byte[16], "AES"), new byte[] {1});
+            }
+
+            @Override
+            public SecretKey unwrap(String keyId, byte[] wrapped) {
+              throw new UnsupportedOperationException();
+            }
+          };
+      assertThatExceptionOfType(EncryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(shortKey).build().encode(new byte[] {1}));
     }
   }
 }

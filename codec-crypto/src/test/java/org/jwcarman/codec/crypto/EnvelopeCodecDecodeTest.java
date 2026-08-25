@@ -18,6 +18,7 @@ package org.jwcarman.codec.crypto;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,9 +65,35 @@ class EnvelopeCodecDecodeTest {
   @Nested
   class Structural_rejection {
     @Test
-    void rejects_input_shorter_than_the_minimum_message_length() {
+    void rejects_all_zero_input_on_bad_magic() {
       assertThatExceptionOfType(DecryptionException.class)
           .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(new byte[37]));
+    }
+
+    @Test
+    void rejects_empty_input_as_too_short() {
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(new byte[0]))
+          .withMessageContaining("too short");
+    }
+
+    @Test
+    void rejects_a_single_byte_as_too_short() {
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(new byte[] {0x4A}))
+          .withMessageContaining("too short");
+    }
+
+    @Test
+    void rejects_null_input() {
+      assertThatNullPointerException()
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().decode(null));
+    }
+
+    @Test
+    void encode_rejects_null_input() {
+      assertThatNullPointerException()
+          .isThrownBy(() -> EnvelopeCodec.builder(provider()).build().encode(null));
     }
 
     @Test
@@ -176,6 +203,38 @@ class EnvelopeCodecDecodeTest {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
       EnvelopeCodec codec = EnvelopeCodec.builder(provider()).allowedKeyIds("kek"::equals).build();
       assertThat(codec.decode(message)).containsExactly(1);
+    }
+
+    @Test
+    void a_denied_key_ids_echo_in_the_message_is_bounded_and_control_free() {
+      String maliciousKeyId = "a".repeat(200) + "\n" + "";
+      byte[] dekBytes = new byte[32];
+      java.util.Arrays.fill(dekBytes, (byte) 3);
+      DataKeyProvider malicious =
+          new DataKeyProvider() {
+            @Override
+            public DataKey newDataKey() {
+              return new DataKey(
+                  maliciousKeyId, new SecretKeySpec(dekBytes, "AES"), new byte[] {1, 2, 3, 4});
+            }
+
+            @Override
+            public SecretKey unwrap(String keyId, byte[] wrapped) {
+              throw new UnsupportedOperationException();
+            }
+          };
+      byte[] message = EnvelopeCodec.builder(malicious).build().encode(new byte[] {1});
+      EnvelopeCodec restrictive =
+          EnvelopeCodec.builder(malicious).allowedKeyIds(id -> false).build();
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> restrictive.decode(message))
+          .satisfies(
+              e -> {
+                String msg = e.getMessage();
+                assertThat(msg.length()).isLessThanOrEqualTo(100);
+                boolean hasControlChar = msg.chars().anyMatch(c -> c < 0x20 || c == 0x7F);
+                assertThat(hasControlChar).isFalse();
+              });
     }
   }
 

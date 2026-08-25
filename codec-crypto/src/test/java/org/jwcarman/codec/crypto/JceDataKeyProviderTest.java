@@ -57,6 +57,35 @@ class JceDataKeyProviderTest {
       assertThatIllegalArgumentException()
           .isThrownBy(() -> new JceDataKeyProvider("kek", Map.of("kek", hmac)));
     }
+
+    @Test
+    void rejects_a_16_byte_aes_kek() {
+      SecretKey shortKek = new SecretKeySpec(new byte[16], "AES");
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> new JceDataKeyProvider("kek", Map.of("kek", shortKek)));
+    }
+
+    @Test
+    void accepts_an_opaque_aes_kek_with_no_encoded_form() {
+      SecretKey opaque =
+          new SecretKey() {
+            @Override
+            public String getAlgorithm() {
+              return "AES";
+            }
+
+            @Override
+            public String getFormat() {
+              return null;
+            }
+
+            @Override
+            public byte[] getEncoded() {
+              return null;
+            }
+          };
+      assertThat(new JceDataKeyProvider("kek", Map.of("kek", opaque))).isNotNull();
+    }
   }
 
   @Nested

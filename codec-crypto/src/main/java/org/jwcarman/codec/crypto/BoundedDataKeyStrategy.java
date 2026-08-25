@@ -80,7 +80,7 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
   private final Object rollLock = new Object();
   private volatile CachedKey cached;
 
-  private record CachedKey(DataKey key, long expiresAtNanos, AtomicLong remaining) {}
+  private record CachedKey(DataKey key, long issuedAtNanos, AtomicLong remaining) {}
 
   /**
    * Creates a strategy using {@link System#nanoTime()} as the monotonic ticker.
@@ -127,14 +127,13 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
         return current.key();
       }
       DataKey fresh = provider.newDataKey();
-      cached =
-          new CachedKey(fresh, ticker.getAsLong() + maxAgeNanos, new AtomicLong(maxMessages - 1));
+      cached = new CachedKey(fresh, ticker.getAsLong(), new AtomicLong(maxMessages - 1));
       return fresh;
     }
   }
 
   private boolean usable(CachedKey candidate) {
-    return ticker.getAsLong() < candidate.expiresAtNanos()
+    return ticker.getAsLong() - candidate.issuedAtNanos() < maxAgeNanos
         && candidate.remaining().getAndDecrement() > 0;
   }
 }

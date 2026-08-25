@@ -162,6 +162,7 @@ class BoundedDataKeyStrategyTest {
           .allSatisfy(count -> assertThat(count.get()).isLessThanOrEqualTo(cap));
       assertThat(results.values().stream().mapToInt(AtomicInteger::get).sum())
           .isEqualTo(threads * perThread);
+      assertThat(provider.calls.get()).isBetween(20, 20 + threads);
     }
   }
 }

@@ -95,7 +95,7 @@ combination:
   regression mode with every normal test run; the `-Pfuzz` Maven profile
   fuzzes both targets live, 120 seconds each.
 - **Mutation testing**: PIT runs in the `ci` profile with an 85% mutation and
-  90% line-coverage threshold. The current score is 147/147 mutations killed,
+  90% line-coverage threshold. The current score is 149/149 mutations killed,
   a run the maintainer verified stable across repeated runs.
 - **Static analysis**: SpotBugs with the findsecbugs plugin runs in the `ci`
   profile at `effort=Max`, `threshold=Low`. One finding is excluded:

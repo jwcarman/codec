@@ -256,8 +256,8 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       char c = truncated.charAt(i);
       boolean deny =
           Character.isISOControl(c)
-              || c == ' '
-              || c == ' '
+              || c == '\u2028'
+              || c == '\u2029'
               || Character.getType(c) == Character.FORMAT;
       sanitized.append(deny ? '?' : c);
     }

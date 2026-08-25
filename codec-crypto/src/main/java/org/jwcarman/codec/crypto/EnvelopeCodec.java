@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import org.jwcarman.codec.spi.Codec;
 
@@ -91,6 +92,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
   private static final int TAG_LENGTH_BITS = 128;
   private static final int TAG_LENGTH_BYTES = TAG_LENGTH_BITS / 8;
   private static final int FIXED_HEADER_LENGTH = 20;
+  private static final int MIN_MESSAGE_LENGTH = FIXED_HEADER_LENGTH + 1 + 1 + TAG_LENGTH_BYTES;
   private static final String GCM_TRANSFORM = "AES/GCM/NoPadding";
 
   private final DataKeyProvider provider;
@@ -156,7 +158,62 @@ public final class EnvelopeCodec implements Codec<byte[]> {
 
   @Override
   public byte[] decode(byte[] bytes) {
-    throw new UnsupportedOperationException("implemented in the decode task");
+    Objects.requireNonNull(bytes, "bytes must not be null");
+    if (bytes.length < MIN_MESSAGE_LENGTH) {
+      throw new DecryptionException("message too short: " + bytes.length + " bytes");
+    }
+    if (bytes[0] != MAGIC_0 || bytes[1] != MAGIC_1) {
+      throw new DecryptionException("bad magic: not an envelope");
+    }
+    if (bytes[2] != FORMAT_VERSION) {
+      throw new DecryptionException("unknown format version: " + bytes[2]);
+    }
+    if (bytes[3] != ALGORITHM_AES_256_GCM) {
+      throw new DecryptionException("unknown algorithm id: " + bytes[3]);
+    }
+    int keyIdLength = readUint16(bytes, 4);
+    if (keyIdLength < 1 || 6 + keyIdLength + 2 > bytes.length) {
+      throw new DecryptionException("invalid keyId length: " + keyIdLength);
+    }
+    int wrappedOffset = 6 + keyIdLength;
+    int wrappedLength = readUint16(bytes, wrappedOffset);
+    int headerLength = FIXED_HEADER_LENGTH + keyIdLength + wrappedLength;
+    if (wrappedLength < 1 || headerLength + TAG_LENGTH_BYTES > bytes.length) {
+      throw new DecryptionException("invalid wrapped key length: " + wrappedLength);
+    }
+    String keyId = new String(bytes, 6, keyIdLength, StandardCharsets.UTF_8);
+    if (!allowedKeyIds.test(keyId)) {
+      throw new DecryptionException("keyId is not allowed: " + keyId);
+    }
+    byte[] wrapped =
+        java.util.Arrays.copyOfRange(bytes, wrappedOffset + 2, wrappedOffset + 2 + wrappedLength);
+    SecretKey dek = unwrapDataKey(keyId, wrapped);
+    byte[] nonce = java.util.Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
+    try {
+      Cipher cipher = Cipher.getInstance(GCM_TRANSFORM);
+      cipher.init(Cipher.DECRYPT_MODE, dek, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
+      cipher.updateAAD(bytes, 0, headerLength);
+      if (aad != null) {
+        cipher.updateAAD(aad);
+      }
+      return cipher.doFinal(bytes, headerLength, bytes.length - headerLength);
+    } catch (GeneralSecurityException e) {
+      throw DecryptionException.cryptographic(e);
+    }
+  }
+
+  private SecretKey unwrapDataKey(String keyId, byte[] wrapped) {
+    try {
+      return provider.unwrap(keyId, wrapped);
+    } catch (DecryptionException e) {
+      throw e;
+    } catch (RuntimeException e) {
+      throw new KeyAccessException("Key infrastructure unavailable", e);
+    }
+  }
+
+  private static int readUint16(byte[] bytes, int offset) {
+    return ((bytes[offset] & 0xFF) << 8) | (bytes[offset + 1] & 0xFF);
   }
 
   /** Builder for {@link EnvelopeCodec}. */

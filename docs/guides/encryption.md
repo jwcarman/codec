@@ -12,7 +12,7 @@ Add the module:
 <dependency>
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-crypto</artifactId>
-    <version>0.5.0</version>
+    <version>0.6.0</version>
 </dependency>
 ```
 

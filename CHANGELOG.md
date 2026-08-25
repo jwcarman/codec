@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-25
+
 ### Added
 - `codec-fory`: Apache Fory backend (`ForyCodecFactory`) for fast JVM-only
   binary serialization; class registration is mandatory and never relaxed by
@@ -151,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maven Central publishing workflow
 - Dependabot for automated dependency updates
 
+[0.6.0]: https://github.com/jwcarman/codec/releases/tag/0.6.0
 [0.5.0]: https://github.com/jwcarman/codec/releases/tag/0.5.0
 [0.4.0]: https://github.com/jwcarman/codec/releases/tag/0.4.0
 [0.3.0]: https://github.com/jwcarman/codec/releases/tag/0.3.0

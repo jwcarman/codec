@@ -48,13 +48,14 @@ Two packages, by kind: `org.jwcarman.codec.transform.compress` and
 
 ## Built-in compression
 
-Two transforms ship in `codec-transforms`, and a third in its own module:
+Two transforms ship in `codec-transforms`; the ones that need a dependency get their own module:
 
 | Transform | Module | Format | When to use |
 |-----------|--------|--------|-------------|
 | `GzipCodec` | `codec-transforms` | gzip (RFC 1952) | Interoperating with external gzip tooling |
 | `DeflateCodec` | `codec-transforms` | zlib (RFC 1950) | High volumes of small payloads — ~12 bytes less framing |
 | `ZstdCodec` | `codec-zstd` | Zstandard (RFC 8878) | The default choice for caches and queues: faster than gzip at every level and usually smaller |
+| `Lz4Codec` | `codec-lz4` | LZ4 frame | When speed is everything: hot caches and high-volume streams; also interoperates with Kafka and the `lz4` CLI |
 
 `ZstdCodec` lives in `codec-zstd` because it is backed by `zstd-jni`, which
 bundles native libraries for the common platforms. Its level is configurable:
@@ -105,6 +106,17 @@ the input, but a person can read and paste it — identifiers, checksums, keys
 in configuration. `lowerCase()` is the usual form; `upperCase()` matches the
 RFC's examples; decoding accepts either and rejects odd-length or non-hex
 input.
+
+`Lz4Codec` (in `codec-lz4`, backed by `lz4-java`) writes the standard LZ4
+frame format. The default compressor is the fast one; `Lz4Codec.highCompression()`
+selects LZ4-HC for a better ratio at a slower compression speed — decompression
+is equally fast either way:
+
+```java
+new Lz4Codec();                           // fast compressor
+Lz4Codec.highCompression();               // LZ4-HC
+new Lz4Codec(16L * 1024 * 1024);          // fast, with a 16 MiB decoded cap
+```
 
 ## Custom transforms
 

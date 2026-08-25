@@ -68,7 +68,7 @@ tiny and pushes the backend decision to the classpath.
     ---
 
     Layer compression, encryption, or a text-safe encoding onto any codec with
-    `andThen`. Gzip, deflate, and zstd ship with decompression-bomb protection.
+    `andThen`. Gzip, deflate, zstd, and LZ4 ship with decompression-bomb protection.
 
 -   **Envelope encryption**
 
@@ -100,6 +100,7 @@ tiny and pushes the backend decision to the classpath.
 | `codec-fory` | Apache Fory binary backend — fast JVM-only serialization with mandatory class registration |
 | `codec-crypto` | AES-256-GCM envelope encryption with pluggable key management |
 | `codec-zstd` | Zstandard compression transform |
+| `codec-lz4` | LZ4 compression transform |
 | `codec-autoconfigure` | Spring Boot auto-configuration for all backends |
 | `codec-spring-boot-starter` | Starter bundling core + auto-configuration |
 | `codec-bom` | Bill of materials for version alignment |

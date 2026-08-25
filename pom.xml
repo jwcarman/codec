@@ -65,6 +65,7 @@
         <protobuf.version>4.36.0</protobuf.version>
         <fory.version>1.1.0</fory.version>
         <zstd-jni.version>1.5.7-3</zstd-jni.version>
+        <lz4-java.version>1.8.1</lz4-java.version>
 
         <!-- Build plugin versions -->
         <compiler.plugin.version>3.15.0</compiler.plugin.version>
@@ -107,6 +108,7 @@
         <module>codec-jsonb</module>
         <module>codec-protobuf</module>
         <module>codec-zstd</module>
+        <module>codec-lz4</module>
         <module>codec-fory</module>
         <module>codec-autoconfigure</module>
         <module>codec-spring-boot-starter</module>

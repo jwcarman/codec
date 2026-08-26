@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `HexCodec` in `codec-transforms` (RFC 4648 base16): lower- or upper-case
   output, strict case-insensitive decoding
+- `Base32Codec` in `codec-transforms` (RFC 4648 §6 Base32 and §7 base32hex),
+  strict case-insensitive decoding
 - `codec-lz4`: LZ4 frame-format compression transform (`Lz4Codec`) with fast and
   high-compression (LZ4-HC) modes and the same decompression-bomb cap as the
   built-in transforms

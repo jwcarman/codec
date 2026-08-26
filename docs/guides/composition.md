@@ -118,6 +118,13 @@ Lz4Codec.highCompression();               // LZ4-HC
 new Lz4Codec(16L * 1024 * 1024);          // fast, with a 16 MiB decoded cap
 ```
 
+`Base32Codec` covers the rest of RFC 4648: `standard()` is the `A-Z2-7`
+alphabet TOTP secrets and DNS-safe identifiers use — no lower case, no
+symbols, so it survives case-insensitive contexts; `hex()` is base32hex,
+whose encoded form sorts in the same order as the bytes it encodes. Output
+is upper-case and padded; decoding is case-insensitive and rejects bad
+lengths, padding, or characters.
+
 ## Custom transforms
 
 For stream-based compression libraries (zstd, lz4, xz, ...), extend

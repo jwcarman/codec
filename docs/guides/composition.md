@@ -46,6 +46,30 @@ it; without Spring, add it next to `codec-core`):
 Two packages, by kind: `org.jwcarman.codec.transform.compress` and
 `org.jwcarman.codec.transform.encoding`.
 
+## Choosing a transform
+
+Nine transforms, three questions: do you need the payload smaller, do you need
+it text-safe, and who else has to read it?
+
+| You need | Reach for | Because |
+|----------|-----------|---------|
+| Smaller payloads, no strong preference | `ZstdCodec` | Best ratio-for-speed of any option; the modern default for caches and queues |
+| The fastest possible compression | `Lz4Codec` | Compresses and decompresses at memory-bandwidth rates; ratio is the trade |
+| A better LZ4 ratio, same decode speed | `Lz4Codec.highCompression()` | LZ4-HC compresses slower but decodes just as fast — good when writes are rare and reads are hot |
+| Interop with gzip tooling, HTTP, or files | `GzipCodec` | Everything reads gzip; the format carries a CRC |
+| Many small payloads, no native deps | `DeflateCodec` | Same algorithm as gzip minus ~12 bytes of framing; JDK-native |
+| Bytes in a text column, JSON string, or header | `Base64Codec.basic()` | The universal text encoding; 33% overhead |
+| Bytes in a URL, filename, or token | `Base64Codec.urlSafe()` / `urlSafeWithoutPadding()` | No `/`, `+`, or `=` to escape |
+| A value a person will type or read aloud | `Base32Codec.standard()` | No lower case, no symbols, and no `0`/`1`/`8`/`9` — the confusable digits; the encoding used for TOTP secrets |
+| A text form that sorts like the bytes | `Base32Codec.hex()` | base32hex preserves byte order under lexicographic sort |
+| A value for logs, diagnostics, or checksums | `HexCodec` | Twice the size, but instantly recognisable and copy-pasteable |
+
+The compression rows all carry the decompression-bomb cap described below.
+The `codec-transforms` transforms are pure JDK; `ZstdCodec` and `Lz4Codec`
+live in `codec-zstd` and `codec-lz4` because each needs a library with native
+code. Combine freely — compress first, encode last, and put
+[encryption](encryption.md) in between.
+
 ## Built-in compression
 
 Two transforms ship in `codec-transforms`; the ones that need a dependency get their own module:

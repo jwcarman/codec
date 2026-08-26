@@ -76,10 +76,23 @@ directly (e.g. `new JacksonCodecFactory(objectMapper)`). Backend choices:
     <artifactId>codec-gson</artifactId>
 </dependency>
 
+<!-- JSON-B (Jakarta JSON Binding; bring a provider, e.g. Yasson) -->
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-jsonb</artifactId>
+</dependency>
+
 <!-- Protocol Buffers -->
 <dependency>
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-protobuf</artifactId>
+</dependency>
+
+<!-- Apache Fory (JVM-only binary; classes must be registered, so build the
+     factory with ForyCodecFactory.of(Person.class, ...) or your own Fory) -->
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-fory</artifactId>
 </dependency>
 ```
 
@@ -215,13 +228,14 @@ The `codec-spring-boot-starter` (via `codec-autoconfigure`) registers a
 `CodecFactory` bean for whichever backend is on the classpath. The backend
 modules themselves are Spring-free.
 
-When several backends are present, precedence is Jackson 3 → Jackson 2 → Gson →
-JSON-B → Protobuf; an application-defined `ThreadSafeFory` bean activates the
-Fory backend ahead of all of them, and defining your own `CodecFactory` bean
-always wins. The
-Jackson, Gson, and JSON-B configurations reuse the application's
-`ObjectMapper`/`Gson`/`Jsonb` bean when one exists, falling back to a default
-instance otherwise.
+When several backends are present, precedence is deterministic. An
+application-defined `ThreadSafeFory` bean activates the Fory backend ahead of
+everything else — Fory needs your classes registered, so it cannot be configured
+on your behalf, and the bean is read as intent. Otherwise the backend is chosen
+by classpath detection: Jackson 3 → Jackson 2 → Gson → JSON-B → Protobuf.
+Defining your own `CodecFactory` bean always wins. The Jackson, Gson, and JSON-B
+configurations reuse the application's `ObjectMapper`/`Gson`/`Jsonb` bean when
+one exists, falling back to a default instance otherwise.
 
 ## Building
 

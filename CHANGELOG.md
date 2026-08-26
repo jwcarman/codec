@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-26
+
 ### Breaking changes
 - The built-in transforms moved out of `codec-core` into a new
   `codec-transforms` module, and into packages by kind:
@@ -187,6 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maven Central publishing workflow
 - Dependabot for automated dependency updates
 
+[0.7.0]: https://github.com/jwcarman/codec/releases/tag/0.7.0
 [0.6.0]: https://github.com/jwcarman/codec/releases/tag/0.6.0
 [0.5.0]: https://github.com/jwcarman/codec/releases/tag/0.5.0
 [0.4.0]: https://github.com/jwcarman/codec/releases/tag/0.4.0

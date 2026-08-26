@@ -19,8 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -31,7 +33,7 @@ import org.junit.jupiter.api.Test;
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class BoundedDataKeyStrategyTest {
 
-  private static final class CountingProvider implements DataKeyProvider {
+  private static class CountingProvider implements DataKeyProvider {
     final AtomicInteger calls = new AtomicInteger();
     boolean failNext;
 
@@ -178,6 +180,52 @@ class BoundedDataKeyStrategyTest {
 
   @Nested
   class Concurrency {
+    @Test
+    void a_thread_that_loses_the_roll_race_reuses_the_key_the_winner_installed() throws Exception {
+      CountDownLatch providerEntered = new CountDownLatch(1);
+      CountDownLatch releaseProvider = new CountDownLatch(1);
+      CountingProvider provider =
+          new CountingProvider() {
+            @Override
+            public DataKey newDataKey() {
+              DataKey key = super.newDataKey();
+              if (calls.get() == 2) {
+                providerEntered.countDown();
+                await(releaseProvider);
+              }
+              return key;
+            }
+          };
+      BoundedDataKeyStrategy strategy =
+          new BoundedDataKeyStrategy(2, Duration.ofHours(1), () -> 0L);
+      strategy.acquire(provider); // key 1, one message left
+      strategy.acquire(provider); // key 1 exhausted
+
+      AtomicReference<DataKey> winner = new AtomicReference<>();
+      AtomicReference<DataKey> loser = new AtomicReference<>();
+      Thread first = Thread.ofPlatform().start(() -> winner.set(strategy.acquire(provider)));
+      providerEntered.await(); // first holds the roll lock, blocked inside the provider
+      Thread second = Thread.ofPlatform().start(() -> loser.set(strategy.acquire(provider)));
+      while (second.getState() != Thread.State.BLOCKED) {
+        Thread.onSpinWait();
+      }
+      releaseProvider.countDown();
+      first.join();
+      second.join();
+
+      assertThat(loser.get()).isSameAs(winner.get());
+      assertThat(provider.calls.get()).isEqualTo(2);
+    }
+
+    private void await(CountDownLatch latch) {
+      try {
+        latch.await();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(e);
+      }
+    }
+
     @Test
     void concurrent_acquires_never_exceed_the_message_cap_per_key() throws Exception {
       CountingProvider provider = new CountingProvider();

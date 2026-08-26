@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 /**
- * Spring Boot auto-configuration for the backends. Exactly one {@code CodecFactory} bean is
- * registered, chosen by precedence — an application-defined {@code ThreadSafeFory} bean first, then
- * Jackson 3, Jackson 2, Gson, JSON-B and Protocol Buffers by classpath presence — and a
- * user-defined {@code CodecFactory} bean always wins. With Spring Data Redis and Boot's cache
- * support present, the Redis cache values named in {@code codec.redis.cache} are serialized through
- * that factory.
+ * Spring Data Redis integration: {@code CodecRedisSerializer} adapts any {@code Codec<T>} to {@code
+ * RedisSerializer<T>} for {@code RedisTemplate} and, through its serialization pair, for the Redis
+ * cache abstraction.
  */
-package org.jwcarman.codec.autoconfigure;
+package org.jwcarman.codec.redis;

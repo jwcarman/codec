@@ -84,5 +84,6 @@ nav:
       - Encryption: guides/encryption.md
       - Threat Model: guides/threat-model.md
       - Spring Boot: guides/spring-boot.md
+      - Spring Data Redis: guides/redis.md
   - Reference:
       - Changelog: https://github.com/jwcarman/codec/blob/main/CHANGELOG.md

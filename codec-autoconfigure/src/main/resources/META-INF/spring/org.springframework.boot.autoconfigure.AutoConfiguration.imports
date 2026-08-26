@@ -4,3 +4,4 @@ org.jwcarman.codec.autoconfigure.Jackson2CodecAutoConfiguration
 org.jwcarman.codec.autoconfigure.GsonCodecAutoConfiguration
 org.jwcarman.codec.autoconfigure.JsonbCodecAutoConfiguration
 org.jwcarman.codec.autoconfigure.ProtobufCodecAutoConfiguration
+org.jwcarman.codec.autoconfigure.CodecRedisCacheAutoConfiguration

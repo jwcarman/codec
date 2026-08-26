@@ -101,6 +101,7 @@ tiny and pushes the backend decision to the classpath.
 | `codec-crypto` | AES-256-GCM envelope encryption with pluggable key management |
 | `codec-zstd` | Zstandard compression transform |
 | `codec-lz4` | LZ4 compression transform |
+| `codec-spring-data-redis` | `RedisSerializer` adapter for Spring Data Redis |
 | `codec-autoconfigure` | Spring Boot auto-configuration for all backends |
 | `codec-spring-boot-starter` | Starter bundling core + auto-configuration |
 | `codec-bom` | Bill of materials for version alignment |

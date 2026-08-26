@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the imports. `codec-zstd` now depends on `codec-transforms`.
 
 ### Added
+- `codec-spring-data-redis`: `CodecRedisSerializer` adapts any codec to Spring
+  Data Redis's `RedisSerializer` (and, via `serializationPair()`, the cache
+  abstraction); Spring Boot auto-configuration serializes the cache values named
+  in `codec.redis.cache.caches` through the application's `CodecFactory`
 - `Codec.nullSafe()`: an explicit wrapper that maps `null` to `null` in both
   directions for integrations whose contract treats `null` as absent
 - `Codec.xmap(forward, backward)`: derive a codec for another type from an

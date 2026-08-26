@@ -46,7 +46,7 @@
     -->
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-bom</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Codec BOM</name>

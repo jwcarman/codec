@@ -50,10 +50,14 @@ final class FailingProvider extends Provider {
   static final class FailingCipherSpi extends CipherSpi {
 
     @Override
-    protected void engineSetMode(String mode) {}
+    protected void engineSetMode(String mode) {
+      // Accepts every mode so the transform resolves; the failure is staged in the operations.
+    }
 
     @Override
-    protected void engineSetPadding(String padding) throws NoSuchPaddingException {}
+    protected void engineSetPadding(String padding) throws NoSuchPaddingException {
+      // Accepts every padding so the transform resolves; the failure is staged in the operations.
+    }
 
     @Override
     protected int engineGetBlockSize() {
@@ -76,20 +80,27 @@ final class FailingProvider extends Provider {
     }
 
     @Override
-    protected void engineInit(int opmode, Key key, SecureRandom random)
-        throws InvalidKeyException {}
+    protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
+      // Accepts any key: initialisation must succeed for wrap and doFinal to be reached.
+    }
 
     @Override
     protected void engineInit(
         int opmode, Key key, AlgorithmParameterSpec params, SecureRandom random)
-        throws InvalidKeyException, InvalidAlgorithmParameterException {}
+        throws InvalidKeyException, InvalidAlgorithmParameterException {
+      // Accepts any key and parameters: initialisation must succeed for doFinal to be reached.
+    }
 
     @Override
     protected void engineInit(int opmode, Key key, AlgorithmParameters params, SecureRandom random)
-        throws InvalidKeyException, InvalidAlgorithmParameterException {}
+        throws InvalidKeyException, InvalidAlgorithmParameterException {
+      // Accepts any key and parameters: initialisation must succeed for doFinal to be reached.
+    }
 
     @Override
-    protected void engineUpdateAAD(byte[] src, int offset, int len) {}
+    protected void engineUpdateAAD(byte[] src, int offset, int len) {
+      // AAD is irrelevant to a cipher that never produces output.
+    }
 
     @Override
     protected byte[] engineUpdate(byte[] input, int inputOffset, int inputLen) {

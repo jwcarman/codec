@@ -16,6 +16,7 @@
 package org.jwcarman.codec.spi;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Converts values of type {@code T} to and from {@code byte[]}.
@@ -70,6 +71,46 @@ public interface Codec<T> {
       @Override
       public T decode(byte[] bytes) {
         return self.decode(transform.decode(bytes));
+      }
+    };
+  }
+
+  /**
+   * Derives a codec for another type from this one, given a conversion in each direction.
+   *
+   * <p>Where {@link #andThen} wraps the <em>bytes</em> side of a codec, this wraps the
+   * <em>value</em> side: the returned codec encodes a {@code U} by converting it to a {@code T}
+   * with {@code backward} and then encoding it here, and decodes by decoding a {@code T} here and
+   * converting it with {@code forward}. It is the tool for the domain-type-versus-wire-type split —
+   * a backend that only serializes generated or registered classes, wrapped as the type the
+   * application actually uses:
+   *
+   * {@snippet lang = java :
+   * Codec<Person> codec = factory.create(PersonProto.class).xmap(Person::fromProto, Person::toProto);
+   * }
+   *
+   * <p>Exceptions thrown by either function propagate unchanged.
+   *
+   * @param forward converts a decoded {@code T} to a {@code U}
+   * @param backward converts a {@code U} to the {@code T} this codec encodes
+   * @param <U> the derived codec's type
+   * @return a codec for {@code U}
+   * @throws NullPointerException if either function is null
+   */
+  default <U> Codec<U> xmap(
+      Function<? super T, ? extends U> forward, Function<? super U, ? extends T> backward) {
+    Objects.requireNonNull(forward, "forward must not be null");
+    Objects.requireNonNull(backward, "backward must not be null");
+    Codec<T> self = this;
+    return new Codec<>() {
+      @Override
+      public byte[] encode(U value) {
+        return self.encode(backward.apply(value));
+      }
+
+      @Override
+      public U decode(byte[] bytes) {
+        return forward.apply(self.decode(bytes));
       }
     };
   }

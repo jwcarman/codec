@@ -16,10 +16,12 @@
 package org.jwcarman.codec.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -91,6 +93,50 @@ class CodecTest {
     @Test
     void rejects_null_transform() {
       assertThatNullPointerException().isThrownBy(() -> UTF8.andThen(null));
+    }
+  }
+
+  @Nested
+  class Xmap {
+
+    private final Codec<UUID> uuids = UTF8.xmap(UUID::fromString, UUID::toString);
+
+    @Test
+    void encodes_through_the_backward_conversion() {
+      UUID id = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+
+      assertThat(uuids.encode(id)).isEqualTo(UTF8.encode("123e4567-e89b-12d3-a456-426614174000"));
+    }
+
+    @Test
+    void decodes_through_the_forward_conversion() {
+      UUID id = UUID.randomUUID();
+
+      assertThat(uuids.decode(UTF8.encode(id.toString()))).isEqualTo(id);
+    }
+
+    @Test
+    void exceptions_from_the_conversions_propagate_unchanged() {
+      byte[] notAUuid = UTF8.encode("nope");
+
+      assertThatIllegalArgumentException().isThrownBy(() -> uuids.decode(notAUuid));
+    }
+
+    @Test
+    void composes_with_and_then() {
+      Codec<UUID> composed = uuids.andThen(appending((byte) 'X'));
+      UUID id = UUID.randomUUID();
+
+      byte[] encoded = composed.encode(id);
+
+      assertThat(encoded[encoded.length - 1]).isEqualTo((byte) 'X');
+      assertThat(composed.decode(encoded)).isEqualTo(id);
+    }
+
+    @Test
+    void rejects_null_conversions() {
+      assertThatNullPointerException().isThrownBy(() -> UTF8.xmap(null, UUID::toString));
+      assertThatNullPointerException().isThrownBy(() -> UTF8.xmap(UUID::fromString, null));
     }
   }
 }

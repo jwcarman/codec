@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the imports. `codec-zstd` now depends on `codec-transforms`.
 
 ### Added
+- `Codec.xmap(forward, backward)`: derive a codec for another type from an
+  existing one — the domain-type-versus-wire-type tool for backends that only
+  serialize generated or registered classes
+- `StringCodec` in `codec-transforms` (`transform.text`): text as its own bytes
+  in any charset, with strict decoding
+- `ChecksumCodec` in `codec-transforms` (`transform.checksum`): a 32-bit
+  checksum trailer for corruption detection, CRC-32C by default
 - `HexCodec` in `codec-transforms` (RFC 4648 base16): lower- or upper-case
   output, strict case-insensitive decoding
 - `Base32Codec` in `codec-transforms` (RFC 4648 §6 Base32 and §7 base32hex),

@@ -43,12 +43,12 @@ it; without Spring, add it next to `codec-core`):
 </dependency>
 ```
 
-Two packages, by kind: `org.jwcarman.codec.transform.compress` and
-`org.jwcarman.codec.transform.encoding`.
+Four packages, by kind: `transform.compress`, `transform.encoding`,
+`transform.checksum`, and `transform.text` (all under `org.jwcarman.codec`).
 
 ## Choosing a transform
 
-Nine transforms, three questions: do you need the payload smaller, do you need
+Three questions pick a transform: do you need the payload smaller, do you need
 it text-safe, and who else has to read it?
 
 | You need | Reach for | Because |
@@ -63,6 +63,8 @@ it text-safe, and who else has to read it?
 | A value a person will type or read aloud | `Base32Codec.standard()` | No lower case, no symbols, and no `0`/`1`/`8`/`9` — the confusable digits; the encoding used for TOTP secrets |
 | A text form that sorts like the bytes | `Base32Codec.hex()` | base32hex preserves byte order under lexicographic sort |
 | A value for logs, diagnostics, or checksums | `HexCodec` | Twice the size, but instantly recognisable and copy-pasteable |
+| Corruption detection on an uncompressed, unencrypted payload | `ChecksumCodec.crc32c()` | Four bytes; rejects bit rot and truncation before a parser sees them. Compressed frames and encrypted payloads already have this |
+| The bytes *are* the text | `StringCodec.utf8()` | Raw text, not a JSON string; strict decoding; a backend-free base for `xmap` |
 
 The compression rows all carry the decompression-bomb cap described below.
 The `codec-transforms` transforms are pure JDK; `ZstdCodec` and `Lz4Codec`
@@ -148,6 +150,58 @@ symbols, so it survives case-insensitive contexts; `hex()` is base32hex,
 whose encoded form sorts in the same order as the bytes it encodes. Output
 is upper-case and padded; decoding is case-insensitive and rejects bad
 lengths, padding, or characters.
+
+## Corruption detection
+
+`ChecksumCodec` appends a 32-bit checksum on encode and verifies it on decode,
+rejecting a mismatch with `IllegalArgumentException`. It catches accidental
+damage — bit rot, a truncated write, a partially overwritten cache entry — so
+corrupt bytes fail here rather than confusing a parser or decoding to a
+plausible but wrong value:
+
+```java
+Codec<Person> codec =
+    factory.create(Person.class).andThen(ChecksumCodec.crc32c());
+```
+
+It is **not** tamper-proof — anyone who can change the bytes can recompute the
+checksum. Encrypted payloads from [`codec-crypto`](encryption.md) are already
+authenticated, and gzip, zstd, and LZ4 frames carry their own checksums, so the
+realistic use is a plain, uncompressed payload such as JSON in a cache.
+`crc32c()` is the recommended form; any other 32-bit `java.util.zip.Checksum`
+(`CRC32`, `Adler32`) can be supplied for interoperability.
+
+## Text as bytes
+
+A backend's `create(String.class)` gives you a *JSON string*: `hello` becomes
+the seven bytes `"hello"`. `StringCodec` is the codec for text that should be
+its own bytes:
+
+```java
+Codec<String> text = StringCodec.utf8();          // or StringCodec.of(charset)
+```
+
+Decoding is strict — malformed input is rejected rather than silently replaced
+with U+FFFD. It is also the natural base for deriving codecs with `xmap`.
+
+## Deriving codecs with `xmap`
+
+Where `andThen` wraps the *bytes* side of a codec, `Codec.xmap` wraps the
+*value* side: given a conversion in each direction, it derives a codec for
+another type. This is the tool for the domain-type-versus-wire-type split — a
+backend that only serializes generated or registered classes, wrapped as the
+type the application actually uses:
+
+```java
+Codec<Person> codec =
+    protobufFactory.create(PersonProto.class).xmap(Person::fromProto, Person::toProto);
+
+Codec<UUID> ids = StringCodec.utf8().xmap(UUID::fromString, UUID::toString);
+```
+
+Exceptions from either conversion propagate unchanged, and the result composes
+with `andThen` like any other codec. For the JSON backends, which already
+serialize records and value types directly, you rarely need it.
 
 ## Custom transforms
 

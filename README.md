@@ -1,6 +1,7 @@
 # Codec
 
 [![CI](https://github.com/jwcarman/codec/actions/workflows/maven.yml/badge.svg)](https://github.com/jwcarman/codec/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/jwcarman/codec/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/jwcarman/codec/actions/workflows/github-code-scanning/codeql)
 [![Maven Central](https://img.shields.io/maven-central/v/org.jwcarman.codec/codec-core)](https://central.sonatype.com/artifact/org.jwcarman.codec/codec-core)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java](https://img.shields.io/badge/dynamic/xml?url=https://raw.githubusercontent.com/jwcarman/codec/main/pom.xml&query=//*[local-name()='maven.compiler.release']/text()&label=Java&color=orange)](https://openjdk.org/)

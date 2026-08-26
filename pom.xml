@@ -110,6 +110,7 @@
         <module>codec-zstd</module>
         <module>codec-lz4</module>
         <module>codec-spring-data-redis</module>
+        <module>codec-kafka</module>
         <module>codec-fory</module>
         <module>codec-autoconfigure</module>
         <module>codec-spring-boot-starter</module>

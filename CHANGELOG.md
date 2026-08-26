@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the imports. `codec-zstd` now depends on `codec-transforms`.
 
 ### Added
+- `codec-kafka`: `CodecSerializer`, `CodecDeserializer`, and `CodecSerde` adapt
+  any codec to Kafka's client serialization interfaces; tombstones map to
+  `null` in both directions
 - `codec-spring-data-redis`: `CodecRedisSerializer` adapts any codec to Spring
   Data Redis's `RedisSerializer` (and, via `serializationPair()`, the cache
   abstraction); Spring Boot auto-configuration serializes the cache values named

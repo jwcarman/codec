@@ -85,5 +85,6 @@ nav:
       - Threat Model: guides/threat-model.md
       - Spring Boot: guides/spring-boot.md
       - Spring Data Redis: guides/redis.md
+      - Apache Kafka: guides/kafka.md
   - Reference:
       - Changelog: https://github.com/jwcarman/codec/blob/main/CHANGELOG.md

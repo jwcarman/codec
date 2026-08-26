@@ -152,6 +152,11 @@
             </dependency>
             <dependency>
                 <groupId>org.jwcarman.codec</groupId>
+                <artifactId>codec-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jwcarman.codec</groupId>
                 <artifactId>codec-fory</artifactId>
                 <version>${project.version}</version>
             </dependency>

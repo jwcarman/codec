@@ -203,6 +203,18 @@ Exceptions from either conversion propagate unchanged, and the result composes
 with `andThen` like any other codec. For the JSON backends, which already
 serialize records and value types directly, you rarely need it.
 
+## Null handling
+
+Whether a codec accepts `null` is its own business: a JSON backend encodes it
+as the literal `null`, the transforms reject it. When an integration's contract
+treats `null` as "absent" — a cache serializer handed `null` on a miss —
+`nullSafe()` makes that explicit: `null` passes straight through in both
+directions and everything else is delegated.
+
+```java
+Codec<Person> codec = factory.create(Person.class).andThen(new ZstdCodec()).nullSafe();
+```
+
 ## Custom transforms
 
 For stream-based compression libraries (zstd, lz4, xz, ...), extend

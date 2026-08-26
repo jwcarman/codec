@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the imports. `codec-zstd` now depends on `codec-transforms`.
 
 ### Added
+- `Codec.nullSafe()`: an explicit wrapper that maps `null` to `null` in both
+  directions for integrations whose contract treats `null` as absent
 - `Codec.xmap(forward, backward)`: derive a codec for another type from an
   existing one — the domain-type-versus-wire-type tool for backends that only
   serialize generated or registered classes

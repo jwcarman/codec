@@ -97,6 +97,33 @@ class CodecTest {
   }
 
   @Nested
+  class Null_safe {
+
+    private final Codec<String> nullSafe = UTF8.nullSafe();
+
+    @Test
+    void encodes_null_as_null_without_consulting_the_codec() {
+      assertThat(nullSafe.encode(null)).isNull();
+    }
+
+    @Test
+    void decodes_null_as_null_without_consulting_the_codec() {
+      assertThat(nullSafe.decode(null)).isNull();
+    }
+
+    @Test
+    void delegates_every_other_value() {
+      assertThat(nullSafe.encode("hi")).isEqualTo(UTF8.encode("hi"));
+      assertThat(nullSafe.decode(UTF8.encode("hi"))).isEqualTo("hi");
+    }
+
+    @Test
+    void the_bare_codec_still_rejects_null() {
+      assertThatNullPointerException().isThrownBy(() -> UTF8.encode(null));
+    }
+  }
+
+  @Nested
   class Xmap {
 
     private final Codec<UUID> uuids = UTF8.xmap(UUID::fromString, UUID::toString);

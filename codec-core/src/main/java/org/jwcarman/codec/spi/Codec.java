@@ -97,6 +97,33 @@ public interface Codec<T> {
    * @return a codec for {@code U}
    * @throws NullPointerException if either function is null
    */
+  /**
+   * Wraps this codec so that {@code null} passes straight through in both directions: {@code
+   * encode(null)} returns {@code null} and {@code decode(null)} returns {@code null}, without
+   * consulting this codec. Every other value is delegated unchanged.
+   *
+   * <p>Whether a bare codec accepts {@code null} is up to its implementation — a JSON backend
+   * encodes it as the literal {@code null}, the transforms reject it — so this is the explicit form
+   * for integrations whose contract treats {@code null} as "absent", such as cache serializers that
+   * are handed {@code null} on a miss.
+   *
+   * @return a codec that maps {@code null} to {@code null} and otherwise behaves as this one
+   */
+  default Codec<T> nullSafe() {
+    Codec<T> self = this;
+    return new Codec<>() {
+      @Override
+      public byte[] encode(T value) {
+        return value == null ? null : self.encode(value);
+      }
+
+      @Override
+      public T decode(byte[] bytes) {
+        return bytes == null ? null : self.decode(bytes);
+      }
+    };
+  }
+
   default <U> Codec<U> xmap(
       Function<? super T, ? extends U> forward, Function<? super U, ? extends T> backward) {
     Objects.requireNonNull(forward, "forward must not be null");

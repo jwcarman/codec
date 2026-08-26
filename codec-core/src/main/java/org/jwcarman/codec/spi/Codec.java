@@ -76,28 +76,6 @@ public interface Codec<T> {
   }
 
   /**
-   * Derives a codec for another type from this one, given a conversion in each direction.
-   *
-   * <p>Where {@link #andThen} wraps the <em>bytes</em> side of a codec, this wraps the
-   * <em>value</em> side: the returned codec encodes a {@code U} by converting it to a {@code T}
-   * with {@code backward} and then encoding it here, and decodes by decoding a {@code T} here and
-   * converting it with {@code forward}. It is the tool for the domain-type-versus-wire-type split —
-   * a backend that only serializes generated or registered classes, wrapped as the type the
-   * application actually uses:
-   *
-   * {@snippet lang = java :
-   * Codec<Person> codec = factory.create(PersonProto.class).xmap(Person::fromProto, Person::toProto);
-   * }
-   *
-   * <p>Exceptions thrown by either function propagate unchanged.
-   *
-   * @param forward converts a decoded {@code T} to a {@code U}
-   * @param backward converts a {@code U} to the {@code T} this codec encodes
-   * @param <U> the derived codec's type
-   * @return a codec for {@code U}
-   * @throws NullPointerException if either function is null
-   */
-  /**
    * Wraps this codec so that {@code null} passes straight through in both directions: {@code
    * encode(null)} returns {@code null} and {@code decode(null)} returns {@code null}, without
    * consulting this codec. Every other value is delegated unchanged.
@@ -124,6 +102,28 @@ public interface Codec<T> {
     };
   }
 
+  /**
+   * Derives a codec for another type from this one, given a conversion in each direction.
+   *
+   * <p>Where {@link #andThen} wraps the <em>bytes</em> side of a codec, this wraps the
+   * <em>value</em> side: the returned codec encodes a {@code U} by converting it to a {@code T}
+   * with {@code backward} and then encoding it here, and decodes by decoding a {@code T} here and
+   * converting it with {@code forward}. It is the tool for the domain-type-versus-wire-type split —
+   * a backend that only serializes generated or registered classes, wrapped as the type the
+   * application actually uses:
+   *
+   * {@snippet lang = java :
+   * Codec<Person> codec = factory.create(PersonProto.class).xmap(Person::fromProto, Person::toProto);
+   * }
+   *
+   * <p>Exceptions thrown by either function propagate unchanged.
+   *
+   * @param forward converts a decoded {@code T} to a {@code U}
+   * @param backward converts a {@code U} to the {@code T} this codec encodes
+   * @param <U> the derived codec's type
+   * @return a codec for {@code U}
+   * @throws NullPointerException if either function is null
+   */
   default <U> Codec<U> xmap(
       Function<? super T, ? extends U> forward, Function<? super U, ? extends T> backward) {
     Objects.requireNonNull(forward, "forward must not be null");

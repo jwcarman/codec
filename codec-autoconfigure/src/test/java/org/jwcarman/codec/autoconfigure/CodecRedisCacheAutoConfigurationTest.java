@@ -99,6 +99,28 @@ class CodecRedisCacheAutoConfigurationTest {
   }
 
   @Nested
+  class Properties {
+
+    @Test
+    void bind_from_the_environment() {
+      contextRunner
+          .withPropertyValues(
+              "codec.redis.cache.enabled=true",
+              "codec.redis.cache.default-type=java.lang.Object",
+              "codec.redis.cache.caches.people=" + Person.class.getName())
+          .run(
+              context -> {
+                CodecRedisCacheProperties properties =
+                    context.getBean(CodecRedisCacheProperties.class);
+
+                assertThat(properties.isEnabled()).isTrue();
+                assertThat(properties.getDefaultType()).isEqualTo("java.lang.Object");
+                assertThat(properties.getCaches()).containsEntry("people", Person.class.getName());
+              });
+    }
+  }
+
+  @Nested
   class Cache_configuration {
 
     @Test

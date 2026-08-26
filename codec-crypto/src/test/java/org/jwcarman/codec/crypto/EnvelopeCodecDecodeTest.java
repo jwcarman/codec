@@ -497,14 +497,15 @@ class EnvelopeCodecDecodeTest {
 
     @Test
     void c1_control_line_separator_and_bidi_override_are_each_replaced_with_a_placeholder() {
-      String keyId = "a\u0085b\u2028c\u202Ed";
+      String keyId = "a\u0085b\u2028c\u2029d\u202Ee";
 
       String message = rejectionMessageFor(keyId);
 
       assertThat(message)
-          .isEqualTo("keyId is not allowed: a?b?c?d")
+          .isEqualTo("keyId is not allowed: a?b?c?d?e")
           .doesNotContain("\u0085")
           .doesNotContain("\u2028")
+          .doesNotContain("\u2029")
           .doesNotContain("\u202E");
     }
   }

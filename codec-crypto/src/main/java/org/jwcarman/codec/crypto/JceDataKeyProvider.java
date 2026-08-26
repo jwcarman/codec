@@ -134,11 +134,7 @@ public final class JceDataKeyProvider implements DataKeyProvider {
       wrapCipher();
     } catch (GeneralSecurityException e) {
       throw new IllegalStateException(
-          "provider "
-              + (provider == null ? "<default>" : provider.getName())
-              + " cannot supply "
-              + WRAP_TRANSFORM,
-          e);
+          "provider " + Providers.describe(provider) + " cannot supply " + WRAP_TRANSFORM, e);
     }
   }
 

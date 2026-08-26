@@ -74,6 +74,12 @@ class BoundedDataKeyStrategyTest {
       assertThatIllegalArgumentException()
           .isThrownBy(() -> new BoundedDataKeyStrategy(10, Duration.ZERO));
     }
+
+    @Test
+    void rejects_a_negative_max_age() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> new BoundedDataKeyStrategy(10, Duration.ofSeconds(-1)));
+    }
   }
 
   @Nested

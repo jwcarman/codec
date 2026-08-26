@@ -139,6 +139,31 @@ class ForyCodecFactoryTest {
     }
 
     @Test
+    void types_fory_handles_without_registration_are_always_supported() {
+      assertThat(factory.supports(int.class)).isTrue();
+      assertThat(factory.supports(Runnable.class)).isTrue();
+      assertThat(factory.supports(Number.class)).isTrue();
+      assertThat(factory.supports(byte[].class)).isTrue();
+      assertThat(factory.supports(javax.crypto.spec.SecretKeySpec.class)).isTrue();
+      assertThat(factory.supports(java.util.ArrayList.class)).isTrue();
+    }
+
+    @Test
+    void a_wildcard_type_argument_is_not_a_registration_concern() {
+      Codec<List<?>> codec = factory.create(new TypeRef<List<?>>() {});
+      List<Person> people = List.of(new Person("Alice", 30, true));
+
+      assertThat(codec.decode(codec.encode(people))).isEqualTo(people);
+    }
+
+    @Test
+    void a_generic_array_type_is_rejected() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> factory.create(new TypeRef<List<String>[]>() {}))
+          .withMessageContaining("Unsupported type");
+    }
+
+    @Test
     void supports_reports_registration() {
       assertThat(factory.supports(Person.class)).isTrue();
       assertThat(factory.supports(List.class)).isTrue();

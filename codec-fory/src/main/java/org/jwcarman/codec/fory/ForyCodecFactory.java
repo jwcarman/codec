@@ -116,10 +116,10 @@ public class ForyCodecFactory implements CodecFactory {
   }
 
   private static boolean needsRegistration(Class<?> type) {
+    // Array classes are implicitly abstract (JLS 10.8), so the abstract check covers them too.
     return !type.isPrimitive()
         && !type.isInterface()
         && !Modifier.isAbstract(type.getModifiers())
-        && !type.isArray()
         && !type.getName().startsWith("java.")
         && !type.getName().startsWith("javax.");
   }

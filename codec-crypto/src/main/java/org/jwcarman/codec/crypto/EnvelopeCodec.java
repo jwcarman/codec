@@ -435,11 +435,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
         newCipher(transform, provider);
       } catch (GeneralSecurityException e) {
         throw new IllegalStateException(
-            "provider "
-                + (provider == null ? "<default>" : provider.getName())
-                + " cannot supply "
-                + transform,
-            e);
+            "provider " + Providers.describe(provider) + " cannot supply " + transform, e);
       }
     }
   }

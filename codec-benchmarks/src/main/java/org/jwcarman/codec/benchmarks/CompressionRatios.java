@@ -20,20 +20,38 @@ import org.jwcarman.codec.spi.Codec;
 
 /**
  * Prints the compressed size and ratio of every compression transform at every payload size as a
- * Markdown table — the companion to {@link CompressionBenchmark}, which measures speed. Run with
- * {@code java -cp benchmarks.jar org.jwcarman.codec.benchmarks.CompressionRatios}.
+ * Markdown table, or as JSON with {@code --json} for {@code render.py} to merge into the throughput
+ * tables — the companion to {@link CompressionBenchmark}, which measures speed. Run with {@code
+ * java -cp benchmarks.jar org.jwcarman.codec.benchmarks.CompressionRatios}.
  */
 public final class CompressionRatios {
+
+  private static final List<String> TRANSFORMS =
+      List.of(
+          "gzip",
+          "deflate1",
+          "deflate6",
+          "deflate9",
+          "zstd1",
+          "zstd3",
+          "zstd9",
+          "zstd19",
+          "lz4",
+          "lz4hc");
 
   private CompressionRatios() {}
 
   /**
    * Entry point.
    *
-   * @param args ignored
+   * @param args {@code --json} for machine-readable output; otherwise a Markdown table
    */
   public static void main(String[] args) {
     List<String> payloads = List.of("small", "medium", "large");
+    if (args.length > 0 && "--json".equals(args[0])) {
+      System.out.print(json(payloads));
+      return;
+    }
     StringBuilder out = new StringBuilder("| Transform |");
     payloads.forEach(p -> out.append(' ').append(p).append(" |"));
     out.append("\n|---|");
@@ -61,5 +79,30 @@ public final class CompressionRatios {
       out.append('\n');
     }
     System.out.print(out);
+  }
+
+  private static String json(List<String> payloads) {
+    StringBuilder out = new StringBuilder("{");
+    boolean firstTransform = true;
+    for (String name : TRANSFORMS) {
+      Codec<byte[]> transform = CompressionBenchmark.transform(name);
+      out.append(firstTransform ? "" : ",")
+          .append('\n')
+          .append("  \"")
+          .append(name)
+          .append("\": {");
+      firstTransform = false;
+      boolean firstPayload = true;
+      for (String payload : payloads) {
+        out.append(firstPayload ? "" : ", ")
+            .append('"')
+            .append(payload)
+            .append("\": ")
+            .append(transform.encode(Payloads.named(payload)).length);
+        firstPayload = false;
+      }
+      out.append('}');
+    }
+    return out.append("\n}\n").toString();
   }
 }

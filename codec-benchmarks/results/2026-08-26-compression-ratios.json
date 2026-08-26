@@ -1,0 +1,12 @@
+{
+  "gzip": {"small": 115, "medium": 1647, "large": 201172},
+  "deflate1": {"small": 103, "medium": 1846, "large": 273057},
+  "deflate6": {"small": 103, "medium": 1635, "large": 201160},
+  "deflate9": {"small": 103, "medium": 1606, "large": 197182},
+  "zstd1": {"small": 102, "medium": 1614, "large": 242999},
+  "zstd3": {"small": 102, "medium": 1590, "large": 227860},
+  "zstd9": {"small": 102, "medium": 1508, "large": 222392},
+  "zstd19": {"small": 103, "medium": 1467, "large": 169684},
+  "lz4": {"small": 123, "medium": 2704, "large": 491989},
+  "lz4hc": {"small": 123, "medium": 2335, "large": 282916}
+}

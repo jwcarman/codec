@@ -17,7 +17,10 @@
 
 """Render a JMH JSON results file as the Markdown tables used in docs/benchmarks.md.
 
-Usage: render.py results.json
+Usage: render.py results.json [ratios.json]
+
+ratios.json is the output of `CompressionRatios --json`; with it, the compression tables carry
+compressed size and ratio beside the throughput.
 """
 import json
 import sys
@@ -44,16 +47,22 @@ def mbps(v, payload):
     return f"{v * SIZES[payload] / 1_000_000:,.0f}"
 
 
-def main(path):
+def main(path, ratios_path=None):
     rows = load(path)
+    ratios = json.load(open(ratios_path)) if ratios_path else None
     for payload in ["small", "medium", "large"]:
         print(f"### Compression — {payload} payload ({SIZES[payload]:,} bytes)\n")
-        print("| Transform | encode ops/s | encode MB/s | decode ops/s | decode MB/s |")
-        print("|---|---:|---:|---:|---:|")
+        size_cols = "| compressed bytes | of input " if ratios else ""
+        print(f"| Transform {size_cols}| encode MB/s | decode MB/s | encode ops/s | decode ops/s |")
+        print(f"|---{'|---:|---:' if ratios else ''}|---:|---:|---:|---:|")
         for codec in ORDER:
             r = rows[("CompressionBenchmark", (("codec", codec), ("payload", payload)))]
-            print(f"| {codec} | {ops(r['encode'])} | {mbps(r['encode'], payload)} "
-                  f"| {ops(r['decode'])} | {mbps(r['decode'], payload)} |")
+            size = ""
+            if ratios:
+                n = ratios[codec][payload]
+                size = f"| {n:,} | {100.0 * n / SIZES[payload]:.1f}% "
+            print(f"| {codec} {size}| {mbps(r['encode'], payload)} | {mbps(r['decode'], payload)} "
+                  f"| {ops(r['encode'])} | {ops(r['decode'])} |")
         print()
     print("\n### Encodings and checksum (medium payload, 8 KB)\n")
     print("| Transform | encode ops/s | decode ops/s |\n|---|---:|---:|")
@@ -75,4 +84,4 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)

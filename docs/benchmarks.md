@@ -51,23 +51,6 @@ measured at 1, 3 (the default), 9 and 19.
   (1.0 M vs 0.42 M ops/s) by amortising the KEK wrap; decode is unchanged,
   since every message is unwrapped on its own.
 
-## Compression ratios
-
-Compressed size and percentage of the input, from `CompressionRatios`:
-
-| Transform | small | medium | large |
-|---|---|---|---|
-| gzip | 115 (110.6%) | 1,647 (19.8%) | 201,172 (19.2%) |
-| deflate1 | 103 (99.0%) | 1,846 (22.1%) | 273,057 (26.0%) |
-| deflate6 | 103 (99.0%) | 1,635 (19.6%) | 201,160 (19.2%) |
-| deflate9 | 103 (99.0%) | 1,606 (19.3%) | 197,182 (18.8%) |
-| zstd1 | 102 (98.1%) | 1,614 (19.4%) | 242,999 (23.2%) |
-| zstd3 | 102 (98.1%) | 1,590 (19.1%) | 227,860 (21.7%) |
-| zstd9 | 102 (98.1%) | 1,508 (18.1%) | 222,392 (21.2%) |
-| zstd19 | 103 (99.0%) | 1,467 (17.6%) | 169,684 (16.2%) |
-| lz4 | 123 (118.3%) | 2,704 (32.4%) | 491,989 (46.9%) |
-| lz4hc | 123 (118.3%) | 2,335 (28.0%) | 282,916 (27.0%) |
-
 ## Encoded sizes by backend
 
 From `EncodedSizes`:
@@ -83,50 +66,53 @@ From `EncodedSizes`:
 
 ## Throughput
 
+Compression tables carry the compressed size and ratio beside the speed, so
+the level trade-offs read in one place.
+
 ### Compression — small payload (104 bytes)
 
-| Transform | encode ops/s | encode MB/s | decode ops/s | decode MB/s |
-|---|---:|---:|---:|---:|
-| gzip | 257,121 | 27 | 588,837 | 61 |
-| deflate1 | 244,586 | 25 | 611,054 | 64 |
-| deflate6 | 237,097 | 25 | 608,134 | 63 |
-| deflate9 | 249,599 | 26 | 599,277 | 62 |
-| zstd1 | 156,297 | 16 | 214,671 | 22 |
-| zstd3 | 98,265 | 10 | 189,968 | 20 |
-| zstd9 | 20,191 | 2 | 177,769 | 18 |
-| zstd19 | 2,829 | 0 | 180,396 | 19 |
-| lz4 | 390,673 | 41 | 502,106 | 52 |
-| lz4hc | 269,637 | 28 | 490,529 | 51 |
+| Transform | compressed bytes | of input | encode MB/s | decode MB/s | encode ops/s | decode ops/s |
+|---|---:|---:|---:|---:|---:|---:|
+| gzip | 115 | 110.6% | 27 | 61 | 257,121 | 588,837 |
+| deflate1 | 103 | 99.0% | 25 | 64 | 244,586 | 611,054 |
+| deflate6 | 103 | 99.0% | 25 | 63 | 237,097 | 608,134 |
+| deflate9 | 103 | 99.0% | 26 | 62 | 249,599 | 599,277 |
+| zstd1 | 102 | 98.1% | 16 | 22 | 156,297 | 214,671 |
+| zstd3 | 102 | 98.1% | 10 | 20 | 98,265 | 189,968 |
+| zstd9 | 102 | 98.1% | 2 | 18 | 20,191 | 177,769 |
+| zstd19 | 103 | 99.0% | 0 | 19 | 2,829 | 180,396 |
+| lz4 | 123 | 118.3% | 41 | 52 | 390,673 | 502,106 |
+| lz4hc | 123 | 118.3% | 28 | 51 | 269,637 | 490,529 |
 
 ### Compression — medium payload (8,338 bytes)
 
-| Transform | encode ops/s | encode MB/s | decode ops/s | decode MB/s |
-|---|---:|---:|---:|---:|
-| gzip | 25,589 | 213 | 119,413 | 996 |
-| deflate1 | 56,339 | 470 | 99,850 | 833 |
-| deflate6 | 24,435 | 204 | 103,773 | 865 |
-| deflate9 | 18,350 | 153 | 101,781 | 849 |
-| zstd1 | 64,046 | 534 | 97,610 | 814 |
-| zstd3 | 41,703 | 348 | 94,445 | 787 |
-| zstd9 | 11,106 | 93 | 98,411 | 821 |
-| zstd19 | 838 | 7 | 97,744 | 815 |
-| lz4 | 119,851 | 999 | 178,016 | 1,484 |
-| lz4hc | 41,969 | 350 | 185,770 | 1,549 |
+| Transform | compressed bytes | of input | encode MB/s | decode MB/s | encode ops/s | decode ops/s |
+|---|---:|---:|---:|---:|---:|---:|
+| gzip | 1,647 | 19.8% | 213 | 996 | 25,589 | 119,413 |
+| deflate1 | 1,846 | 22.1% | 470 | 833 | 56,339 | 99,850 |
+| deflate6 | 1,635 | 19.6% | 204 | 865 | 24,435 | 103,773 |
+| deflate9 | 1,606 | 19.3% | 153 | 849 | 18,350 | 101,781 |
+| zstd1 | 1,614 | 19.4% | 534 | 814 | 64,046 | 97,610 |
+| zstd3 | 1,590 | 19.1% | 348 | 787 | 41,703 | 94,445 |
+| zstd9 | 1,508 | 18.1% | 93 | 821 | 11,106 | 98,411 |
+| zstd19 | 1,467 | 17.6% | 7 | 815 | 838 | 97,744 |
+| lz4 | 2,704 | 32.4% | 999 | 1,484 | 119,851 | 178,016 |
+| lz4hc | 2,335 | 28.0% | 350 | 1,549 | 41,969 | 185,770 |
 
 ### Compression — large payload (1,048,576 bytes)
 
-| Transform | encode ops/s | encode MB/s | decode ops/s | decode MB/s |
-|---|---:|---:|---:|---:|
-| gzip | 34 | 36 | 746 | 782 |
-| deflate1 | 225 | 236 | 463 | 486 |
-| deflate6 | 33 | 35 | 642 | 673 |
-| deflate9 | 19 | 19 | 647 | 678 |
-| zstd1 | 591 | 619 | 1,152 | 1,208 |
-| zstd3 | 561 | 588 | 1,358 | 1,424 |
-| zstd9 | 88 | 92 | 1,461 | 1,532 |
-| zstd19 | 5 | 6 | 1,701 | 1,784 |
-| lz4 | 718 | 753 | 1,696 | 1,778 |
-| lz4hc | 26 | 28 | 2,346 | 2,460 |
+| Transform | compressed bytes | of input | encode MB/s | decode MB/s | encode ops/s | decode ops/s |
+|---|---:|---:|---:|---:|---:|---:|
+| gzip | 201,172 | 19.2% | 36 | 782 | 34 | 746 |
+| deflate1 | 273,057 | 26.0% | 236 | 486 | 225 | 463 |
+| deflate6 | 201,160 | 19.2% | 35 | 673 | 33 | 642 |
+| deflate9 | 197,182 | 18.8% | 19 | 678 | 19 | 647 |
+| zstd1 | 242,999 | 23.2% | 619 | 1,208 | 591 | 1,152 |
+| zstd3 | 227,860 | 21.7% | 588 | 1,424 | 561 | 1,358 |
+| zstd9 | 222,392 | 21.2% | 92 | 1,532 | 88 | 1,461 |
+| zstd19 | 169,684 | 16.2% | 6 | 1,784 | 5 | 1,701 |
+| lz4 | 491,989 | 46.9% | 753 | 1,778 | 718 | 1,696 |
+| lz4hc | 282,916 | 27.0% | 28 | 2,460 | 26 | 2,346 |
 
 
 ### Encodings and checksum (medium payload, 8 KB)
@@ -175,9 +161,9 @@ From `EncodedSizes`:
 ./mvnw -q -pl codec-benchmarks -am package -DskipTests
 java --enable-native-access=ALL-UNNAMED -jar codec-benchmarks/target/benchmarks.jar \
     -rf json -rff results.json
-java -cp codec-benchmarks/target/benchmarks.jar org.jwcarman.codec.benchmarks.CompressionRatios
+java -cp codec-benchmarks/target/benchmarks.jar org.jwcarman.codec.benchmarks.CompressionRatios --json > ratios.json
 java -cp codec-benchmarks/target/benchmarks.jar org.jwcarman.codec.benchmarks.EncodedSizes
-python3 codec-benchmarks/render.py results.json     # the throughput tables
+python3 codec-benchmarks/render.py results.json ratios.json     # the throughput tables
 ```
 
 Run a subset by name (`CompressionBenchmark`) or parameter (`-p codec=zstd3`).

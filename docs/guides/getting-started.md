@@ -44,6 +44,12 @@ Backend choices: `codec-jackson` (Jackson 3.x), `codec-jackson2` (Jackson 2.x),
 see [Apache Fory](fory.md)). The Jackson backends also cover
 CBOR, Smile, YAML, and XML — see [Jackson Dataformats](dataformats.md).
 
+`codec-jsonb` depends on the Jakarta JSON Binding API only; bring a provider.
+Codec is tested against [Eclipse Yasson](https://github.com/eclipse-ee4j/yasson),
+the reference implementation. Apache Johnzon also works, with one difference
+worth knowing: it surfaces malformed input as JSON-P's `JsonParsingException`
+rather than wrapping it in `JsonbException` as the spec describes.
+
 ## Use it
 
 Inject the auto-configured `CodecFactory` and create codecs for your types:

@@ -33,7 +33,11 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
-/** Every compression transform, encode and decode, at each payload size. */
+/**
+ * Every compression transform, encode and decode, at each payload size. Deflate is benchmarked at
+ * levels 1, 6 (the default) and 9; gzip shares its engine and adds only framing, so it appears at
+ * the default level alone.
+ */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 3, time = 1)
@@ -42,11 +46,24 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(Scope.Benchmark)
 public class CompressionBenchmark {
 
-  @Param({"gzip", "deflate", "zstd1", "zstd3", "zstd19", "lz4", "lz4hc"})
+  @Param({
+    "gzip",
+    "deflate1",
+    "deflate6",
+    "deflate9",
+    "zstd1",
+    "zstd3",
+    "zstd9",
+    "zstd19",
+    "lz4",
+    "lz4hc"
+  })
   public String codec;
 
   @Param({"small", "medium", "large"})
   public String payload;
+
+  private static final long MAX_DECODED = 64L * 1024 * 1024;
 
   private Codec<byte[]> transform;
   private byte[] plain;
@@ -61,9 +78,12 @@ public class CompressionBenchmark {
   public static Codec<byte[]> transform(String name) {
     return switch (name) {
       case "gzip" -> new GzipCodec();
-      case "deflate" -> new DeflateCodec();
+      case "deflate1" -> new DeflateCodec(1, MAX_DECODED);
+      case "deflate6" -> new DeflateCodec(6, MAX_DECODED);
+      case "deflate9" -> new DeflateCodec(9, MAX_DECODED);
       case "zstd1" -> new ZstdCodec(1);
       case "zstd3" -> new ZstdCodec(3);
+      case "zstd9" -> new ZstdCodec(9);
       case "zstd19" -> new ZstdCodec(19);
       case "lz4" -> new Lz4Codec();
       case "lz4hc" -> Lz4Codec.highCompression();

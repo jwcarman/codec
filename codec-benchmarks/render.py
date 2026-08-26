@@ -24,7 +24,7 @@ import sys
 from collections import defaultdict
 
 SIZES = {"small": 104, "medium": 8338, "large": 1048576}
-ORDER = ["gzip", "deflate", "zstd1", "zstd3", "zstd19", "lz4", "lz4hc"]
+ORDER = ["gzip", "deflate1", "deflate6", "deflate9", "zstd1", "zstd3", "zstd9", "zstd19", "lz4", "lz4hc"]
 
 
 def load(path):
@@ -46,24 +46,26 @@ def mbps(v, payload):
 
 def main(path):
     rows = load(path)
-    print("### Compression\n")
-    print("| Transform | Payload | encode ops/s | encode MB/s | decode ops/s | decode MB/s |")
-    print("|---|---|---:|---:|---:|---:|")
     for payload in ["small", "medium", "large"]:
+        print(f"### Compression — {payload} payload ({SIZES[payload]:,} bytes)\n")
+        print("| Transform | encode ops/s | encode MB/s | decode ops/s | decode MB/s |")
+        print("|---|---:|---:|---:|---:|")
         for codec in ORDER:
             r = rows[("CompressionBenchmark", (("codec", codec), ("payload", payload)))]
-            print(f"| {codec} | {payload} | {ops(r['encode'])} | {mbps(r['encode'], payload)} "
+            print(f"| {codec} | {ops(r['encode'])} | {mbps(r['encode'], payload)} "
                   f"| {ops(r['decode'])} | {mbps(r['decode'], payload)} |")
+        print()
     print("\n### Encodings and checksum (medium payload, 8 KB)\n")
     print("| Transform | encode ops/s | decode ops/s |\n|---|---:|---:|")
     for codec in ["base64", "base32", "hex", "crc32c"]:
         r = rows[("EncodingBenchmark", (("codec", codec),))]
         print(f"| {codec} | {ops(r['encode'])} | {ops(r['decode'])} |")
-    print("\n### Backends (one small record)\n")
-    print("| Backend | encode ops/s | decode ops/s |\n|---|---:|---:|")
-    for backend in ["jackson3", "jackson2", "gson", "jsonb", "fory", "protobuf"]:
-        r = rows[("BackendBenchmark", (("backend", backend),))]
-        print(f"| {backend} | {ops(r['encode'])} | {ops(r['decode'])} |")
+    for payload, label in [("small", "one small record"), ("medium", "an order with 100 line items")]:
+        print(f"\n### Backends — {label}\n")
+        print("| Backend | encode ops/s | decode ops/s |\n|---|---:|---:|")
+        for backend in ["jackson3", "jackson2", "gson", "jsonb", "fory", "protobuf"]:
+            r = rows[("BackendBenchmark", (("backend", backend), ("payload", payload)))]
+            print(f"| {backend} | {ops(r['encode'])} | {ops(r['decode'])} |")
     print("\n### Envelope encryption\n")
     print("| Strategy | Payload | encode ops/s | decode ops/s |\n|---|---|---:|---:|")
     for payload in ["small", "medium"]:

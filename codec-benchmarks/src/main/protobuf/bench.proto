@@ -27,3 +27,17 @@ message PersonProto {
   bool active = 3;
   string email = 4;
 }
+
+message LineItemProto {
+  string sku = 1;
+  string description = 2;
+  int32 quantity = 3;
+  double unit_price = 4;
+}
+
+message OrderProto {
+  string id = 1;
+  string customer = 2;
+  bool paid = 3;
+  repeated LineItemProto items = 4;
+}

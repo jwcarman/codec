@@ -26,6 +26,7 @@ import org.jwcarman.codec.jackson2.Jackson2CodecFactory;
 import org.jwcarman.codec.jsonb.JsonbCodecFactory;
 import org.jwcarman.codec.protobuf.ProtobufCodecFactory;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.CodecFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -39,8 +40,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 /**
- * Every backend encoding and decoding the same record. Protobuf serializes its generated message
- * rather than the record — the closest like-for-like comparison the format allows.
+ * Every backend encoding and decoding the same value: a small record and a medium object graph.
+ * Protobuf serializes its generated messages rather than the records — the closest like-for-like
+ * comparison the format allows.
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -53,36 +55,45 @@ public class BackendBenchmark {
   @Param({"jackson3", "jackson2", "gson", "jsonb", "fory", "protobuf"})
   public String backend;
 
+  @Param({"small", "medium"})
+  public String payload;
+
   private Supplier<byte[]> encoder;
   private Supplier<Object> decoder;
 
   @Setup
   public void setup() {
+    boolean medium = "medium".equals(payload);
     if ("protobuf".equals(backend)) {
-      BenchProtos.PersonProto proto =
-          BenchProtos.PersonProto.newBuilder()
-              .setName(Person.SAMPLE.name())
-              .setAge(Person.SAMPLE.age())
-              .setActive(Person.SAMPLE.active())
-              .setEmail(Person.SAMPLE.email())
-              .build();
-      bind(new ProtobufCodecFactory().create(BenchProtos.PersonProto.class), proto);
+      ProtobufCodecFactory factory = new ProtobufCodecFactory();
+      if (medium) {
+        bind(factory.create(BenchProtos.OrderProto.class), Protos.order(Order.SAMPLE));
+      } else {
+        bind(factory.create(BenchProtos.PersonProto.class), Protos.person(Person.SAMPLE));
+      }
+    } else if (medium) {
+      bind(factory(backend).create(Order.class), Order.SAMPLE);
     } else {
-      Codec<Person> people =
-          switch (backend) {
-            case "jackson3" ->
-                new JacksonCodecFactory(new tools.jackson.databind.ObjectMapper())
-                    .create(Person.class);
-            case "jackson2" ->
-                new Jackson2CodecFactory(new com.fasterxml.jackson.databind.ObjectMapper())
-                    .create(Person.class);
-            case "gson" -> new GsonCodecFactory(new Gson()).create(Person.class);
-            case "jsonb" -> new JsonbCodecFactory(JsonbBuilder.create()).create(Person.class);
-            case "fory" -> ForyCodecFactory.of(Person.class).create(Person.class);
-            default -> throw new IllegalArgumentException(backend);
-          };
-      bind(people, Person.SAMPLE);
+      bind(factory(backend).create(Person.class), Person.SAMPLE);
     }
+  }
+
+  /**
+   * Builds a backend's factory by benchmark name; Fory has the benchmark types registered.
+   *
+   * @param backend the {@code @Param} value
+   * @return the factory
+   */
+  public static CodecFactory factory(String backend) {
+    return switch (backend) {
+      case "jackson3" -> new JacksonCodecFactory(new tools.jackson.databind.ObjectMapper());
+      case "jackson2" ->
+          new Jackson2CodecFactory(new com.fasterxml.jackson.databind.ObjectMapper());
+      case "gson" -> new GsonCodecFactory(new Gson());
+      case "jsonb" -> new JsonbCodecFactory(JsonbBuilder.create());
+      case "fory" -> ForyCodecFactory.of(Person.class, Order.class, Order.LineItem.class);
+      default -> throw new IllegalArgumentException(backend);
+    };
   }
 
   private <T> void bind(Codec<T> codec, T value) {

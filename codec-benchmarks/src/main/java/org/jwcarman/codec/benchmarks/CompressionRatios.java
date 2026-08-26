@@ -39,7 +39,18 @@ public final class CompressionRatios {
     out.append("\n|---|");
     payloads.forEach(p -> out.append("---|"));
     out.append('\n');
-    for (String name : List.of("gzip", "deflate", "zstd1", "zstd3", "zstd19", "lz4", "lz4hc")) {
+    for (String name :
+        List.of(
+            "gzip",
+            "deflate1",
+            "deflate6",
+            "deflate9",
+            "zstd1",
+            "zstd3",
+            "zstd9",
+            "zstd19",
+            "lz4",
+            "lz4hc")) {
       Codec<byte[]> transform = CompressionBenchmark.transform(name);
       out.append("| ").append(name).append(" |");
       for (String payload : payloads) {

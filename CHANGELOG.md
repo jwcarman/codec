@@ -8,9 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `codec-benchmarks`: JMH benchmarks for every compression transform, encoding,
-  backend, and the envelope-encryption strategies (not published), with the
-  results and a benchmarks page in the docs
+- `codec-benchmarks`: JMH benchmarks for every compression transform (deflate
+  and zstd at several levels), encoding, backend (a small record and a
+  100-item object graph), and the envelope-encryption strategies (not
+  published), with the results and a benchmarks page in the docs
 
 ### Documentation
 - Compression claims corrected against the benchmarks: the JDK codecs are

@@ -53,11 +53,11 @@ it text-safe, and who else has to read it?
 
 | You need | Reach for | Because |
 |----------|-----------|---------|
-| Smaller payloads, no strong preference | `ZstdCodec` | Best ratio-for-speed of any option; the modern default for caches and queues |
+| Smaller payloads, no strong preference | `ZstdCodec` | Best ratio-for-speed of any option on medium and large payloads; the modern default for caches and queues |
 | The fastest possible compression | `Lz4Codec` | Compresses and decompresses at memory-bandwidth rates; ratio is the trade |
-| A better LZ4 ratio, same decode speed | `Lz4Codec.highCompression()` | LZ4-HC compresses slower but decodes just as fast — good when writes are rare and reads are hot |
+| The fastest possible decode | `Lz4Codec.highCompression()` | LZ4-HC compresses much slower (slower than gzip) but decodes fastest of anything — for write-rarely, read-constantly data |
 | Interop with gzip tooling, HTTP, or files | `GzipCodec` | Everything reads gzip; the format carries a CRC |
-| Many small payloads, no native deps | `DeflateCodec` | Same algorithm as gzip minus ~12 bytes of framing; JDK-native |
+| Many small payloads, no native deps | `DeflateCodec` | Same algorithm as gzip minus ~12 bytes of framing; JDK-native — and on payloads under a few hundred bytes the JDK codecs are actually the fastest |
 | Bytes in a text column, JSON string, or header | `Base64Codec.basic()` | The universal text encoding; 33% overhead |
 | Bytes in a URL, filename, or token | `Base64Codec.urlSafe()` / `urlSafeWithoutPadding()` | No `/`, `+`, or `=` to escape |
 | A value a person will type or read aloud | `Base32Codec.standard()` | No lower case, no symbols, and no `0`/`1`/`8`/`9` — the confusable digits; the encoding used for TOTP secrets |
@@ -66,7 +66,8 @@ it text-safe, and who else has to read it?
 | Corruption detection on an uncompressed, unencrypted payload | `ChecksumCodec.crc32c()` | Four bytes; rejects bit rot and truncation before a parser sees them. Compressed frames and encrypted payloads already have this |
 | The bytes *are* the text | `StringCodec.utf8()` | Raw text, not a JSON string; strict decoding; a backend-free base for `xmap` |
 
-The compression rows all carry the decompression-bomb cap described below.
+The compression rows all carry the decompression-bomb cap described below;
+the [benchmarks](../benchmarks.md) back the speed claims.
 The `codec-transforms` transforms are pure JDK; `ZstdCodec` and `Lz4Codec`
 live in `codec-zstd` and `codec-lz4` because each needs a library with native
 code. Combine freely — compress first, encode last, and put
@@ -80,7 +81,7 @@ Two transforms ship in `codec-transforms`; the ones that need a dependency get t
 |-----------|--------|--------|-------------|
 | `GzipCodec` | `codec-transforms` | gzip (RFC 1952) | Interoperating with external gzip tooling |
 | `DeflateCodec` | `codec-transforms` | zlib (RFC 1950) | High volumes of small payloads — ~12 bytes less framing |
-| `ZstdCodec` | `codec-zstd` | Zstandard (RFC 8878) | The default choice for caches and queues: faster than gzip at every level and usually smaller |
+| `ZstdCodec` | `codec-zstd` | Zstandard (RFC 8878) | The default choice for caches and queues: an order of magnitude faster than gzip on anything bigger than a few hundred bytes, at a similar ratio |
 | `Lz4Codec` | `codec-lz4` | LZ4 frame | When speed is everything: hot caches and high-volume streams; also interoperates with Kafka and the `lz4` CLI |
 
 `ZstdCodec` lives in `codec-zstd` because it is backed by `zstd-jni`, which

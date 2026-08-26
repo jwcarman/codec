@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `codec-benchmarks`: JMH benchmarks for every compression transform, encoding,
+  backend, and the envelope-encryption strategies (not published), with the
+  results and a benchmarks page in the docs
+
+### Documentation
+- Compression claims corrected against the benchmarks: the JDK codecs are
+  fastest on payloads under a few hundred bytes, zstd's default level is not
+  smaller than gzip on prose, and LZ4-HC is a decode-side optimisation
+
 ## [0.7.0] - 2026-08-26
 
 ### Breaking changes

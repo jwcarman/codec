@@ -159,6 +159,8 @@ Codec<Person> codec =
 | LZ4 | LZ4 frame compression transform | `codec-lz4` |
 | Spring Data Redis | `RedisSerializer` adapter, cache auto-configuration | `codec-spring-data-redis` |
 | Kafka | `Serializer`, `Deserializer`, and `Serde` adapters | `codec-kafka` |
+
+Speed and ratio claims are backed by [benchmarks](https://jwcarman.github.io/codec/benchmarks/).
 | Auto-configure | Spring Boot auto-configuration for all backends | `codec-autoconfigure` |
 | Starter | Spring Boot starter (core + auto-configure) | `codec-spring-boot-starter` |
 

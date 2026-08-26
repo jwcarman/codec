@@ -36,10 +36,11 @@ import org.jwcarman.codec.transform.compress.CompressionStreamCodec;
  * Frames carry a content checksum, which catches corruption on decode.
  *
  * <p>The default compressor is the fast one; {@link #highCompression()} selects LZ4-HC, which
- * compresses several times slower for a noticeably better ratio while decompressing at the same
- * speed. Backed by {@code lz4-java}, which ships native libraries for the common platforms and
- * falls back to pure Java elsewhere; that dependency is why this transform lives in its own module
- * rather than {@code codec-transforms}.
+ * compresses far slower (an order of magnitude or more — slower than gzip) for a noticeably better
+ * ratio, and decompresses fastest of all: a write-rarely, read-constantly trade. Backed by {@code
+ * lz4-java}, which ships native libraries for the common platforms and falls back to pure Java
+ * elsewhere; that dependency is why this transform lives in its own module rather than {@code
+ * codec-transforms}.
  *
  * <p>Like the built-in compression transforms, decoding is capped: a payload that would expand
  * beyond the configured maximum is rejected before it is fully inflated, which defends against

@@ -25,8 +25,8 @@ import org.jwcarman.codec.transform.compress.CompressionStreamCodec;
 
 /**
  * Zstandard (RFC 8878) compression as a {@code Codec<byte[]>} transform, for use with {@code
- * Codec.andThen}. Faster than gzip at every level and smaller at most, which makes it the usual
- * choice for cache entries and queue payloads.
+ * Codec.andThen}. An order of magnitude faster than gzip on payloads beyond a few hundred bytes at
+ * a comparable ratio, which makes it the usual choice for cache entries and queue payloads.
  *
  * <p>Backed by {@code zstd-jni}, which ships native libraries for the common platforms; that is why
  * this transform lives in its own module rather than {@code codec-core}.

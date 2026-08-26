@@ -86,5 +86,6 @@ nav:
       - Spring Boot: guides/spring-boot.md
       - Spring Data Redis: guides/redis.md
       - Apache Kafka: guides/kafka.md
+  - Benchmarks: benchmarks.md
   - Reference:
       - Changelog: https://github.com/jwcarman/codec/blob/main/CHANGELOG.md

@@ -114,6 +114,7 @@
         <module>codec-fory</module>
         <module>codec-autoconfigure</module>
         <module>codec-spring-boot-starter</module>
+        <module>codec-benchmarks</module>
     </modules>
 
     <dependencyManagement>

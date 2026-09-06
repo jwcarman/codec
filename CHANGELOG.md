@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `codec-versioned`: `VersionedCodec` prefixes each payload with a magic and
+  version header and dispatches decoding on it, so a storage strategy can change
+  without a flag day — old versions stay registered and readable while an
+  explicit write version makes a two-phase rollout possible
 - `codec-benchmarks`: JMH benchmarks for every compression transform (deflate
   and zstd at several levels), encoding, backend (a small record and a
   100-item object graph), and the envelope-encryption strategies (not

@@ -216,6 +216,72 @@ directions and everything else is delegated.
 Codec<Person> codec = factory.create(Person.class).andThen(new ZstdCodec()).nullSafe();
 ```
 
+## Versioning the format
+
+Bare codec output is not self-describing: bytes written by Jackson look exactly
+like bytes written by Fory. Change backends — or add compression, or change it —
+and everything already stored becomes unreadable the moment the new code
+deploys.
+
+`codec-versioned` fixes that by writing a three-byte header ahead of the
+payload, `0xC0 0xDC` followed by an unsigned version, and dispatching decoding
+on it:
+
+```java
+Codec<Person> codec = VersionedCodec.<Person>builder()
+        .version(1, jacksonFactory.create(Person.class))
+        .version(2, foryFactory.create(Person.class).andThen(new ZstdCodec()))
+        .writing(2)
+        .build();
+```
+
+Keep old versions registered and old data stays readable; nothing needs
+rewriting.
+
+The write version is explicit rather than "newest wins", and that is the point.
+Deploy with version 2 registered but still `.writing(1)`, let it reach every
+instance, then flip to `.writing(2)` in a second deploy. No instance is ever
+handed data it cannot read. Data written by a version the reader does not know
+raises `UnknownVersionException`, which carries the offending version — during a
+rollout that means "written by a newer deploy", a condition you may want to
+route or retry rather than treat as corruption. A buffer that is not versioned
+at all raises the parent `VersionedFormatException`.
+
+Because the builder is generic over `Codec<T>`, versioning a *transform* is the
+`T = byte[]` case:
+
+```java
+Codec<byte[]> compression = VersionedCodec.<byte[]>builder()
+        .version(1, new GzipCodec())
+        .version(2, new ZstdCodec())
+        .writing(2)
+        .build();
+
+Codec<Person> codec = factory.create(Person.class).andThen(compression);
+```
+
+### Where to put it in the chain
+
+Anything layered *outside* a versioned codec has to be undone before the header
+can be read, so it is frozen for the life of the store.
+
+```java
+// header outermost — backend, transforms, everything inside may differ per version
+VersionedCodec.<Person>builder()
+        .version(1, jackson.create(Person.class).andThen(new GzipCodec()))
+        .version(2, fory.create(Person.class).andThen(new ZstdCodec()))
+        .writing(2)
+        .build();
+
+// header inside gzip — gzip can now never change
+versioned.andThen(new GzipCodec());
+```
+
+The second form is legitimate when the outer layer carries its own versioning —
+`EnvelopeCodec` does, with its own magic and version byte — but make it a
+deliberate choice. The rule: **put whatever you might want to change inside the
+versioned codec, and only permanent commitments outside it.**
+
 ## Custom transforms
 
 For stream-based compression libraries (zstd, lz4, xz, ...), extend

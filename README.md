@@ -157,12 +157,26 @@ Codec<Person> codec =
         .andThen(new AesCodec(key)); // your own Codec<byte[]>
 ```
 
+To change your storage strategy later without rewriting stored data, wrap the
+codec in a versioned one (`codec-versioned`). It writes a 3-byte header naming
+the version that produced each payload and dispatches on it when reading, so old
+data stays readable while new data is written by the new strategy:
+
+```java
+Codec<Person> codec = VersionedCodec.<Person>builder()
+        .version(1, jacksonFactory.create(Person.class))
+        .version(2, foryFactory.create(Person.class).andThen(new ZstdCodec()))
+        .writing(2)   // deploy readers first, then flip this
+        .build();
+```
+
 ## Modules
 
 | Module | Backend | Artifact |
 |--------|---------|----------|
 | Core | SPI interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
 | Transforms | Zero-dependency byte transforms: gzip, deflate, Base64, hex | `codec-transforms` |
+| Versioned | Format versioning: a version header that lets the storage strategy change | `codec-versioned` |
 | Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
 | Jackson 2 | Jackson 2.x JSON (`com.fasterxml.jackson`) | `codec-jackson2` |
 | Gson | Gson JSON | `codec-gson` |

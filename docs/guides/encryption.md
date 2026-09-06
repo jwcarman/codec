@@ -237,7 +237,7 @@ big-endian; length fields are unsigned 16-bit values.
 | 8+k+w   | nonce                              | 12    |
 | 20+k+w  | ciphertext ‖ GCM tag               | n+16  |
 
-Overhead is `36 + k + w` bytes — roughly 90 bytes for a JCE provider with a
+Overhead is `36 + k + w` bytes — roughly 80 bytes for a JCE provider with a
 short keyId, and up to ~295 bytes for a KMS ARN plus a 184-byte wrapped DEK.
 On small, frequent messages the wrapped DEK dominates that overhead, which is
 part of why `BoundedDataKeyStrategy` and provider-side unwrap caching exist.

@@ -91,7 +91,7 @@ tiny and pushes the backend decision to the classpath.
 | Module | What it is |
 |--------|------------|
 | `codec-core` | The SPI: `Codec`, `CodecFactory`, `TypeRef` — nothing else |
-| `codec-transforms` | Zero-dependency `Codec<byte[]>` transforms: gzip, deflate, Base64, hex |
+| `codec-transforms` | Zero-dependency `Codec<byte[]>` transforms: gzip, deflate, Base64, Base32, hex, checksum, text |
 | `codec-versioned` | Format versioning: a version header that lets the storage strategy change |
 | `codec-jackson` | Jackson 3.x (`tools.jackson`) JSON backend |
 | `codec-jackson2` | Jackson 2.x (`com.fasterxml.jackson`) JSON backend |

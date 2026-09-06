@@ -9,7 +9,7 @@
 </dependency>
 ```
 
-The starter bundles `codec-core` and `codec-autoconfigure`. Add one backend
+The starter bundles `codec-core`, `codec-transforms`, and `codec-autoconfigure`. Add one backend
 module alongside it, and a `CodecFactory` bean is registered for that backend.
 The backend modules themselves contain no Spring code — all auto-configuration
 lives in `codec-autoconfigure`.

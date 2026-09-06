@@ -100,7 +100,7 @@ new DeflateCodec(Deflater.BEST_COMPRESSION, maxDecodedSize);
 
 ### Decompression-bomb protection
 
-All three transforms refuse to decode payloads that expand beyond a cap — 64 MiB
+All four transforms refuse to decode payloads that expand beyond a cap — 64 MiB
 by default — throwing `IllegalStateException` instead of exhausting memory on
 hostile input. Pass a byte limit to the constructor to tune it:
 
@@ -225,8 +225,8 @@ deploys.
 
 `codec-versioned` fixes that by writing a three-byte header ahead of the
 payload, `0xC0 0xDC` followed by an unsigned version, and dispatching decoding
-on it. It lives in its own module (the starter includes it; without Spring,
-add it next to `codec-core`):
+on it. It lives in its own module, which the starter does not include — add it
+next to `codec-core`:
 
 ```xml
 <dependency>

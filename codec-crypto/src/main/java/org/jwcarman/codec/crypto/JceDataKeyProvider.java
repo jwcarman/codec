@@ -31,8 +31,8 @@ import javax.crypto.spec.SecretKeySpec;
  *
  * <p>The constructor takes a {@code Map<String, SecretKey>} of AES-256 KEKs keyed by id, plus the
  * id of the current wrapping KEK. Generated data-encryption keys (DEKs) are AES-256, drawn from
- * {@link SecureRandom}, and wrapped with AES key-wrap ({@code AESWrap}, RFC 3394): unlike GCM,
- * AES-KW needs no nonce, so wrapping the same DEK under the same KEK always produces the same
+ * {@link SecureRandom}, and wrapped with AES key-wrap ({@code AES/KW/NoPadding}, RFC 3394): unlike
+ * GCM, AES-KW needs no nonce, so wrapping the same DEK under the same KEK always produces the same
  * ciphertext, and its integrity check value (ICV) causes unwrap of a tampered or foreign-key blob
  * to fail rather than silently return garbage key material.
  *
@@ -53,8 +53,8 @@ import javax.crypto.spec.SecretKeySpec;
  * message wrapped under it has been re-encrypted.
  *
  * <p>The two public constructors cover the simple default case: a new {@link SecureRandom}
- * instance, or a caller-supplied one as a test seam, with {@code AESWrap} resolved via the JDK's
- * default provider lookup. Use {@link #builder(String, Map)} instead when a {@link
+ * instance, or a caller-supplied one as a test seam, with {@code AES/KW/NoPadding} resolved via the
+ * JDK's default provider lookup. Use {@link #builder(String, Map)} instead when a {@link
  * java.security.Provider} needs to be selected explicitly — for example a FIPS-validated provider
  * pinned to this instance rather than installed globally; the builder also exposes the {@link
  * SecureRandom} seam via {@code secureRandom(SecureRandom)}.
@@ -83,7 +83,8 @@ public final class JceDataKeyProvider implements DataKeyProvider {
    *
    * @param currentKeyId the id of the KEK, present in {@code keks}, used to wrap new data keys
    * @param keks the AES-256 key-encryption keys this provider trusts, keyed by id
-   * @throws IllegalStateException if the default JCE provider cannot supply the AESWrap transform
+   * @throws IllegalStateException if the default JCE provider cannot supply the {@code
+   *     AES/KW/NoPadding} transform
    */
   public JceDataKeyProvider(String currentKeyId, Map<String, SecretKey> keks) {
     this(currentKeyId, keks, new SecureRandom(), null);
@@ -95,7 +96,8 @@ public final class JceDataKeyProvider implements DataKeyProvider {
    * @param currentKeyId the id of the KEK, present in {@code keks}, used to wrap new data keys
    * @param keks the AES-256 key-encryption keys this provider trusts, keyed by id
    * @param random the source of randomness for generated data keys
-   * @throws IllegalStateException if the default JCE provider cannot supply the AESWrap transform
+   * @throws IllegalStateException if the default JCE provider cannot supply the {@code
+   *     AES/KW/NoPadding} transform
    */
   public JceDataKeyProvider(String currentKeyId, Map<String, SecretKey> keks, SecureRandom random) {
     this(currentKeyId, keks, random, null);
@@ -234,9 +236,10 @@ public final class JceDataKeyProvider implements DataKeyProvider {
     }
 
     /**
-     * Sets the {@link Provider} used to look up the {@code AESWrap} {@link Cipher} for wrapping and
-     * unwrapping data keys, so a FIPS-validated or otherwise pinned provider can be selected per
-     * provider instance instead of being installed as the JVM's globally highest-priority provider.
+     * Sets the {@link Provider} used to look up the {@code AES/KW/NoPadding} {@link Cipher} for
+     * wrapping and unwrapping data keys, so a FIPS-validated or otherwise pinned provider can be
+     * selected per provider instance instead of being installed as the JVM's globally
+     * highest-priority provider.
      *
      * <p>Resolved once at {@link #build()} time: if the provider cannot supply the transform,
      * {@code build()} throws {@link IllegalStateException} immediately rather than letting the
@@ -254,7 +257,8 @@ public final class JceDataKeyProvider implements DataKeyProvider {
      * Builds the {@link JceDataKeyProvider}.
      *
      * @return a new {@link JceDataKeyProvider}
-     * @throws IllegalStateException if a provider was set and cannot supply {@code AESWrap}
+     * @throws IllegalStateException if a provider was set and cannot supply {@code
+     *     AES/KW/NoPadding}
      */
     public JceDataKeyProvider build() {
       return new JceDataKeyProvider(currentKeyId, keks, random, provider);

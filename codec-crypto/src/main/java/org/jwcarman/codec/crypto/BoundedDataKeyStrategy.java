@@ -52,8 +52,11 @@ import java.util.function.LongSupplier;
  * <p>In environments where a running VM or container may be snapshotted and cloned (e.g. certain
  * serverless or sandboxed execution platforms), a clone can resume with an identical cached DEK and
  * duplicated {@link java.security.SecureRandom} state, which can cause nonces to repeat under that
- * shared key. Consumers operating in such environments should prefer {@link DirectDataKeyStrategy}
- * instead, or explicitly roll this strategy's key on resume from a snapshot.
+ * shared key. {@link DirectDataKeyStrategy} does not remove the hazard when the data key comes from
+ * {@link JceDataKeyProvider}, whose DEK is drawn from the same cloned RNG: both clones then produce
+ * the same key and the same nonce. The mitigations are a KMS-backed provider (DEK entropy from
+ * outside the process), reseeding or replacing the {@code SecureRandom} and rolling this strategy's
+ * key on resume, or a platform that reseeds on VM-generation change.
  *
  * <h2>Key retirement</h2>
  *

@@ -87,6 +87,50 @@ class OperationalFailureTest {
     };
   }
 
+  /** An AES key whose {@code getEncoded()} returns its own backing array, which the API allows. */
+  private static SecretKey aliasingKey(byte[] material) {
+    return new SecretKey() {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      public String getAlgorithm() {
+        return "AES";
+      }
+
+      @Override
+      public String getFormat() {
+        return "RAW";
+      }
+
+      @Override
+      public byte[] getEncoded() {
+        return material;
+      }
+    };
+  }
+
+  /** A key whose accessors fail, as a non-extractable HSM key can. */
+  private static SecretKey throwingKey() {
+    return new SecretKey() {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      public String getAlgorithm() {
+        throw new java.security.ProviderException("key handle revoked");
+      }
+
+      @Override
+      public String getFormat() {
+        return null;
+      }
+
+      @Override
+      public byte[] getEncoded() {
+        return null;
+      }
+    };
+  }
+
   @Nested
   class Provider_description {
     @Test
@@ -227,23 +271,79 @@ class OperationalFailureTest {
     }
 
     @Test
-    void an_opaque_unwrapped_key_passes_validation_and_is_handed_to_the_cipher() {
-      // Its length cannot be checked, so validation trusts it; the JDK provider then rejects the
-      // keyless material, which surfaces as the uniform cryptographic rejection. This is the
-      // HSM/KMS path: a non-extractable data key must get past the check.
+    void
+        an_opaque_unwrapped_key_passes_validation_and_its_rejection_by_the_cipher_is_not_a_rejection_of_the_data() {
+      // Its length cannot be checked, so validation trusts it; the JDK provider then refuses the
+      // keyless material at cipher init. That happened before any ciphertext was consulted, so it
+      // is a key-infrastructure failure. This is the HSM/KMS path: a non-extractable data key must
+      // get past the check, and a provider mismatch must never quarantine records.
       EnvelopeCodec codec = EnvelopeCodec.builder(unwrappingTo(opaqueAesKey())).build();
       byte[] envelope = codec.encode(PLAINTEXT);
 
-      assertThatExceptionOfType(DecryptionException.class)
+      assertThatExceptionOfType(KeyAccessException.class)
           .isThrownBy(() -> codec.decode(envelope))
-          .withMessage("Unable to decrypt data");
+          .withMessage("Data key is unusable with the cipher provider")
+          .withCauseInstanceOf(java.security.InvalidKeyException.class);
     }
 
-    // PIT equivalent mutant (spec 006 §2.3): VoidMethodCallMutator removing the Arrays.fill that
-    // zeroes the getEncoded() copy in EnvelopeCodec.aes256Problem survives. The copy is a local
-    // that nothing else references once the method returns, so no test through the public API can
-    // observe whether it was zeroed; the only way to kill it would be a SecretKey that hands out
-    // its own internal array, which would test that the codec destroys an array it does not own.
+    @Test
+    void a_key_whose_accessors_throw_is_a_key_access_failure_on_decode() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(unwrappingTo(throwingKey())).build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(KeyAccessException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .withMessage("Data key could not be inspected")
+          .withCauseInstanceOf(java.security.ProviderException.class);
+    }
+
+    @Test
+    void a_key_whose_accessors_throw_is_an_encryption_failure_on_encode() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(providerOf(throwingKey())).build();
+
+      assertThatExceptionOfType(EncryptionException.class)
+          .isThrownBy(() -> codec.encode(PLAINTEXT))
+          .withMessage("Data key could not be inspected")
+          .withCauseInstanceOf(java.security.ProviderException.class);
+    }
+
+    @Test
+    void an_admission_predicate_that_throws_is_a_key_access_failure() {
+      EnvelopeCodec writer = EnvelopeCodec.builder(providerOf(aes256())).build();
+      byte[] envelope = writer.encode(PLAINTEXT);
+      EnvelopeCodec reader =
+          EnvelopeCodec.builder(providerOf(aes256()))
+              .allowedKeyIds(
+                  keyId -> {
+                    throw new IllegalStateException("policy service down");
+                  })
+              .build();
+
+      assertThatExceptionOfType(KeyAccessException.class)
+          .isThrownBy(() -> reader.decode(envelope))
+          .withMessage("Admission check failed")
+          .withCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void a_key_that_exposes_its_backing_array_is_sealed_under_its_real_material() {
+      // Key.getEncoded() does not promise a copy. A codec that zeroed what it was handed before
+      // sealing would encrypt under the all-zero key. (SunJCE's own GCM decrypt path zeroes the
+      // array it gets from getEncoded() after key expansion, so the material is not expected to
+      // survive a decode; the property that matters is what the ciphertext was sealed under.)
+      byte[] material = new byte[32];
+      Arrays.fill(material, (byte) 5);
+      EnvelopeCodec codec = EnvelopeCodec.builder(providerOf(aliasingKey(material))).build();
+
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThat(material).containsOnly((byte) 5);
+      EnvelopeCodec zeroKeyReader =
+          EnvelopeCodec.builder(providerOf(new SecretKeySpec(new byte[32], "AES"))).build();
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> zeroKeyReader.decode(envelope));
+      assertThat(codec.decode(envelope)).isEqualTo(PLAINTEXT);
+    }
 
     /** A provider that issues a valid AES-256 data key but unwraps to whatever it is told. */
     private static DataKeyProvider unwrappingTo(SecretKey unwrapped) {

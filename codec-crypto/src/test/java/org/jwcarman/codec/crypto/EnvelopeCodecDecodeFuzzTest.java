@@ -22,9 +22,9 @@ import com.code_intelligence.jazzer.junit.FuzzTest;
  * (regression mode); with JAZZER_FUZZ=1 (the {@code fuzz} profile) it fuzzes for real.
  *
  * <p>Kept in its own class, separate from {@link EnvelopeCodecMutationFuzzTest}, because
- * jazzer-junit 0.24.0 fuzzes only the first {@code @FuzzTest} method it finds per JVM; the {@code
- * fuzz} profile runs each class in its own forked JVM ({@code reuseForks=false}) so both targets
- * actually fuzz.
+ * jazzer-junit fuzzes only the first {@code @FuzzTest} method it finds per JVM; the {@code fuzz}
+ * profile runs each class in its own forked JVM ({@code reuseForks=false}) so both targets actually
+ * fuzz.
  */
 class EnvelopeCodecDecodeFuzzTest {
 

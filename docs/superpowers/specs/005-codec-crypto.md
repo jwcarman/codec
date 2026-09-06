@@ -116,9 +116,12 @@ encode/decode provider mismatch.
   default `System::nanoTime`; test seam, same pattern as the `secureRandom`
   builder seam). Bounds are enforced with atomics; a roll under contention may
   occur one message early, never late.
-  Documented caveat: in environments where a VM or container may be snapshotted
-  and cloned, duplicated `SecureRandom` state can repeat nonces under a shared
-  cached DEK — prefer `DirectDataKeyStrategy` there, or roll on resume.
+  Documented caveat (corrected 2026-09-06): in environments where a VM or
+  container may be snapshotted and cloned, duplicated `SecureRandom` state can
+  repeat nonces under a shared cached DEK. `DirectDataKeyStrategy` does not
+  remove the hazard under `JceDataKeyProvider`, whose DEK is drawn from the same
+  cloned RNG; the mitigations are a KMS-backed provider, reseeding on resume,
+  or a platform that reseeds on VM-generation change.
   A retired DEK is simply released to GC — no
   `destroy()` call and no close hook (OpenJDK's `SecretKeySpec` does not
   implement destruction, and destroying a key another thread may still be
@@ -235,7 +238,10 @@ breaking stored data.
 Known, documented limitation: GCM is not key-committing. Because the wrapped
 DEK travels with the message, a sophisticated attacker in multi-party scenarios
 can construct a ciphertext valid under two different DEKs ("invisible
-salamander"). The keyId allowlist mitigates the practical variants; algorithm
+salamander"). In this design the DEK is pinned per ciphertext by the
+deterministic AES-KW unwrap under a fixed KEK with its 64-bit ICV, so the attack
+needs two decryptors holding different KEKs under the same keyId (or a hostile
+provider); the keyId allowlist limits which KEKs are consulted at all. Algorithm
 id `0x02` is **reserved** for a key-committing suite (GCM plus key-commitment
 tag) should the threat model ever warrant it.
 

@@ -124,10 +124,14 @@ that cliff edge. A consumer that genuinely needs a higher cap implements
 
 !!! danger "Not safe under VM/container snapshot-and-clone"
     If your runtime may snapshot and clone a live process (some serverless or
-    sandboxed platforms do this), a clone can resume with an identical cached
-    DEK and duplicated `SecureRandom` state — which can make nonces repeat
-    under that shared key. Prefer `DirectDataKeyStrategy` in such environments,
-    or explicitly roll the strategy's key on resume from a snapshot.
+    sandboxed platforms do this), a clone can resume with duplicated
+    `SecureRandom` state. Under this strategy the clones share the cached DEK
+    and repeat its nonces. `DirectDataKeyStrategy` does not fix this when the
+    DEK comes from `JceDataKeyProvider`: it is drawn from the same cloned RNG,
+    so both clones generate the same DEK *and* the same nonce. Use a KMS-backed
+    provider (the DEK's entropy then comes from outside the process), reseed or
+    replace the `SecureRandom` and roll this strategy's key on resume, or rely
+    on a platform that reseeds on VM-generation change.
 
 ## Choosing a JCE provider
 
@@ -251,14 +255,14 @@ length error.
 AES-GCM, algorithm id `0x01`, is not key-committing: a sophisticated attacker
 who controls both the ciphertext and (in multi-party scenarios) more than one
 candidate key can in principle construct a single ciphertext that decrypts
-successfully under two different DEKs, each to different plaintext. Because
-the wrapped DEK travels with the message rather than being derived solely from
-a single trusted key, this module does not independently rule that out. The
-keyId allowlist (see [Key rotation](#key-rotation-via-keyids)) mitigates the
-practical variants of this attack by constraining which KEKs — and therefore
-which DEK-unwrap paths — decode will ever consider. Algorithm id `0x02` is
-reserved for a future key-committing suite, should a consumer's threat model
-require one.
+successfully under two different DEKs, each to different plaintext. In this
+design the DEK a decryptor uses is pinned by the deterministic AES-KW unwrap of
+the wrapped blob under a fixed KEK, with its 64-bit integrity check — so a
+salamander needs two decryptors holding *different* KEKs under the *same*
+keyId, plus a wrapped blob whose unwrap passes the check under both, or a
+provider that lies. The keyId allowlist limits which KEKs decode will consult
+at all. Algorithm id `0x02` is reserved for a future key-committing suite,
+should a consumer's threat model require one.
 
 ## Ordering and composition
 

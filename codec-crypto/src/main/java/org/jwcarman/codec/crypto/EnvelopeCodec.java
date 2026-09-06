@@ -138,9 +138,14 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     } catch (RuntimeException e) {
       throw new EncryptionException("Unable to acquire data key", e);
     }
-    String problem = aes256Problem(dataKey.key());
+    String problem;
+    try {
+      problem = aes256Problem(dataKey.key());
+    } catch (RuntimeException e) {
+      throw new EncryptionException("Data key could not be inspected", e);
+    }
     if (problem != null) {
-      throw new EncryptionException(problem);
+      throw new EncryptionException(problem, null);
     }
     byte[] keyIdBytes = dataKey.keyId().getBytes(StandardCharsets.UTF_8);
     byte[] wrapped = dataKey.wrapped();
@@ -197,7 +202,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       throw new DecryptionException("invalid wrapped key length: " + wrappedLength);
     }
     String keyId = new String(bytes, 6, keyIdLength, StandardCharsets.UTF_8);
-    if (!allowedKeyIds.test(keyId)) {
+    if (!admits(keyId)) {
       throw new DecryptionException("keyId is not allowed: " + sanitizeForMessage(keyId));
     }
     byte[] wrapped =
@@ -207,21 +212,53 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     // than handing whatever came back to a cipher whose algorithm id says AES-256-GCM. A key that
     // violates the contract says nothing about the ciphertext, so this is a key-infrastructure
     // failure, not a rejection of the data — a pipeline must not quarantine records over it.
-    String problem = aes256Problem(dek);
+    String problem = inspect(dek);
     if (problem != null) {
       throw new KeyAccessException("Data key provider returned an invalid key: " + problem);
     }
     byte[] nonce = Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
+    // Two stages, two meanings. Setting the cipher up touches only the key, the nonce (always 12
+    // bytes) and the AAD; if that fails the key is unusable with this JCE provider — an HSM key
+    // handed to SunJCE, say — which is a key-infrastructure failure. Only doFinal consults the
+    // ciphertext, so only its failure is the uniform cryptographic rejection.
+    Cipher cipher;
     try {
-      return gcmDecrypt(
-          jceProvider,
-          dek,
-          nonce,
-          Arrays.copyOf(bytes, headerLength),
-          aad,
-          Arrays.copyOfRange(bytes, headerLength, bytes.length));
+      cipher =
+          gcmCipher(
+              jceProvider,
+              Cipher.DECRYPT_MODE,
+              dek,
+              nonce,
+              Arrays.copyOf(bytes, headerLength),
+              aad);
+    } catch (GeneralSecurityException e) {
+      throw new KeyAccessException("Data key is unusable with the cipher provider", e);
+    }
+    try {
+      return cipher.doFinal(bytes, headerLength, bytes.length - headerLength);
     } catch (GeneralSecurityException e) {
       throw DecryptionException.cryptographic(e);
+    }
+  }
+
+  /** Runs the admission predicate; a predicate that throws is an infrastructure failure. */
+  private boolean admits(String keyId) {
+    try {
+      return allowedKeyIds.test(keyId);
+    } catch (RuntimeException e) {
+      throw new KeyAccessException("Admission check failed", e);
+    }
+  }
+
+  /**
+   * Inspects an unwrapped key; a key object whose accessors throw — a non-extractable HSM key
+   * raising {@code ProviderException}, say — is an infrastructure failure, not a rejection.
+   */
+  private static String inspect(SecretKey key) {
+    try {
+      return aes256Problem(key);
+    } catch (RuntimeException e) {
+      throw new KeyAccessException("Data key could not be inspected", e);
     }
   }
 
@@ -245,18 +282,13 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     if (encoded == null) {
       return null;
     }
-    try {
-      return encoded.length == DEK_LENGTH_BYTES
-          ? null
-          : "Data key length mismatch: expected 32 bytes";
-    } finally {
-      // getEncoded() hands back a fresh copy of the key material; do not leave it for the GC.
-      // This relies on getEncoded() returning a copy, which every JDK SecretKey implementation
-      // does (SecretKeySpec clones; PKCS#11 keys export a fresh array) though Key does not mandate
-      // it. The zeroing shortens one clone's lifetime and is not a security boundary: the
-      // SecretKey itself still holds the material.
-      Arrays.fill(encoded, (byte) 0);
-    }
+    // Deliberately not zeroed: Key.getEncoded() does not promise a copy, and a SecretKey that
+    // returns its backing array would have its material destroyed here — after which the message
+    // would be sealed under the all-zero key. The SecretKey holds the material regardless, so
+    // zeroing one more reference would buy nothing.
+    return encoded.length == DEK_LENGTH_BYTES
+        ? null
+        : "Data key length mismatch: expected 32 bytes";
   }
 
   private SecretKey unwrapDataKey(String keyId, byte[] wrapped) {
@@ -327,13 +359,8 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       byte[] extraAad,
       byte[] plaintext)
       throws GeneralSecurityException {
-    Cipher cipher = newCipher(GCM_TRANSFORM, provider);
-    cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
-    cipher.updateAAD(headerAad);
-    if (extraAad != null) {
-      cipher.updateAAD(extraAad);
-    }
-    return cipher.doFinal(plaintext);
+    return gcmCipher(provider, Cipher.ENCRYPT_MODE, key, nonce, headerAad, extraAad)
+        .doFinal(plaintext);
   }
 
   /**
@@ -359,13 +386,24 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       byte[] extraAad,
       byte[] ciphertext)
       throws GeneralSecurityException {
+    return gcmCipher(provider, Cipher.DECRYPT_MODE, key, nonce, headerAad, extraAad)
+        .doFinal(ciphertext);
+  }
+
+  /**
+   * Resolves and initialises an AES-256-GCM cipher and feeds it the AAD: everything that touches
+   * the key but not the ciphertext, so that a failure here can be told apart from a rejection.
+   */
+  private static Cipher gcmCipher(
+      Provider provider, int mode, SecretKey key, byte[] nonce, byte[] headerAad, byte[] extraAad)
+      throws GeneralSecurityException {
     Cipher cipher = newCipher(GCM_TRANSFORM, provider);
-    cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
+    cipher.init(mode, key, new GCMParameterSpec(TAG_LENGTH_BITS, nonce));
     cipher.updateAAD(headerAad);
     if (extraAad != null) {
       cipher.updateAAD(extraAad);
     }
-    return cipher.doFinal(ciphertext);
+    return cipher;
   }
 
   /** Builder for {@link EnvelopeCodec}. */

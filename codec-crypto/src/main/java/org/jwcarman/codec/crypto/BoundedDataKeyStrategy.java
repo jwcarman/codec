@@ -75,6 +75,9 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
 
   private static final long MAX_MESSAGE_CAP = 1L << 24;
 
+  /** The largest age the nanosecond ticker can represent. */
+  private static final Duration MAX_AGE = Duration.ofNanos(Long.MAX_VALUE);
+
   private final long maxMessages;
   private final long maxAgeNanos;
   private final LongSupplier ticker;
@@ -110,6 +113,9 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
     Objects.requireNonNull(maxAge, "maxAge must not be null");
     if (maxAge.isZero() || maxAge.isNegative()) {
       throw new IllegalArgumentException("maxAge must be positive: " + maxAge);
+    }
+    if (maxAge.compareTo(MAX_AGE) > 0) {
+      throw new IllegalArgumentException("maxAge must not exceed " + MAX_AGE + ": " + maxAge);
     }
     this.maxMessages = maxMessages;
     this.maxAgeNanos = maxAge.toNanos();

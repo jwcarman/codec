@@ -17,6 +17,7 @@ package org.jwcarman.codec.spi;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.Objects;
 
 /**
@@ -36,10 +37,23 @@ import java.util.Objects;
 public abstract class TypeRef<T> {
   private final Type type;
 
-  /** Captures the type argument supplied by the anonymous subclass. */
+  /**
+   * Captures the type argument supplied by the anonymous subclass.
+   *
+   * @throws IllegalArgumentException if the type argument is a type variable — {@code new
+   *     TypeRef<T>() {}} inside a generic method captures nothing a backend can use, and would
+   *     otherwise be silently mapped to {@code Object}
+   */
   protected TypeRef() {
     Type superclass = getClass().getGenericSuperclass();
-    this.type = ((ParameterizedType) superclass).getActualTypeArguments()[0];
+    Type captured = ((ParameterizedType) superclass).getActualTypeArguments()[0];
+    if (captured instanceof TypeVariable<?>) {
+      throw new IllegalArgumentException(
+          "TypeRef cannot capture the type variable "
+              + captured
+              + ": the type argument must be concrete where the anonymous subclass is created");
+    }
+    this.type = captured;
   }
 
   private TypeRef(Type type) {

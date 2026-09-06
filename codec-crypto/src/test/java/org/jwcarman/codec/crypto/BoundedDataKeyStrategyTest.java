@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -81,6 +82,18 @@ class BoundedDataKeyStrategyTest {
     void rejects_a_negative_max_age() {
       assertThatIllegalArgumentException()
           .isThrownBy(() -> new BoundedDataKeyStrategy(10, Duration.ofSeconds(-1)));
+    }
+
+    @Test
+    void rejects_a_max_age_the_ticker_cannot_represent() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> new BoundedDataKeyStrategy(10, ChronoUnit.FOREVER.getDuration()))
+          .withMessageContaining("maxAge must not exceed");
+    }
+
+    @Test
+    void accepts_the_largest_representable_max_age() {
+      assertThat(new BoundedDataKeyStrategy(10, Duration.ofNanos(Long.MAX_VALUE))).isNotNull();
     }
   }
 

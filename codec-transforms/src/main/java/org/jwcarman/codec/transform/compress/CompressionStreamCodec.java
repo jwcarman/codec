@@ -43,19 +43,25 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
 
   private static final int BUFFER_SIZE = 8192;
 
+  /** The largest cap that can be honoured: the decoded payload is held in a single array. */
+  private static final long MAX_DECODED_SIZE_CEILING = Integer.MAX_VALUE - 8;
+
   private final long maxDecodedSize;
 
   /**
    * Creates a codec that refuses to decode payloads expanding beyond the given size.
    *
-   * @param maxDecodedSize maximum decoded size in bytes; must be positive
+   * @param maxDecodedSize maximum decoded size in bytes; must be positive. The decoded payload is
+   *     returned in a single array, so a value above {@code Integer.MAX_VALUE - 8} is clamped to
+   *     that ceiling: past it the codec throws the documented {@link IllegalStateException} rather
+   *     than an {@link OutOfMemoryError}
    * @throws IllegalArgumentException if {@code maxDecodedSize} is not positive
    */
   protected CompressionStreamCodec(long maxDecodedSize) {
     if (maxDecodedSize <= 0) {
       throw new IllegalArgumentException("maxDecodedSize must be positive: " + maxDecodedSize);
     }
-    this.maxDecodedSize = maxDecodedSize;
+    this.maxDecodedSize = Math.min(maxDecodedSize, MAX_DECODED_SIZE_CEILING);
   }
 
   /**

@@ -46,6 +46,9 @@
             <artifactId>codec-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- at.yawk.lz4 is the maintained fork of org.lz4:lz4-java (same developers, same API;
+             upstream's last release was 1.8.0 and it no longer takes patches). Pinned here
+             rather than in the BOM so the coordinate change is visible to anyone auditing. -->
         <dependency>
             <groupId>at.yawk.lz4</groupId>
             <artifactId>lz4-java</artifactId>

@@ -67,6 +67,18 @@ class TypeRefTest {
   // --- of(Class) factory ---
 
   @Test
+  void shouldRejectATypeVariable() {
+    assertThatThrownBy(TypeRefTest::<String>captureUnresolved)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("type variable T");
+  }
+
+  /** A generic method: {@code T} is erased here, so the anonymous subclass captures a variable. */
+  private static <T> TypeRef<T> captureUnresolved() {
+    return new TypeRef<T>() {};
+  }
+
+  @Test
   void ofClassShouldCaptureType() {
     TypeRef<String> ref = TypeRef.of(String.class);
     assertThat(ref.getType()).isEqualTo(String.class);

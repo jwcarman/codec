@@ -15,6 +15,7 @@
  */
 package org.jwcarman.codec.transform.compress;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
@@ -32,7 +33,11 @@ class CompressionStreamCodecTest {
   private static final class ThrowingStreamCodec extends CompressionStreamCodec {
 
     private ThrowingStreamCodec() {
-      super(1024);
+      this(1024);
+    }
+
+    private ThrowingStreamCodec(long maxDecodedSize) {
+      super(maxDecodedSize);
     }
 
     @Override
@@ -68,6 +73,13 @@ class CompressionStreamCodecTest {
   void decode_wraps_io_failures_in_unchecked_io_exception() {
     assertThatExceptionOfType(UncheckedIOException.class)
         .isThrownBy(() -> codec.decode(new byte[] {1, 2, 3}));
+  }
+
+  @Test
+  void accepts_a_cap_larger_than_a_single_array_can_hold() {
+    // Long.MAX_VALUE is the idiom for "no cap"; it is clamped to the array ceiling rather than
+    // rejected, so that past it the codec fails with the documented IllegalStateException.
+    assertThat(new ThrowingStreamCodec(Long.MAX_VALUE)).isNotNull();
   }
 
   @Test

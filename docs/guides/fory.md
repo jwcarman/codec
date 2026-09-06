@@ -22,6 +22,15 @@ classes you pass. Register every type a codec will carry, including the element
 types of collections — the JDK's own collections and boxed types are already
 registered by Fory.
 
+The helper also applies the one safeguard from Fory's
+[security guidance](https://fory.apache.org/docs/object-serialization/java/security/)
+that Fory does not switch on by default in compatible mode:
+`withDeserializeUnknownClass(false)`. Without it a payload naming a class the
+instance has not registered is materialised from its metadata as an anonymous
+struct; with it the payload is rejected. Fory's other safeguards — a read depth
+of 50, a 128 MiB graph-memory gate, bounds on container and metadata sizes —
+are already its defaults and are left as they are.
+
 !!! danger "Do not disable registration for convenience"
     A `Fory` built with `requireClassRegistration(false)` will deserialize any
     class on the classpath that the bytes name. If you hand such an instance

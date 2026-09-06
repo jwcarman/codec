@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   100-item order grows 2%; throughput is unchanged. Payloads written by earlier
   releases still decode, but bytes written by this release cannot be read by a
   schema-consistent Fory. Callers who want a specific mode build their own
-  `ThreadSafeFory` and pass it to the constructor
+  `ThreadSafeFory` and pass it to the constructor. Per Fory's security guidance
+  the helper also sets `deserializeUnknownClass(false)`, so a payload naming an
+  unregistered class is rejected rather than materialised as an anonymous struct
 - `JacksonCodecFactory`, `Jackson2CodecFactory`, and `GsonCodecFactory` now reject a
   `null` engine or `TypeRef` with a labelled `NullPointerException`, matching the
   JSON-B and Fory factories; `CompressionStreamCodec` likewise rejects `null` on

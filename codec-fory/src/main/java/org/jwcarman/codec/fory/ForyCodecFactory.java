@@ -38,14 +38,20 @@ import org.jwcarman.codec.spi.TypeRef;
  * requireClassRegistration(true)} (the library default, and what {@link #of(Class[])} does) and
  * register every type a codec will carry, including the element types of collections.
  *
- * <p>{@link #of(Class[])} is a helper: beyond requiring registration it leaves Fory's defaults
- * alone, and the wire format follows them. Since Fory 1.2.0 that default is compatible mode — each
- * payload carries its class schema, so a reader whose class has gained or lost a field since the
- * payload was written still decodes it correctly, where schema-consistent mode returns a wrong
- * object without an error. It costs a few bytes of metadata per class per message: negligible past
- * a few fields, but a four-field record roughly doubles. A caller who wants a particular mode —
- * schema-consistent for the smallest output, or any setting pinned against future Fory defaults —
- * builds their own {@link ThreadSafeFory} and passes it to the constructor.
+ * <p>{@link #of(Class[])} is a helper: it applies Fory's security guidance and otherwise leaves
+ * Fory's defaults alone, so the wire format follows them. The security guidance is registration
+ * required plus {@code deserializeUnknownClass(false)} — the one recommended safeguard Fory does
+ * not apply by default in compatible mode. Without it a payload naming a class this instance has
+ * not registered is materialised from its metadata as an anonymous struct; with it the payload is
+ * rejected. Fory's other safeguards (a read depth of 50, a 128 MiB graph-memory gate, bounds on
+ * container and metadata sizes) are already its defaults and are left as they are. Since Fory 1.2.0
+ * that default is compatible mode — each payload carries its class schema, so a reader whose class
+ * has gained or lost a field since the payload was written still decodes it correctly, where
+ * schema-consistent mode returns a wrong object without an error. It costs a few bytes of metadata
+ * per class per message: negligible past a few fields, but a four-field record roughly doubles. A
+ * caller who wants a particular mode — schema-consistent for the smallest output, or any setting
+ * pinned against future Fory defaults — builds their own {@link ThreadSafeFory} and passes it to
+ * the constructor.
  *
  * <p>The wire format is Fory's own and JVM-specific. It is the right choice when Java is on both
  * ends and speed and size matter; it is the wrong choice for anything another language will read,
@@ -79,9 +85,10 @@ public class ForyCodecFactory implements CodecFactory {
 
   /**
    * Creates a factory over a new thread-safe Fory instance, in Java mode with class registration
-   * required and Fory's other defaults unchanged, with the given classes registered. Register every
-   * type a codec will carry — records, beans, and the element types of the collections they hold;
-   * the JDK's collections and boxed types are registered by Fory itself.
+   * required, unknown-class deserialization disabled, and Fory's other defaults unchanged, with the
+   * given classes registered. Register every type a codec will carry — records, beans, and the
+   * element types of the collections they hold; the JDK's collections and boxed types are
+   * registered by Fory itself.
    *
    * @param classes the classes codecs from this factory may serialize
    * @return a factory ready to create codecs for the registered classes
@@ -91,6 +98,7 @@ public class ForyCodecFactory implements CodecFactory {
         Fory.builder()
             .withLanguage(Language.JAVA)
             .requireClassRegistration(true)
+            .withDeserializeUnknownClass(false)
             .buildThreadSafeFory();
     for (Class<?> type : classes) {
       fory.register(type);

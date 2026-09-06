@@ -31,6 +31,8 @@ import java.util.stream.IntStream;
 import org.apache.fory.Fory;
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.config.Language;
+import org.apache.fory.exception.DeserializationException;
+import org.apache.fory.exception.InsecureException;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -169,6 +171,54 @@ class ForyCodecFactoryTest {
       Evolved decoded = ForyCodecFactory.of(Evolved.class).create(Evolved.class).decode(bytes);
 
       assertThat(decoded).isEqualTo(new Evolved("Alice", 30, true, null));
+    }
+  }
+
+  @Nested
+  class Security_boundary {
+
+    /** A self-referential record, to build a graph deeper than Fory's read-depth limit. */
+    public record Node(Node next) {}
+
+    private static Node chain(int depth) {
+      Node node = null;
+      for (int i = 0; i < depth; i++) {
+        node = new Node(node);
+      }
+      return node;
+    }
+
+    @Test
+    void a_payload_naming_an_unregistered_class_is_rejected_not_materialised() {
+      byte[] bytes =
+          ForyCodecFactory.of(Schema_evolution.Evolved.class)
+              .create(Schema_evolution.Evolved.class)
+              .encode(new Schema_evolution.Evolved("Alice", 30, true, "alice@example.com"));
+      ForyCodecFactory reader = ForyCodecFactory.of();
+
+      assertThatExceptionOfType(DeserializationException.class)
+          .isThrownBy(() -> reader.create(Object.class).decode(bytes));
+    }
+
+    @Test
+    void a_graph_deeper_than_the_read_limit_is_rejected() {
+      Codec<Node> codec = ForyCodecFactory.of(Node.class).create(Node.class);
+      byte[] bytes = codec.encode(chain(60));
+
+      assertThatExceptionOfType(InsecureException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("depth");
+    }
+
+    @Test
+    void a_rejected_read_does_not_poison_the_instance() {
+      Codec<Node> codec = ForyCodecFactory.of(Node.class).create(Node.class);
+      byte[] tooDeep = codec.encode(chain(60));
+      assertThatExceptionOfType(InsecureException.class).isThrownBy(() -> codec.decode(tooDeep));
+
+      Node shallow = chain(10);
+
+      assertThat(codec.decode(codec.encode(shallow))).isEqualTo(shallow);
     }
   }
 

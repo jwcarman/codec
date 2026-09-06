@@ -1,5 +1,11 @@
 # GraalVM native-image hints for codec
 
+> **Status (2026-09-06):** a working note from the 0.1.0 investigation, kept out of the site
+> nav. Its conclusion still holds — the modules added since (`codec-transforms`,
+> `codec-crypto`, `codec-versioned`, `codec-kafka`, `codec-spring-data-redis`) frame bytes and
+> adapt interfaces without reflection — but the class names below reflect 0.1.0; the
+> auto-configuration classes it mentions now live in `codec-autoconfigure`.
+
 ## Context
 
 Exercised against `cowork-connector-example` (Spring Boot 4.0.5, Java 25) using the GraalVM tracing agent (`-agentlib:native-image-agent`). Codec 0.1.0 currently ships **zero** `META-INF/native-image/` metadata and **no** `RuntimeHintsRegistrar` / `BeanRegistrationAotProcessor`.

@@ -1,5 +1,10 @@
 # PRD — Codec
 
+> **Historical.** This is the founding product brief, kept for the record. It predates the
+> module split, the transforms/crypto/versioned modules, and the current test stack, and is
+> not maintained; the module table in `README.md`, the guides under `docs/`, and
+> `CHANGELOG.md` describe what ships today.
+
 ---
 
 ## What this project is

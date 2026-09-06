@@ -470,6 +470,8 @@ Create `codec-versioned/src/main/java/org/jwcarman/codec/versioned/VersionedCode
 package org.jwcarman.codec.versioned;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
 
@@ -526,7 +528,6 @@ public final class VersionedCodec {
   private static final int HEADER_LENGTH = 3;
   private static final int MIN_VERSION = 1;
   private static final int MAX_VERSION = 255;
-  private static final int VERSION_SLOTS = 256;
 
   private VersionedCodec() {}
 
@@ -547,13 +548,8 @@ public final class VersionedCodec {
    */
   public static final class Builder<T> {
 
-    private final Codec<T>[] codecs = newSlots();
+    private final Map<Integer, Codec<T>> registrations = new HashMap<>();
     private int writeVersion = -1;
-
-    @SuppressWarnings("unchecked")
-    private static <T> Codec<T>[] newSlots() {
-      return new Codec[VERSION_SLOTS];
-    }
 
     private Builder() {}
 
@@ -573,10 +569,10 @@ public final class VersionedCodec {
             "version must be between " + MIN_VERSION + " and " + MAX_VERSION + ": " + version);
       }
       Objects.requireNonNull(codec, "codec must not be null");
-      if (codecs[version] != null) {
+      if (registrations.containsKey(version)) {
         throw new IllegalStateException("version already registered: " + version);
       }
-      codecs[version] = codec;
+      registrations.put(version, codec);
       return this;
     }
 
@@ -604,25 +600,26 @@ public final class VersionedCodec {
      *     called, or if it names a version with no registered codec
      */
     public Codec<T> build() {
-      if (Arrays.stream(codecs).allMatch(Objects::isNull)) {
+      if (registrations.isEmpty()) {
         throw new IllegalStateException("at least one version must be registered");
       }
       if (writeVersion < 0) {
         throw new IllegalStateException("a write version must be set with writing(int)");
       }
-      if (codecs[writeVersion] == null) {
+      if (!registrations.containsKey(writeVersion)) {
         throw new IllegalStateException("no codec registered for write version: " + writeVersion);
       }
-      return new Dispatcher<>(codecs.clone(), writeVersion);
+      return new Dispatcher<>(Map.copyOf(registrations), writeVersion);
     }
   }
 
-  private record Dispatcher<T>(Codec<T>[] codecs, int writeVersion) implements Codec<T> {
+  private record Dispatcher<T>(Map<Integer, Codec<T>> codecs, int writeVersion)
+      implements Codec<T> {
 
     @Override
     public byte[] encode(T value) {
       Objects.requireNonNull(value, "value must not be null");
-      byte[] payload = codecs[writeVersion].encode(value);
+      byte[] payload = codecs.get(writeVersion).encode(value);
       byte[] framed = new byte[HEADER_LENGTH + payload.length];
       framed[0] = MAGIC_0;
       framed[1] = MAGIC_1;
@@ -645,7 +642,7 @@ public final class VersionedCodec {
         throw new VersionedFormatException("not a versioned payload: bad magic");
       }
       int version = bytes[2] & 0xFF;
-      Codec<T> codec = codecs[version];
+      Codec<T> codec = codecs.get(version);
       if (codec == null) {
         throw new UnknownVersionException(version);
       }
@@ -655,15 +652,16 @@ public final class VersionedCodec {
 }
 ```
 
-Note on `Builder.newSlots()`: a generic array creation needs the unchecked cast, and the project forbids `@SuppressWarnings`. **Do not commit the annotation shown above.** Replace `newSlots()` with a non-generic field instead: declare the slots as `private final java.util.Map<Integer, Codec<T>> registrations = new java.util.HashMap<>();` in the builder, and have `build()` construct the dispatch array inside `Dispatcher` from that map using a raw-free helper. Concretely, replace the builder's array field and `newSlots` with:
+Two things worth knowing about this implementation:
 
-```java
-    private final Map<Integer, Codec<T>> registrations = new HashMap<>();
-```
-
-adjust `version(...)` to use `registrations.containsKey(version)` / `registrations.put(version, codec)`, adjust `build()`'s emptiness check to `registrations.isEmpty()` and its write-version check to `!registrations.containsKey(writeVersion)`, and have it return `new Dispatcher<>(Map.copyOf(registrations), writeVersion)`. Change `Dispatcher` to hold `Map<Integer, Codec<T>> codecs` and look up with `codecs.get(version)`. Add `import java.util.HashMap;` and `import java.util.Map;` and drop `import java.util.Arrays;` only if `copyOfRange` is no longer used (it still is — keep it).
-
-The spec's implementation note preferred an array for O(1) dispatch; an immutable `Map<Integer, Codec<T>>` lookup is the honest cost of the no-suppression rule and is not measurably slower than the surrounding serialization work. Record this trade in the commit message.
+- **Dispatch is a `Map<Integer, Codec<T>>`, not the array spec 007 sketched.** A
+  generic array (`new Codec[256]`) cannot be created without an unchecked cast, and
+  the project forbids suppressions of every kind. An immutable map lookup is the
+  honest cost of that rule, and it is not measurable against the delegate
+  serialization it guards. Record the trade in the commit message.
+- **`build()` checks emptiness before the write version**, so a builder with no
+  registrations at all reports that, rather than complaining about the write
+  version. A test in Step 5 pins this ordering.
 
 - [ ] **Step 4: Run to verify the round-trip tests pass**
 

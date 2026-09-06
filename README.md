@@ -172,10 +172,10 @@ Codec<Person> codec = VersionedCodec.<Person>builder()
 
 ## Modules
 
-| Module | Backend | Artifact |
-|--------|---------|----------|
+| Module | What it is | Artifact |
+|--------|------------|----------|
 | Core | SPI interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
-| Transforms | Zero-dependency byte transforms: gzip, deflate, Base64, hex | `codec-transforms` |
+| Transforms | Zero-dependency byte transforms: gzip, deflate, Base64, Base32, hex, checksum, text | `codec-transforms` |
 | Versioned | Format versioning: a version header that lets the storage strategy change | `codec-versioned` |
 | Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
 | Jackson 2 | Jackson 2.x JSON (`com.fasterxml.jackson`) | `codec-jackson2` |
@@ -188,10 +188,10 @@ Codec<Person> codec = VersionedCodec.<Person>builder()
 | LZ4 | LZ4 frame compression transform | `codec-lz4` |
 | Spring Data Redis | `RedisSerializer` adapter, cache auto-configuration | `codec-spring-data-redis` |
 | Kafka | `Serializer`, `Deserializer`, and `Serde` adapters | `codec-kafka` |
-
-Speed and ratio claims are backed by [benchmarks](https://jwcarman.github.io/codec/benchmarks/).
 | Auto-configure | Spring Boot auto-configuration for all backends | `codec-autoconfigure` |
 | Starter | Spring Boot starter (core + auto-configure) | `codec-spring-boot-starter` |
+
+Speed and ratio claims are backed by [benchmarks](https://jwcarman.github.io/codec/benchmarks/).
 
 ## Core SPI
 

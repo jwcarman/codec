@@ -89,7 +89,7 @@
         <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
         <sonatype.plugin.version>0.11.0</sonatype.plugin.version>
-        <license.plugin.version>5.1.1</license.plugin.version>
+        <license.plugin.version>5.1.2</license.plugin.version>
         <license.owner>James Carman</license.owner>
     </properties>
 

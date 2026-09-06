@@ -225,7 +225,15 @@ deploys.
 
 `codec-versioned` fixes that by writing a three-byte header ahead of the
 payload, `0xC0 0xDC` followed by an unsigned version, and dispatching decoding
-on it:
+on it. It lives in its own module (the starter includes it; without Spring,
+add it next to `codec-core`):
+
+```xml
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-versioned</artifactId>
+</dependency>
+```
 
 ```java
 Codec<Person> codec = VersionedCodec.<Person>builder()

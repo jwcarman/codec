@@ -181,9 +181,12 @@ shared.
 
 ## Implementation notes
 
-- Dispatch is a `Codec<T>[]` of length 256 indexed by the unsigned version byte,
-  built once. Decode is a bounds check and a reference load; no boxing, no map
-  lookup.
+- Dispatch is a `Map<Integer, Codec<T>>`, built once by the builder and frozen
+  with `Map.copyOf`. A `Codec<T>[]` of length 256 was considered, but a generic
+  array of that shape cannot be created without an unchecked cast, and this
+  project forbids suppressing warnings of any kind — so the array is not an
+  option here. Versions 0-255 fall inside `Integer`'s cache, so the boxing on
+  lookup allocates nothing.
 - Encode and decode each cost one array copy. That is inherent to a
   `byte[]`-in/`byte[]`-out SPI and is not worth contorting the API to avoid.
 

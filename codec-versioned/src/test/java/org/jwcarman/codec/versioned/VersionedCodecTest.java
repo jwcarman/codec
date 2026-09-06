@@ -182,7 +182,8 @@ class VersionedCodecTest {
     @Test
     void is_rejected_when_empty() {
       assertThatExceptionOfType(VersionedFormatException.class)
-          .isThrownBy(() -> codec.decode(new byte[0]));
+          .isThrownBy(() -> codec.decode(new byte[0]))
+          .withMessage("not a versioned payload: expected at least 3 bytes, got 0");
     }
 
     @ParameterizedTest(name = "{0} byte(s)")
@@ -192,13 +193,15 @@ class VersionedCodecTest {
       truncated[0] = MAGIC_0;
 
       assertThatExceptionOfType(VersionedFormatException.class)
-          .isThrownBy(() -> codec.decode(truncated));
+          .isThrownBy(() -> codec.decode(truncated))
+          .withMessage("not a versioned payload: expected at least 3 bytes, got " + length);
     }
 
     @Test
     void is_rejected_when_the_magic_does_not_match() {
       assertThatExceptionOfType(VersionedFormatException.class)
-          .isThrownBy(() -> codec.decode(new byte[] {'{', '"', 'a', '"', '}'}));
+          .isThrownBy(() -> codec.decode(new byte[] {'{', '"', 'a', '"', '}'}))
+          .withMessage("not a versioned payload: bad magic");
     }
 
     @Test
@@ -274,7 +277,8 @@ class VersionedCodecTest {
     @Test
     void rejects_building_with_no_versions_registered() {
       assertThatIllegalStateException()
-          .isThrownBy(() -> VersionedCodec.<String>builder().writing(1).build());
+          .isThrownBy(() -> VersionedCodec.<String>builder().writing(1).build())
+          .withMessage("at least one version must be registered");
     }
 
     @Test
@@ -288,6 +292,21 @@ class VersionedCodecTest {
       assertThatIllegalStateException()
           .isThrownBy(
               () -> VersionedCodec.<String>builder().version(1, plain()).writing(2).build());
+    }
+
+    @Test
+    void lets_a_later_writing_call_replace_an_earlier_one() {
+      Codec<String> codec =
+          VersionedCodec.<String>builder()
+              .version(1, plain())
+              .version(2, upperCase())
+              .writing(1)
+              .writing(2)
+              .build();
+
+      byte[] encoded = codec.encode("hi");
+
+      assertThat(encoded[2]).isEqualTo((byte) 2);
     }
 
     @Test

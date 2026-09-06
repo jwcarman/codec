@@ -66,6 +66,14 @@ import org.jwcarman.codec.spi.Codec;
  *
  * <p>Built codecs are immutable and thread-safe whenever their delegates are, which the {@link
  * Codec} contract already requires. Builders are not thread-safe.
+ *
+ * <p><strong>Failures.</strong> {@code decode} throws {@link VersionedFormatException} when the
+ * buffer is shorter than the three-byte header or the magic does not match — bytes some other codec
+ * wrote. Its subtype {@link UnknownVersionException} is thrown instead when the framing is valid
+ * but names a version this codec has no registration for, and carries that version. Exceptions
+ * thrown by a delegate codec propagate unchanged. {@code encode} throws {@link
+ * NullPointerException} on a {@code null} value; wrap the built codec with {@link Codec#nullSafe()}
+ * to opt into passing {@code null} straight through instead.
  */
 public final class VersionedCodec {
 
@@ -123,7 +131,8 @@ public final class VersionedCodec {
     }
 
     /**
-     * Names the version {@link Codec#encode} writes. Required.
+     * Names the version {@link Codec#encode} writes. Required. A later call replaces an earlier one
+     * — there is exactly one write version, and the last call wins.
      *
      * @param version the format version to write, 1-255
      * @return this builder

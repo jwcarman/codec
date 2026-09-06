@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
 
 /**
@@ -77,6 +78,7 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
 
   @Override
   public final byte[] encode(byte[] value) {
+    Objects.requireNonNull(value, "value must not be null");
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     try (OutputStream compress = compressing(out)) {
       compress.write(value);
@@ -88,6 +90,7 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
 
   @Override
   public final byte[] decode(byte[] bytes) {
+    Objects.requireNonNull(bytes, "bytes must not be null");
     try (InputStream decompress = decompressing(new ByteArrayInputStream(bytes))) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       byte[] buffer = new byte[BUFFER_SIZE];

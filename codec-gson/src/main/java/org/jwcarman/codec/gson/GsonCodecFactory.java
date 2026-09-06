@@ -17,6 +17,7 @@ package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
@@ -32,11 +33,12 @@ public class GsonCodecFactory implements CodecFactory {
    * @param gson the Gson instance to serialize and deserialize with
    */
   public GsonCodecFactory(Gson gson) {
-    this.gson = gson;
+    this.gson = Objects.requireNonNull(gson, "gson must not be null");
   }
 
   @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
+    Objects.requireNonNull(typeRef, "typeRef must not be null");
     TypeToken<T> typeToken = (TypeToken<T>) TypeToken.get(typeRef.getType());
     return new GsonCodec<>(gson, typeToken);
   }

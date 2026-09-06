@@ -16,6 +16,7 @@
 package org.jwcarman.codec.jackson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
 import java.util.Map;
@@ -139,5 +140,15 @@ class JacksonCodecFactoryTest {
     }
 
     assertThat(errors).isEmpty();
+  }
+
+  @Test
+  void shouldRejectNullEngine() {
+    assertThatNullPointerException().isThrownBy(() -> new JacksonCodecFactory(null));
+  }
+
+  @Test
+  void shouldRejectNullTypeRef() {
+    assertThatNullPointerException().isThrownBy(() -> factory.create((TypeRef<Person>) null));
   }
 }

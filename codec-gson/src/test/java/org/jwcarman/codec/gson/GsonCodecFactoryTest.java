@@ -16,6 +16,7 @@
 package org.jwcarman.codec.gson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import com.google.gson.Gson;
 import java.util.List;
@@ -139,5 +140,15 @@ class GsonCodecFactoryTest {
     }
 
     assertThat(errors).isEmpty();
+  }
+
+  @Test
+  void shouldRejectNullEngine() {
+    assertThatNullPointerException().isThrownBy(() -> new GsonCodecFactory(null));
+  }
+
+  @Test
+  void shouldRejectNullTypeRef() {
+    assertThatNullPointerException().isThrownBy(() -> factory.create((TypeRef<Person>) null));
   }
 }

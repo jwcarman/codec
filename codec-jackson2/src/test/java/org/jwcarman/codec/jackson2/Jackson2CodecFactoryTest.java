@@ -17,6 +17,7 @@ package org.jwcarman.codec.jackson2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.UncheckedIOException;
@@ -108,6 +109,20 @@ class Jackson2CodecFactoryTest {
       byte[] garbage = "not json".getBytes(StandardCharsets.UTF_8);
 
       assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(garbage));
+    }
+  }
+
+  @Nested
+  class Argument_validation {
+
+    @Test
+    void rejects_a_null_object_mapper() {
+      assertThatNullPointerException().isThrownBy(() -> new Jackson2CodecFactory(null));
+    }
+
+    @Test
+    void rejects_a_null_type_ref() {
+      assertThatNullPointerException().isThrownBy(() -> factory.create((TypeRef<Person>) null));
     }
   }
 }

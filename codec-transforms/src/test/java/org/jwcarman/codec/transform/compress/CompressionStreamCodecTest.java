@@ -16,6 +16,7 @@
 package org.jwcarman.codec.transform.compress;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,5 +68,19 @@ class CompressionStreamCodecTest {
   void decode_wraps_io_failures_in_unchecked_io_exception() {
     assertThatExceptionOfType(UncheckedIOException.class)
         .isThrownBy(() -> codec.decode(new byte[] {1, 2, 3}));
+  }
+
+  @Test
+  void encode_rejects_null_before_touching_the_stream() {
+    assertThatNullPointerException()
+        .isThrownBy(() -> codec.encode(null))
+        .withMessage("value must not be null");
+  }
+
+  @Test
+  void decode_rejects_null_before_touching_the_stream() {
+    assertThatNullPointerException()
+        .isThrownBy(() -> codec.decode(null))
+        .withMessage("bytes must not be null");
   }
 }

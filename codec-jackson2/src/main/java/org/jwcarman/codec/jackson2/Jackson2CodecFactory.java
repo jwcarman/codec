@@ -17,6 +17,7 @@ package org.jwcarman.codec.jackson2;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
 import org.jwcarman.codec.spi.TypeRef;
@@ -32,11 +33,12 @@ public class Jackson2CodecFactory implements CodecFactory {
    * @param objectMapper the mapper to serialize and deserialize with
    */
   public Jackson2CodecFactory(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+    this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
   }
 
   @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
+    Objects.requireNonNull(typeRef, "typeRef must not be null");
     JavaType javaType = objectMapper.getTypeFactory().constructType(typeRef.getType());
     return new Jackson2Codec<>(objectMapper, javaType);
   }

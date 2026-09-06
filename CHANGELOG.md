@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `JacksonCodecFactory`, `Jackson2CodecFactory`, and `GsonCodecFactory` now reject a
+  `null` engine or `TypeRef` with a labelled `NullPointerException`, matching the
+  JSON-B and Fory factories; `CompressionStreamCodec` likewise rejects `null` on
+  `encode` and `decode` before touching a stream, matching the other transforms
+
 ### Added
 - `codec-versioned`: `VersionedCodec` prefixes each payload with a magic and
   version header and dispatches decoding on it, so a storage strategy can change

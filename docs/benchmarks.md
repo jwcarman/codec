@@ -2,7 +2,7 @@
 
 Numbers from the `codec-benchmarks` module (JMH), so the guides' speed and
 size claims are reproducible rather than folklore. **One machine, one run:**
-Apple M4 Max, 64 GB, OpenJDK 25.0.3, codec 0.8.0-SNAPSHOT, 2026-08-26.
+Apple M4 Max, 64 GB, OpenJDK 25.0.3, codec 0.8.0-SNAPSHOT, 2026-09-06.
 Throughput mode, 1 fork, 3 × 1 s warm-up, 5 × 1 s measurement. The raw JMH
 output is in `codec-benchmarks/results/`; treat the relative ordering as the
 finding, not the absolute figures.
@@ -19,10 +19,10 @@ measured at 1, 3 (the default), 9 and 19.
 ## What the numbers say
 
 - **For medium and large payloads, zstd and LZ4 are in a different league
-  from the JDK.** zstd 3 encodes 1 MB at ~590 MB/s against deflate 6's ~35 MB/s
-  and decodes twice as fast; LZ4 encodes at ~750 MB/s and decodes at ~1.8 GB/s.
-  Even the JDK's fastest level (deflate 1, ~235 MB/s) is well behind zstd 1
-  (~620 MB/s) while producing a worse ratio (26.0% vs 23.2%).
+  from the JDK.** zstd 3 encodes 1 MB at ~620 MB/s against deflate 6's ~38 MB/s
+  and decodes two and a half times as fast; LZ4 encodes at ~790 MB/s and
+  decodes at ~1.9 GB/s. Even the JDK's fastest level (deflate 1, ~250 MB/s) is
+  well behind zstd 1 (~650 MB/s) while producing a worse ratio (26.0% vs 23.2%).
 - **For tiny payloads the JDK wins.** At 104 bytes gzip and deflate out-run
   zstd and LZ4 on both encode and decode — the fixed cost of a JNI stream
   dominates, and there is nothing to compress anyway (every transform *grows*
@@ -34,16 +34,22 @@ measured at 1, 3 (the default), 9 and 19.
 - **Ratio is not zstd's advantage at the default level.** On the prose payload
   zstd 3 lands at 21.7% of the input against deflate 6's 19.2%; only zstd 19
   beats it. zstd's win is speed at a comparable ratio.
-- **LZ4-HC is a decode-side optimisation.** It compresses ~28× slower than
-  plain LZ4 (slower than gzip) for a better ratio, and decodes fastest of
+- **LZ4-HC is a decode-side optimisation.** It compresses ~22× slower than
+  plain LZ4 (about gzip's speed) for a better ratio, and decodes fastest of
   anything measured. Use it for write-rarely, read-constantly data.
 - **The text encodings are negligible next to any backend or transform**, with
   the pure-Java Base32 the slowest of them (~440 MB/s).
 - **Binary backends pull further ahead as the payload grows.** On the small
-  record Fory decodes ~6× faster than Jackson 2; on the 100-item order it is
-  ~10× faster on decode and ~15× on encode (1.5 M orders/s), and Protobuf is
+  record Fory decodes ~5× faster than Jackson 2; on the 100-item order it is
+  ~10× faster on decode and ~15× on encode (1.4 M orders/s), and Protobuf is
   ~5× faster than the JSON backends. Their output is also half the size:
-  4.4 KB (Fory) and 4.8 KB (Protobuf) against 9.1 KB of JSON.
+  4.5 KB (Fory) and 4.8 KB (Protobuf) against 9.1 KB of JSON.
+- **Fory's compatible mode costs bytes only on tiny payloads.** `codec-fory`
+  takes Fory's default, compatible mode since Fory 1.2.0 (see the
+  [Fory guide](guides/fory.md#schema-evolution)), which writes each class's
+  schema once per message: the lone four-field record
+  is 74 bytes, no smaller than its 72 bytes of JSON, while the 100-item order
+  pays 2%. Throughput is unaffected.
 - **Among the JSON backends, Jackson 2 decodes fastest** in this run — twice
   as fast as Jackson 3 on the order — and JSON-B (Yasson) is the slowest at
   both sizes.
@@ -61,7 +67,7 @@ From `EncodedSizes`:
 | jackson2 | 72 | 9,096 |
 | gson | 72 | 9,096 |
 | jsonb | 72 | 9,096 |
-| fory | 37 | 4,422 |
+| fory | 74 | 4,510 |
 | protobuf | 35 | 4,815 |
 
 ## Throughput
@@ -73,87 +79,87 @@ the level trade-offs read in one place.
 
 | Transform | compressed bytes | of input | encode MB/s | decode MB/s | encode ops/s | decode ops/s |
 |---|---:|---:|---:|---:|---:|---:|
-| gzip | 115 | 110.6% | 27 | 61 | 257,121 | 588,837 |
-| deflate1 | 103 | 99.0% | 25 | 64 | 244,586 | 611,054 |
-| deflate6 | 103 | 99.0% | 25 | 63 | 237,097 | 608,134 |
-| deflate9 | 103 | 99.0% | 26 | 62 | 249,599 | 599,277 |
-| zstd1 | 102 | 98.1% | 16 | 22 | 156,297 | 214,671 |
-| zstd3 | 102 | 98.1% | 10 | 20 | 98,265 | 189,968 |
-| zstd9 | 102 | 98.1% | 2 | 18 | 20,191 | 177,769 |
-| zstd19 | 103 | 99.0% | 0 | 19 | 2,829 | 180,396 |
-| lz4 | 123 | 118.3% | 41 | 52 | 390,673 | 502,106 |
-| lz4hc | 123 | 118.3% | 28 | 51 | 269,637 | 490,529 |
+| gzip | 115 | 110.6% | 27 | 61 | 263,438 | 584,761 |
+| deflate1 | 103 | 99.0% | 27 | 63 | 255,848 | 608,249 |
+| deflate6 | 103 | 99.0% | 26 | 63 | 252,615 | 604,734 |
+| deflate9 | 103 | 99.0% | 27 | 63 | 255,637 | 608,106 |
+| zstd1 | 102 | 98.1% | 17 | 21 | 161,182 | 204,964 |
+| zstd3 | 102 | 98.1% | 11 | 17 | 102,589 | 162,277 |
+| zstd9 | 102 | 98.1% | 2 | 17 | 20,516 | 167,031 |
+| zstd19 | 103 | 99.0% | 0 | 16 | 2,991 | 154,408 |
+| lz4 | 123 | 118.3% | 41 | 49 | 392,272 | 468,573 |
+| lz4hc | 123 | 118.3% | 29 | 50 | 278,798 | 483,448 |
 
 ### Compression — medium payload (8,338 bytes)
 
 | Transform | compressed bytes | of input | encode MB/s | decode MB/s | encode ops/s | decode ops/s |
 |---|---:|---:|---:|---:|---:|---:|
-| gzip | 1,647 | 19.8% | 213 | 996 | 25,589 | 119,413 |
-| deflate1 | 1,846 | 22.1% | 470 | 833 | 56,339 | 99,850 |
-| deflate6 | 1,635 | 19.6% | 204 | 865 | 24,435 | 103,773 |
-| deflate9 | 1,606 | 19.3% | 153 | 849 | 18,350 | 101,781 |
-| zstd1 | 1,614 | 19.4% | 534 | 814 | 64,046 | 97,610 |
-| zstd3 | 1,590 | 19.1% | 348 | 787 | 41,703 | 94,445 |
-| zstd9 | 1,508 | 18.1% | 93 | 821 | 11,106 | 98,411 |
-| zstd19 | 1,467 | 17.6% | 7 | 815 | 838 | 97,744 |
-| lz4 | 2,704 | 32.4% | 999 | 1,484 | 119,851 | 178,016 |
-| lz4hc | 2,335 | 28.0% | 350 | 1,549 | 41,969 | 185,770 |
+| gzip | 1,647 | 19.8% | 218 | 967 | 26,098 | 115,925 |
+| deflate1 | 1,846 | 22.1% | 496 | 808 | 59,532 | 96,957 |
+| deflate6 | 1,635 | 19.6% | 212 | 853 | 25,413 | 102,297 |
+| deflate9 | 1,606 | 19.3% | 159 | 854 | 19,080 | 102,468 |
+| zstd1 | 1,614 | 19.4% | 561 | 692 | 67,264 | 83,003 |
+| zstd3 | 1,590 | 19.1% | 377 | 772 | 45,171 | 92,633 |
+| zstd9 | 1,508 | 18.1% | 97 | 897 | 11,590 | 107,549 |
+| zstd19 | 1,467 | 17.6% | 7 | 889 | 881 | 106,610 |
+| lz4 | 2,704 | 32.4% | 1,052 | 1,532 | 126,206 | 183,791 |
+| lz4hc | 2,335 | 28.0% | 381 | 1,622 | 45,741 | 194,508 |
 
 ### Compression — large payload (1,048,576 bytes)
 
 | Transform | compressed bytes | of input | encode MB/s | decode MB/s | encode ops/s | decode ops/s |
 |---|---:|---:|---:|---:|---:|---:|
-| gzip | 201,172 | 19.2% | 36 | 782 | 34 | 746 |
-| deflate1 | 273,057 | 26.0% | 236 | 486 | 225 | 463 |
-| deflate6 | 201,160 | 19.2% | 35 | 673 | 33 | 642 |
-| deflate9 | 197,182 | 18.8% | 19 | 678 | 19 | 647 |
-| zstd1 | 242,999 | 23.2% | 619 | 1,208 | 591 | 1,152 |
-| zstd3 | 227,860 | 21.7% | 588 | 1,424 | 561 | 1,358 |
-| zstd9 | 222,392 | 21.2% | 92 | 1,532 | 88 | 1,461 |
-| zstd19 | 169,684 | 16.2% | 6 | 1,784 | 5 | 1,701 |
-| lz4 | 491,989 | 46.9% | 753 | 1,778 | 718 | 1,696 |
-| lz4hc | 282,916 | 27.0% | 28 | 2,460 | 26 | 2,346 |
+| gzip | 201,172 | 19.2% | 38 | 756 | 36 | 721 |
+| deflate1 | 273,057 | 26.0% | 248 | 495 | 236 | 472 |
+| deflate6 | 201,160 | 19.2% | 38 | 677 | 36 | 646 |
+| deflate9 | 197,182 | 18.8% | 20 | 700 | 20 | 667 |
+| zstd1 | 242,999 | 23.2% | 648 | 1,561 | 618 | 1,488 |
+| zstd3 | 227,860 | 21.7% | 621 | 1,755 | 593 | 1,673 |
+| zstd9 | 222,392 | 21.2% | 95 | 1,835 | 91 | 1,750 |
+| zstd19 | 169,684 | 16.2% | 6 | 2,113 | 6 | 2,015 |
+| lz4 | 491,989 | 46.9% | 792 | 1,886 | 755 | 1,799 |
+| lz4hc | 282,916 | 27.0% | 36 | 2,549 | 35 | 2,431 |
 
 
 ### Encodings and checksum (medium payload, 8 KB)
 
 | Transform | encode ops/s | decode ops/s |
 |---|---:|---:|
-| base64 | 1,788,492 | 1,155,595 |
-| base32 | 52,882 | 44,267 |
-| hex | 408,117 | 104,802 |
-| crc32c | 1,096,045 | 1,160,829 |
+| base64 | 1,787,991 | 1,148,057 |
+| base32 | 52,531 | 48,224 |
+| hex | 406,702 | 104,500 |
+| crc32c | 1,091,752 | 1,160,519 |
 
 ### Backends — one small record
 
 | Backend | encode ops/s | decode ops/s |
 |---|---:|---:|
-| jackson3 | 7,609,018 | 3,442,688 |
-| jackson2 | 9,205,690 | 6,961,336 |
-| gson | 5,563,157 | 3,556,733 |
-| jsonb | 4,226,333 | 1,479,832 |
-| fory | 41,404,266 | 42,134,653 |
-| protobuf | 74,203,641 | 28,987,859 |
+| jackson3 | 7,826,665 | 3,575,335 |
+| jackson2 | 8,874,575 | 6,998,820 |
+| gson | 5,550,844 | 3,832,645 |
+| jsonb | 4,099,414 | 1,552,030 |
+| fory | 43,554,798 | 36,590,914 |
+| protobuf | 73,836,647 | 28,808,969 |
 
 ### Backends — an order with 100 line items
 
 | Backend | encode ops/s | decode ops/s |
 |---|---:|---:|
-| jackson3 | 97,232 | 34,148 |
-| jackson2 | 90,301 | 64,292 |
-| gson | 57,174 | 39,255 |
-| jsonb | 49,420 | 23,331 |
-| fory | 1,519,591 | 655,846 |
-| protobuf | 524,729 | 349,014 |
+| jackson3 | 97,993 | 35,863 |
+| jackson2 | 90,473 | 64,103 |
+| gson | 56,377 | 40,996 |
+| jsonb | 49,764 | 23,859 |
+| fory | 1,385,881 | 674,915 |
+| protobuf | 524,202 | 355,915 |
 
 ### Envelope encryption
 
 | Strategy | Payload | encode ops/s | decode ops/s |
 |---|---|---:|---:|
-| direct | small | 419,684 | 496,681 |
-| bounded | small | 1,015,655 | 499,724 |
-| direct | medium | 226,873 | 245,885 |
-| bounded | medium | 328,873 | 246,058 |
+| direct | small | 415,616 | 494,701 |
+| bounded | small | 1,017,118 | 501,934 |
+| direct | medium | 229,782 | 245,527 |
+| bounded | medium | 329,200 | 245,931 |
 
 ## Running them yourself
 

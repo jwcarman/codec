@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `codec-fory`: Apache Fory 1.1.0 → 1.7.1. `ForyCodecFactory.of(...)` takes Fory's
+  defaults, and Fory's default changed from schema-consistent to compatible mode
+  in 1.2.0 (without a release note), so payloads now carry their class schema:
+  a reader whose class has gained or lost a field decodes correctly where
+  schema-consistent mode silently returned a mis-shifted object. It costs a few
+  bytes per class per message — a lone four-field record roughly doubles, a
+  100-item order grows 2%; throughput is unchanged. Payloads written by earlier
+  releases still decode, but bytes written by this release cannot be read by a
+  schema-consistent Fory. Callers who want a specific mode build their own
+  `ThreadSafeFory` and pass it to the constructor
 - `JacksonCodecFactory`, `Jackson2CodecFactory`, and `GsonCodecFactory` now reject a
   `null` engine or `TypeRef` with a labelled `NullPointerException`, matching the
   JSON-B and Fory factories; `CompressionStreamCodec` likewise rejects `null` on
@@ -24,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   published), with the results and a benchmarks page in the docs
 
 ### Documentation
+- Benchmarks re-run on 2026-09-06 with Fory 1.7.1, zstd-jni 1.5.7-15, and
+  lz4-java 1.11.2: zstd decodes 1 MB payloads 18–29% faster at every level, the
+  backend numbers and encoded sizes reflect Fory's compatible mode, and the Fory
+  guide gains a schema-evolution section
 - Compression claims corrected against the benchmarks: the JDK codecs are
   fastest on payloads under a few hundred bytes, zstd's default level is not
   smaller than gzip on prose, and LZ4-HC is a decode-side optimisation

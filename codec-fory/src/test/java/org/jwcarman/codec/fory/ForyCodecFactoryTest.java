@@ -111,12 +111,64 @@ class ForyCodecFactoryTest {
     }
 
     @Test
-    void output_is_smaller_than_the_json_equivalent() {
-      Person alice = new Person("Alice", 30, true);
-      byte[] encoded = factory.create(Person.class).encode(alice);
-      byte[] json = "{\"name\":\"Alice\",\"age\":30,\"active\":true}".getBytes(UTF_8);
+    void output_is_smaller_than_the_json_equivalent_beyond_a_few_fields() {
+      // Compatible mode carries each class's schema once per message, so a lone four-field
+      // record is not smaller than its JSON; a payload with some repetition comfortably is.
+      List<Person> people =
+          IntStream.range(0, 20)
+              .mapToObj(i -> new Person("Person " + i, 20 + i, i % 2 == 0))
+              .toList();
+      Order order = new Order("o-1", people);
+      byte[] encoded = factory.create(Order.class).encode(order);
 
-      assertThat(encoded).hasSizeLessThanOrEqualTo(json.length);
+      StringBuilder json = new StringBuilder("{\"id\":\"o-1\",\"people\":[");
+      for (int i = 0; i < people.size(); i++) {
+        Person p = people.get(i);
+        if (i > 0) json.append(',');
+        json.append("{\"name\":\"")
+            .append(p.name())
+            .append("\",\"age\":")
+            .append(p.age())
+            .append(",\"active\":")
+            .append(p.active())
+            .append('}');
+      }
+      json.append("]}");
+
+      assertThat(encoded).hasSizeLessThan(json.toString().getBytes(UTF_8).length);
+    }
+  }
+
+  @Nested
+  class Schema_evolution {
+
+    /** {@link Person} with a field added: the same logical type at a later schema version. */
+    public record Evolved(String name, int age, boolean active, String email) {}
+
+    @Test
+    void a_reader_whose_class_lost_a_field_still_decodes_correctly() {
+      // Both factories register exactly one class, so Fory assigns it the same id on each side;
+      // the field-level metadata compatible mode carries is what matches the values by name.
+      byte[] bytes =
+          ForyCodecFactory.of(Evolved.class)
+              .create(Evolved.class)
+              .encode(new Evolved("Alice", 30, true, "alice@example.com"));
+
+      Person decoded = ForyCodecFactory.of(Person.class).create(Person.class).decode(bytes);
+
+      assertThat(decoded).isEqualTo(new Person("Alice", 30, true));
+    }
+
+    @Test
+    void a_reader_whose_class_gained_a_field_reads_it_as_null() {
+      byte[] bytes =
+          ForyCodecFactory.of(Person.class)
+              .create(Person.class)
+              .encode(new Person("Alice", 30, true));
+
+      Evolved decoded = ForyCodecFactory.of(Evolved.class).create(Evolved.class).decode(bytes);
+
+      assertThat(decoded).isEqualTo(new Evolved("Alice", 30, true, null));
     }
   }
 

@@ -3,7 +3,8 @@
 `codec-fory` is the backend for JVM-to-JVM payloads where speed and size matter —
 cache entries, queue messages, journal records. It serializes through
 [Apache Fory](https://fory.apache.org), which is typically several times faster
-than Kryo and produces smaller output than JSON.
+than Kryo and, on anything beyond a handful of fields, produces smaller output
+than JSON.
 
 ```java
 CodecFactory factory = ForyCodecFactory.of(Person.class, Order.class);
@@ -40,11 +41,35 @@ types itself and decides interfaces by each value's runtime class.
 To probe before creating, `factory.supports(SomeClass.class)` answers the same
 question as a boolean.
 
+## Schema evolution
+
+`ForyCodecFactory.of(...)` is a helper: beyond requiring registration it takes
+Fory's defaults, and the wire format follows them. Since Fory 1.2.0 the default
+is **compatible mode**: every payload carries its class schema, so a reader
+whose class has gained a field since the payload was written sees `null` there,
+and one whose class has lost a field simply skips it. The alternative,
+schema-consistent mode, does not fail on that drift — it returns a *wrong
+object*, with the remaining values shifted into the wrong fields — which is why
+Fory changed its default.
+
+The cost is a few bytes of metadata per class per message. On a real payload it
+is noise (the 100-item order in the [benchmarks](../benchmarks.md) grows 2%),
+but a lone four-field record roughly doubles and ends up no smaller than its
+JSON.
+
+Two things follow from inheriting the default. The two formats are not
+symmetric — a compatible-mode reader reads both, but a schema-consistent reader
+cannot read compatible-mode bytes — and a future Fory release could change the
+default again. If either matters to you, build your own `ThreadSafeFory` with
+the mode named explicitly and hand it to the constructor below; and put a
+[`VersionedCodec`](composition.md#versioning-the-format) in front of it before
+you ever need to change your mind.
+
 ## Bring your own Fory
 
 `new ForyCodecFactory(ThreadSafeFory)` accepts a caller-configured instance for
-anything beyond the default — compatible mode for schema evolution, custom
-serializers, or a shared instance. Codecs must be thread-safe and a plain
+anything beyond the default — schema-consistent mode for the smallest output,
+custom serializers, or a shared instance. Codecs must be thread-safe and a plain
 `Fory` is not, so the constructor takes only a `ThreadSafeFory`; build one
 with `Fory.builder()...buildThreadSafeFory()`.
 
@@ -53,8 +78,9 @@ with `Fory.builder()...buildThreadSafeFory()`.
 The wire format is Fory's own and JVM-specific:
 
 - Another language will read the bytes — use CBOR, JSON, or Protocol Buffers.
-- The data must outlive the classes that wrote it — use a schema-based format,
-  or at minimum Fory's compatible mode, and test the evolution you expect.
+- The data must outlive the classes that wrote it — compatible mode tolerates
+  added and removed fields, not renamed or retyped ones; use a schema-based
+  format, and test the evolution you expect.
 
 ## Spring Boot
 

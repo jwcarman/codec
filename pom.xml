@@ -87,6 +87,8 @@
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
         <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
         <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
+        <versions.plugin.version>2.18.0</versions.plugin.version>
+        <versions.plugin.version>2.18.0</versions.plugin.version>
 
         <!-- License Header Configuration -->
         <license.owner>James Carman</license.owner>
@@ -225,6 +227,13 @@ limitations under the License.]]></inlineHeader>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>${deploy.plugin.version}</version>
+                </plugin>
+                <!-- Invoked from the release workflow (versions:set); pinned so a release is not
+                     built with whatever version happens to be newest on Central that day. -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>${versions.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -404,10 +413,6 @@ limitations under the License.]]></inlineHeader>
                                     <ignoredUnusedDeclaredDependencies>
                                         <!-- The junit-jupiter aggregator supplies the engine at test runtime. -->
                                         <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter</ignoredUnusedDeclaredDependency>
-                                        <!-- codec-spring-boot-starter ships no code: it is dependencies-only by design. -->
-                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-core</ignoredUnusedDeclaredDependency>
-                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-transforms</ignoredUnusedDeclaredDependency>
-                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-autoconfigure</ignoredUnusedDeclaredDependency>
                                     </ignoredUnusedDeclaredDependencies>
                                     <ignoredNonTestScopedDependencies>
                                         <!-- Only test code references spring-boot classes directly, but it is a

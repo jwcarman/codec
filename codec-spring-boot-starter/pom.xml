@@ -52,4 +52,34 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>analyze-dependencies</id>
+                                <configuration>
+                                    <!-- The starter ships no code: it is dependencies-only by design, so every
+                                         declared dependency is "unused" as far as bytecode analysis can tell.
+                                         Scoped here rather than in the parent so the gate stays strict for
+                                         every module that does ship code. -->
+                                    <ignoredUnusedDeclaredDependencies combine.children="append">
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-core</ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-transforms</ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-autoconfigure</ignoredUnusedDeclaredDependency>
+                                    </ignoredUnusedDeclaredDependencies>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

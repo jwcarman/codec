@@ -185,8 +185,9 @@ shared.
   with `Map.copyOf`. A `Codec<T>[]` of length 256 was considered, but a generic
   array of that shape cannot be created without an unchecked cast, and this
   project forbids suppressing warnings of any kind — so the array is not an
-  option here. Versions 0-255 fall inside `Integer`'s cache, so the boxing on
-  lookup allocates nothing.
+  option here. The lookup boxes an `int` key: versions up to 127 come from
+  `Integer`'s cache, and 128-255 allocate a short-lived box. Against a delegate
+  that has just serialized an object graph, that is not a measurable cost.
 - Encode and decode each cost one array copy. That is inherent to a
   `byte[]`-in/`byte[]`-out SPI and is not worth contorting the API to avoid.
 

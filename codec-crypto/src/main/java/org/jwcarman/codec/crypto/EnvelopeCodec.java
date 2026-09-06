@@ -138,7 +138,10 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     } catch (RuntimeException e) {
       throw new EncryptionException("Unable to acquire data key", e);
     }
-    validateAes256(dataKey.key());
+    String problem = aes256Problem(dataKey.key());
+    if (problem != null) {
+      throw new EncryptionException(problem);
+    }
     byte[] keyIdBytes = dataKey.keyId().getBytes(StandardCharsets.UTF_8);
     byte[] wrapped = dataKey.wrapped();
     byte[] nonce = new byte[NONCE_LENGTH];
@@ -200,6 +203,12 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     byte[] wrapped =
         Arrays.copyOfRange(bytes, wrappedOffset + 2, wrappedOffset + 2 + wrappedLength);
     SecretKey dek = unwrapDataKey(keyId, wrapped);
+    // The provider's contract is an AES-256 key; hold decode to the same check as encode rather
+    // than handing whatever came back to a cipher whose algorithm id says AES-256-GCM.
+    String problem = aes256Problem(dek);
+    if (problem != null) {
+      throw new DecryptionException(problem);
+    }
     byte[] nonce = Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
     try {
       return gcmDecrypt(
@@ -214,16 +223,27 @@ public final class EnvelopeCodec implements Codec<byte[]> {
     }
   }
 
-  private static void validateAes256(SecretKey key) {
+  /**
+   * Checks that a data key is AES-256, returning the problem as a message or {@code null} when the
+   * key passes. Shared by encode and decode, which raise it as their own exception type.
+   */
+  private static String aes256Problem(SecretKey key) {
     if (!DEK_ALGORITHM.equals(key.getAlgorithm())) {
-      throw new EncryptionException(
-          "Data key algorithm mismatch: expected AES, got " + key.getAlgorithm());
+      return "Data key algorithm mismatch: expected AES, got " + key.getAlgorithm();
     }
     byte[] encoded = key.getEncoded();
     // A null encoding means an opaque, HSM-backed key: its length cannot be checked here, so it
     // is trusted to be AES-256 as the provider contract requires.
-    if (encoded != null && encoded.length != DEK_LENGTH_BYTES) {
-      throw new EncryptionException("Data key length mismatch: expected 32 bytes");
+    if (encoded == null) {
+      return null;
+    }
+    try {
+      return encoded.length == DEK_LENGTH_BYTES
+          ? null
+          : "Data key length mismatch: expected 32 bytes";
+    } finally {
+      // getEncoded() hands back a fresh copy of the key material; do not leave it for the GC.
+      Arrays.fill(encoded, (byte) 0);
     }
   }
 

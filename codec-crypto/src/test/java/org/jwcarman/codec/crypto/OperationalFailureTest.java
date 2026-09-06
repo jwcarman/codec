@@ -179,6 +179,44 @@ class OperationalFailureTest {
     }
 
     @Test
+    void an_unwrapped_key_of_the_wrong_length_is_rejected_before_decryption() {
+      EnvelopeCodec codec =
+          EnvelopeCodec.builder(unwrappingTo(new SecretKeySpec(new byte[16], "AES"))).build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .withMessageContaining("expected 32 bytes");
+    }
+
+    @Test
+    void an_unwrapped_non_aes_key_is_rejected_before_decryption() {
+      EnvelopeCodec codec =
+          EnvelopeCodec.builder(unwrappingTo(new SecretKeySpec(new byte[32], "HmacSHA256")))
+              .build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .withMessageContaining("expected AES, got HmacSHA256");
+    }
+
+    /** A provider that issues a valid AES-256 data key but unwraps to whatever it is told. */
+    private static DataKeyProvider unwrappingTo(SecretKey unwrapped) {
+      return new DataKeyProvider() {
+        @Override
+        public DataKey newDataKey() {
+          return new DataKey("kek", aes256(), new byte[] {1});
+        }
+
+        @Override
+        public SecretKey unwrap(String keyId, byte[] wrapped) {
+          return unwrapped;
+        }
+      };
+    }
+
+    @Test
     void an_opaque_aes_key_passes_validation_and_is_handed_to_the_provider() {
       // Its length cannot be checked, so validation trusts it; the JDK provider then rejects the
       // keyless material, which surfaces as an encryption failure rather than a validation one.

@@ -47,14 +47,14 @@ import org.jwcarman.codec.spi.Codec;
  *
  * {@snippet lang = java :
  * // header outermost: backend, transforms, everything inside may differ per version
- * VersionedCodec.<Person>builder()
+ * Codec<Person> versioned = VersionedCodec.<Person>builder()
  *         .version(1, jackson.create(Person.class).andThen(new GzipCodec()))
  *         .version(2, fory.create(Person.class).andThen(new ZstdCodec()))
  *         .writing(2)
  *         .build();
  *
- * // header inside gzip: gzip can now never change
- * versioned.andThen(new GzipCodec());
+ * // header now inside gzip: gzip must be undone to read it, so gzip can never change
+ * Codec<Person> frozen = versioned.andThen(new GzipCodec());
  * }
  *
  * <p>Put whatever you might want to change inside the versioned codec; put only permanent

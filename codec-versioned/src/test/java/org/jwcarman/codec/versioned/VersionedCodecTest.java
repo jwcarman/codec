@@ -205,6 +205,13 @@ class VersionedCodecTest {
     }
 
     @Test
+    void is_rejected_when_only_the_first_magic_byte_matches() {
+      assertThatExceptionOfType(VersionedFormatException.class)
+          .isThrownBy(() -> codec.decode(new byte[] {MAGIC_0, (byte) 0xFF, 1}))
+          .withMessage("not a versioned payload: bad magic");
+    }
+
+    @Test
     void is_not_reported_as_an_unknown_version() {
       assertThatExceptionOfType(VersionedFormatException.class)
           .isThrownBy(() -> codec.decode(new byte[] {0x00, 0x00, 0x01}))

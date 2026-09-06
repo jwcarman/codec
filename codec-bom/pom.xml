@@ -107,6 +107,11 @@
             </dependency>
             <dependency>
                 <groupId>org.jwcarman.codec</groupId>
+                <artifactId>codec-versioned</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jwcarman.codec</groupId>
                 <artifactId>codec-crypto</artifactId>
                 <version>${project.version}</version>
             </dependency>

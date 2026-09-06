@@ -178,28 +178,72 @@ class OperationalFailureTest {
           .withMessageContaining("expected 32 bytes");
     }
 
+    // A provider whose unwrap violates its contract is a key-infrastructure failure, not a
+    // rejection of the ciphertext: the data may be fine, so it must surface as KeyAccessException
+    // and never as the DecryptionException a pipeline quarantines on.
+
     @Test
-    void an_unwrapped_key_of_the_wrong_length_is_rejected_before_decryption() {
+    void an_unwrapped_key_of_the_wrong_length_is_a_key_access_failure_not_a_rejection() {
       EnvelopeCodec codec =
           EnvelopeCodec.builder(unwrappingTo(new SecretKeySpec(new byte[16], "AES"))).build();
       byte[] envelope = codec.encode(PLAINTEXT);
 
-      assertThatExceptionOfType(DecryptionException.class)
+      assertThatExceptionOfType(KeyAccessException.class)
           .isThrownBy(() -> codec.decode(envelope))
           .withMessageContaining("expected 32 bytes");
     }
 
     @Test
-    void an_unwrapped_non_aes_key_is_rejected_before_decryption() {
+    void an_unwrapped_non_aes_key_is_a_key_access_failure_not_a_rejection() {
       EnvelopeCodec codec =
           EnvelopeCodec.builder(unwrappingTo(new SecretKeySpec(new byte[32], "HmacSHA256")))
               .build();
       byte[] envelope = codec.encode(PLAINTEXT);
 
-      assertThatExceptionOfType(DecryptionException.class)
+      assertThatExceptionOfType(KeyAccessException.class)
           .isThrownBy(() -> codec.decode(envelope))
           .withMessageContaining("expected AES, got HmacSHA256");
     }
+
+    @Test
+    void an_unwrapped_null_key_is_a_key_access_failure_not_an_npe() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(unwrappingTo(null)).build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(KeyAccessException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .withMessageContaining("Data key is null");
+    }
+
+    @Test
+    void a_control_character_in_an_unwrapped_keys_algorithm_name_is_not_echoed() {
+      SecretKey hostile = new SecretKeySpec(new byte[32], "AES\nforged log line");
+      EnvelopeCodec codec = EnvelopeCodec.builder(unwrappingTo(hostile)).build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(KeyAccessException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .withMessageContaining("got AES?forged log line");
+    }
+
+    @Test
+    void an_opaque_unwrapped_key_passes_validation_and_is_handed_to_the_cipher() {
+      // Its length cannot be checked, so validation trusts it; the JDK provider then rejects the
+      // keyless material, which surfaces as the uniform cryptographic rejection. This is the
+      // HSM/KMS path: a non-extractable data key must get past the check.
+      EnvelopeCodec codec = EnvelopeCodec.builder(unwrappingTo(opaqueAesKey())).build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(DecryptionException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .withMessage("Unable to decrypt data");
+    }
+
+    // PIT equivalent mutant (spec 006 §2.3): VoidMethodCallMutator removing the Arrays.fill that
+    // zeroes the getEncoded() copy in EnvelopeCodec.aes256Problem survives. The copy is a local
+    // that nothing else references once the method returns, so no test through the public API can
+    // observe whether it was zeroed; the only way to kill it would be a SecretKey that hands out
+    // its own internal array, which would test that the codec destroys an array it does not own.
 
     /** A provider that issues a valid AES-256 data key but unwraps to whatever it is told. */
     private static DataKeyProvider unwrappingTo(SecretKey unwrapped) {

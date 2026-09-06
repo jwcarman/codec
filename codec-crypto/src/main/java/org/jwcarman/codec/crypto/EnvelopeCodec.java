@@ -204,10 +204,12 @@ public final class EnvelopeCodec implements Codec<byte[]> {
         Arrays.copyOfRange(bytes, wrappedOffset + 2, wrappedOffset + 2 + wrappedLength);
     SecretKey dek = unwrapDataKey(keyId, wrapped);
     // The provider's contract is an AES-256 key; hold decode to the same check as encode rather
-    // than handing whatever came back to a cipher whose algorithm id says AES-256-GCM.
+    // than handing whatever came back to a cipher whose algorithm id says AES-256-GCM. A key that
+    // violates the contract says nothing about the ciphertext, so this is a key-infrastructure
+    // failure, not a rejection of the data — a pipeline must not quarantine records over it.
     String problem = aes256Problem(dek);
     if (problem != null) {
-      throw new DecryptionException(problem);
+      throw new KeyAccessException("Data key provider returned an invalid key: " + problem);
     }
     byte[] nonce = Arrays.copyOfRange(bytes, headerLength - NONCE_LENGTH, headerLength);
     try {
@@ -228,8 +230,14 @@ public final class EnvelopeCodec implements Codec<byte[]> {
    * key passes. Shared by encode and decode, which raise it as their own exception type.
    */
   private static String aes256Problem(SecretKey key) {
+    if (key == null) {
+      return "Data key is null";
+    }
     if (!DEK_ALGORITHM.equals(key.getAlgorithm())) {
-      return "Data key algorithm mismatch: expected AES, got " + key.getAlgorithm();
+      // The algorithm name comes from the provider's key object; sanitized like a wire keyId, since
+      // on the decode path the wire keyId is what selected it.
+      return "Data key algorithm mismatch: expected AES, got "
+          + sanitizeForMessage(String.valueOf(key.getAlgorithm()));
     }
     byte[] encoded = key.getEncoded();
     // A null encoding means an opaque, HSM-backed key: its length cannot be checked here, so it
@@ -243,6 +251,10 @@ public final class EnvelopeCodec implements Codec<byte[]> {
           : "Data key length mismatch: expected 32 bytes";
     } finally {
       // getEncoded() hands back a fresh copy of the key material; do not leave it for the GC.
+      // This relies on getEncoded() returning a copy, which every JDK SecretKey implementation
+      // does (SecretKeySpec clones; PKCS#11 keys export a fresh array) though Key does not mandate
+      // it. The zeroing shortens one clone's lifetime and is not a security boundary: the
+      // SecretKey itself still holds the material.
       Arrays.fill(encoded, (byte) 0);
     }
   }

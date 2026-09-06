@@ -340,6 +340,14 @@ Consistent with the rest of the codebase: every failure throws, nothing logs.
   pipeline that quarantines or discards on `DecryptionException` must never do
   so because a KMS was briefly down — conflating the two turns an availability
   blip into data loss.
+  Also in this class (amended 2026-09-06): a provider whose `unwrap` returns
+  normally but violates the SPI contract — `null`, a non-AES key, or a key that
+  is not 256 bits. The codec checks the unwrapped key exactly as it checks a
+  fresh one on encode, and a failure says nothing about the ciphertext, so it is
+  an infrastructure failure: a misconfigured KEK must alert on key
+  infrastructure, not quarantine a day of recoverable records as corrupt. The
+  message names the violation (never the key material or its actual length);
+  a provider-supplied algorithm name is sanitized like a wire keyId.
 - `EncryptionException` (extends `IllegalStateException`): provider or strategy
   failure during encode, wrapping the cause.
 

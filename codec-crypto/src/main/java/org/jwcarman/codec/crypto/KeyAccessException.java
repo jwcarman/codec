@@ -37,4 +37,14 @@ public class KeyAccessException extends IllegalStateException {
   public KeyAccessException(String message, Throwable cause) {
     super(message, cause);
   }
+
+  /**
+   * Creates a key-infrastructure failure that has no underlying exception: the provider returned
+   * normally, but what it returned violates the {@link DataKeyProvider} contract.
+   *
+   * @param message what the provider got wrong
+   */
+  public KeyAccessException(String message) {
+    super(message);
+  }
 }

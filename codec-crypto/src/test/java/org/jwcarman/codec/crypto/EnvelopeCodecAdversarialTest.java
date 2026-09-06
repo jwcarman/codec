@@ -19,7 +19,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Map;
+import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -120,6 +123,44 @@ class EnvelopeCodecAdversarialTest {
       EnvelopeCodec reader =
           EnvelopeCodec.builder(new JceDataKeyProvider("kek", Map.of("kek", shared))).build();
       byte[] plaintext = "portable".getBytes(UTF_8);
+      assertThat(reader.decode(writer.encode(plaintext))).isEqualTo(plaintext);
+    }
+
+    @Test
+    void a_provider_written_from_the_spec_alone_decodes_what_the_jce_provider_wrote() {
+      // Spec 005 §JceDataKeyProvider: the wrapped blob is [0x01][RFC 3394 AES-KW of the DEK under
+      // the KEK]. This fake shares nothing with JceDataKeyProvider but the KEK bytes and that
+      // sentence, so a passing decode is evidence about the wrapped form, not about one class.
+      byte[] kek = new byte[32];
+      Arrays.fill(kek, (byte) 7);
+      SecretKey shared = new SecretKeySpec(kek, "AES");
+      EnvelopeCodec writer =
+          EnvelopeCodec.builder(new JceDataKeyProvider("kek", Map.of("kek", shared))).build();
+      DataKeyProvider fromTheSpec =
+          new DataKeyProvider() {
+            @Override
+            public DataKey newDataKey() {
+              throw new UnsupportedOperationException("read-only fake");
+            }
+
+            @Override
+            public SecretKey unwrap(String keyId, byte[] wrapped) {
+              assertThat(keyId).isEqualTo("kek");
+              assertThat(wrapped[0]).isEqualTo((byte) 0x01);
+              try {
+                Cipher kw = Cipher.getInstance("AES/KW/NoPadding");
+                kw.init(Cipher.UNWRAP_MODE, shared);
+                return (SecretKey)
+                    kw.unwrap(
+                        Arrays.copyOfRange(wrapped, 1, wrapped.length), "AES", Cipher.SECRET_KEY);
+              } catch (GeneralSecurityException e) {
+                throw new IllegalStateException(e);
+              }
+            }
+          };
+      EnvelopeCodec reader = EnvelopeCodec.builder(fromTheSpec).build();
+      byte[] plaintext = "portable".getBytes(UTF_8);
+
       assertThat(reader.decode(writer.encode(plaintext))).isEqualTo(plaintext);
     }
   }

@@ -58,6 +58,14 @@ import java.util.function.LongSupplier;
  * outside the process), reseeding or replacing the {@code SecureRandom} and rolling this strategy's
  * key on resume, or a platform that reseeds on VM-generation change.
  *
+ * <h2>One provider per cached key</h2>
+ *
+ * <p>The cached DEK is tied to the {@link DataKeyProvider} instance that issued it. If a strategy
+ * instance is shared between codecs built on different providers, an {@code acquire} from the other
+ * provider rolls rather than reusing a DEK wrapped under a KEK that provider does not hold. Sharing
+ * is still not recommended — each codec gets the amortisation it expects only with its own strategy
+ * — but it cannot produce undecodable output.
+ *
  * <h2>Key retirement</h2>
  *
  * <p>A retired DEK is simply released to the garbage collector when this strategy stops referencing
@@ -87,7 +95,8 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
   private final Object rollLock = new Object();
   private final AtomicReference<CachedKey> cached = new AtomicReference<>();
 
-  private record CachedKey(DataKey key, long issuedAtNanos, AtomicLong remaining) {}
+  private record CachedKey(
+      DataKeyProvider provider, DataKey key, long issuedAtNanos, AtomicLong remaining) {}
 
   /**
    * Creates a strategy using {@link System#nanoTime()} as the monotonic ticker.
@@ -127,23 +136,30 @@ public final class BoundedDataKeyStrategy implements DataKeyStrategy {
 
   @Override
   public DataKey acquire(DataKeyProvider provider) {
+    Objects.requireNonNull(provider, "provider must not be null");
     CachedKey current = cached.get();
-    if (current != null && usable(current)) {
+    if (current != null && usable(current, provider)) {
       return current.key();
     }
     synchronized (rollLock) {
       current = cached.get();
-      if (current != null && usable(current)) {
+      if (current != null && usable(current, provider)) {
         return current.key();
       }
       DataKey fresh = provider.newDataKey();
-      cached.set(new CachedKey(fresh, ticker.getAsLong(), new AtomicLong(maxMessages - 1)));
+      cached.set(
+          new CachedKey(provider, fresh, ticker.getAsLong(), new AtomicLong(maxMessages - 1)));
       return fresh;
     }
   }
 
-  private boolean usable(CachedKey candidate) {
-    return ticker.getAsLong() - candidate.issuedAtNanos() < maxAgeNanos
+  /**
+   * A cached key is usable only for the provider that issued it: a strategy instance shared by two
+   * codecs on different providers must never hand one codec a DEK wrapped under the other's KEK.
+   */
+  private boolean usable(CachedKey candidate, DataKeyProvider provider) {
+    return candidate.provider() == provider
+        && ticker.getAsLong() - candidate.issuedAtNanos() < maxAgeNanos
         && candidate.remaining().getAndDecrement() > 0;
   }
 }

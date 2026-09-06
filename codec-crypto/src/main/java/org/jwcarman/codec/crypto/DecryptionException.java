@@ -22,14 +22,17 @@ package org.jwcarman.codec.crypto;
  * is fundamentally incompatible with the decryption operation. The message and cause provide
  * diagnostic details about why decryption failed.
  *
- * <p>Note on timing side-channels: the indistinguishability guarantee for cryptographic rejections
- * covers exception <em>content</em> only — every such rejection shares the exact same message. It
- * does not cover timing. The timing side channel is unavoidable and explicitly out of scope:
- * unwrapping a key through a remote provider and verifying a GCM tag locally take observably
- * different amounts of time, and structural rejections (bad magic, unknown version, an
- * out-of-bounds length) return before any provider call is even made. Callers who need
- * timing-independent behavior across all rejection categories must build that at a layer above this
- * exception's message.
+ * <p>Scope of the indistinguishability guarantee: every cryptographic rejection shares the exact
+ * same <em>message</em>. The <em>cause</em> is preserved for diagnosis and does differ by stage —
+ * an AES-KW integrity failure carries the JCE exception from the unwrap, a GCM tag mismatch carries
+ * {@code AEADBadTagException}, an unknown KEK id carries none — so a consumer that exposes stack
+ * traces exposes which stage rejected the input. Log the message, not the trace, where that
+ * distinction must not leak. The guarantee does not cover timing either. The timing side channel is
+ * unavoidable and explicitly out of scope: unwrapping a key through a remote provider and verifying
+ * a GCM tag locally take observably different amounts of time, and structural rejections (bad
+ * magic, unknown version, an out-of-bounds length) return before any provider call is even made.
+ * Callers who need timing-independent behavior across all rejection categories must build that at a
+ * layer above this exception's message.
  */
 public class DecryptionException extends IllegalArgumentException {
 

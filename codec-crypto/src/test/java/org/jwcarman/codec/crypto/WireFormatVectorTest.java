@@ -52,13 +52,39 @@ class WireFormatVectorTest {
         .build();
   }
 
-  private static final String FROZEN_VECTOR_HEX =
+  static final String FROZEN_VECTOR_HEX =
       "4a43010100036b656b002901246d75815315bd8b40ac141ba1cbca56785ae73cbbafa7fd20f4c91a99312c946edff8132c8259b4202122232425262728292a2bb155c2150fb5797c630c36a1e16ec59cac4b79f69c5cb6458373a94d52f0dd";
 
   @Test
   void the_wire_format_matches_the_frozen_vector_byte_for_byte() {
     byte[] message = deterministicCodec().encode("codec-crypto v1".getBytes(UTF_8));
     assertThat(HexFormat.of().formatHex(message)).isEqualTo(FROZEN_VECTOR_HEX);
+  }
+
+  @Test
+  void a_shared_dek_gets_a_fresh_nonce_per_message_while_its_wrapped_form_repeats() {
+    // Under BoundedDataKeyStrategy two messages share one DEK; the nonce must still differ. With
+    // the sequential RNG the nonce field is the only thing the RNG feeds after the first DEK, so
+    // the two headers must agree everywhere except the last 12 bytes.
+    byte[] kek = new byte[32];
+    SecureRandom random = sequentialRandom();
+    EnvelopeCodec codec =
+        EnvelopeCodec.builder(
+                new JceDataKeyProvider("kek", Map.of("kek", new SecretKeySpec(kek, "AES")), random))
+            .secureRandom(random)
+            .strategy(new BoundedDataKeyStrategy(100, java.time.Duration.ofMinutes(5)))
+            .build();
+
+    byte[] first = codec.encode("one".getBytes(UTF_8));
+    byte[] second = codec.encode("two".getBytes(UTF_8));
+
+    int headerLength = 64; // 20 + k(3) + w(41), as in the frozen vector
+    assertThat(java.util.Arrays.copyOf(second, headerLength - 12))
+        .isEqualTo(java.util.Arrays.copyOf(first, headerLength - 12));
+    assertThat(java.util.Arrays.copyOfRange(second, headerLength - 12, headerLength))
+        .isNotEqualTo(java.util.Arrays.copyOfRange(first, headerLength - 12, headerLength));
+    assertThat(codec.decode(first)).isEqualTo("one".getBytes(UTF_8));
+    assertThat(codec.decode(second)).isEqualTo("two".getBytes(UTF_8));
   }
 
   @Test

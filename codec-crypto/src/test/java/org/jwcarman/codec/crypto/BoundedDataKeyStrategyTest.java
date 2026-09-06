@@ -100,6 +100,20 @@ class BoundedDataKeyStrategyTest {
   @Nested
   class Rolling {
     @Test
+    void a_different_provider_instance_gets_its_own_key_not_the_cached_one() {
+      CountingProvider first = new CountingProvider();
+      CountingProvider second = new CountingProvider();
+      BoundedDataKeyStrategy strategy = new BoundedDataKeyStrategy(100, Duration.ofMinutes(5));
+
+      DataKey fromFirst = strategy.acquire(first);
+      DataKey fromSecond = strategy.acquire(second);
+
+      assertThat(fromSecond).isNotSameAs(fromFirst);
+      assertThat(first.calls.get()).isEqualTo(1);
+      assertThat(second.calls.get()).isEqualTo(1);
+    }
+
+    @Test
     void reuses_the_cached_key_within_bounds() {
       CountingProvider provider = new CountingProvider();
       BoundedDataKeyStrategy strategy =

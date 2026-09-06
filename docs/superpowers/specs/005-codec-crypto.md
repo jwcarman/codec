@@ -333,7 +333,9 @@ Consistent with the rest of the codebase: every failure throws, nothing logs.
   violations, disallowed keyId) carry stage-specific messages; cryptographic
   rejections (tag mismatch, unwrap *rejection* — AES-KW ICV failure, KMS
   invalid-ciphertext) share one indistinguishable message. Scope of that claim:
-  exception *content* only. The timing side channel is unavoidable — a KMS
+  the exception *message* only. The cause is preserved for diagnosis and
+  differs by stage (JCE unwrap failure, `AEADBadTagException`, or none for an
+  unknown KEK id); consumers that expose stack traces expose the stage. The timing side channel is unavoidable — a KMS
   unwrap round trip and a local tag check differ observably, and structural
   rejections return before any provider call — and is documented as such.
 - `KeyAccessException` (extends `IllegalStateException`): "the key

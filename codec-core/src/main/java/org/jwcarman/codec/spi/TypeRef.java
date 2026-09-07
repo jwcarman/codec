@@ -100,14 +100,12 @@ public abstract class TypeRef<T> {
    *     single erased class a codec could be created for
    */
   public Class<T> rawClass() {
-    Class<?> raw;
-    if (type instanceof Class<?> clazz) {
-      raw = clazz;
-    } else if (type instanceof ParameterizedType parameterized) {
-      raw = (Class<?>) parameterized.getRawType();
-    } else {
-      throw new IllegalArgumentException("Unsupported type: " + type.getTypeName());
-    }
+    Class<?> raw =
+        switch (type) {
+          case Class<?> clazz -> clazz;
+          case ParameterizedType parameterized -> (Class<?>) parameterized.getRawType();
+          default -> throw new IllegalArgumentException("Unsupported type: " + type.getTypeName());
+        };
     return uncheckedTypeToken(raw);
   }
 

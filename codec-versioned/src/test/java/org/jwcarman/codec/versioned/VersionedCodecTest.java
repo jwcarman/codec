@@ -292,7 +292,7 @@ class VersionedCodecTest {
       VersionedCodec.Builder<String> builder = VersionedCodec.<String>builder().writing(1);
 
       assertThatIllegalStateException()
-          .isThrownBy(() -> builder.build())
+          .isThrownBy(builder::build)
           .withMessage("at least one version must be registered");
     }
 
@@ -300,7 +300,7 @@ class VersionedCodecTest {
     void rejects_building_without_a_write_version() {
       VersionedCodec.Builder<String> builder = VersionedCodec.<String>builder().version(1, plain());
 
-      assertThatIllegalStateException().isThrownBy(() -> builder.build());
+      assertThatIllegalStateException().isThrownBy(builder::build);
     }
 
     @Test
@@ -308,7 +308,7 @@ class VersionedCodecTest {
       VersionedCodec.Builder<String> builder =
           VersionedCodec.<String>builder().version(1, plain()).writing(2);
 
-      assertThatIllegalStateException().isThrownBy(() -> builder.build());
+      assertThatIllegalStateException().isThrownBy(builder::build);
     }
 
     @Test

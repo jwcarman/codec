@@ -37,11 +37,27 @@ RedisCacheConfiguration.defaultCacheConfig()
 
 ### Auto-configuration
 
-With `codec-spring-data-redis`, the starter, `spring-boot-starter-cache` (and
-`@EnableCaching`), and `spring-boot-starter-data-redis` on the classpath, and
-a `CodecFactory` bean present — which a backend module and the starter give
-you — the auto-configured `CodecFactory` serializes cache values for the
-caches you name:
+The cache auto-configuration activates when all of the following are true:
+
+- `codec-spring-data-redis` and the starter are on the classpath
+- `spring-boot-starter-cache` is on the classpath, and `@EnableCaching` is set
+- `spring-boot-starter-data-redis` is on the classpath
+- a `CodecFactory` bean is present — which a backend module and the starter
+  give you
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-cache</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+Once all four hold, the auto-configured `CodecFactory` serializes cache
+values for the caches you name:
 
 ```properties
 codec.redis.cache.caches.people=com.example.Person
@@ -62,6 +78,14 @@ codec.redis.cache.default-type=java.lang.Object
 ```
 
 Set `codec.redis.cache.enabled=false` to switch the auto-configuration off.
+
+#### Properties reference
+
+| Property | Type | Default | Meaning |
+|---|---|---|---|
+| `codec.redis.cache.enabled` | `boolean` | `true` | Whether codec serializes Redis cache values. |
+| `codec.redis.cache.default-type` | class name | unset | Value type for caches not listed under `caches`; unset leaves them on Spring Boot's default serializer. |
+| `codec.redis.cache.caches.<name>` | class name | *(none)* | Value type for the named cache. |
 
 ## Compress, encrypt, cache
 

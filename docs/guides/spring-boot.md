@@ -67,7 +67,9 @@ present, precedence is deterministic:
 6. Protocol Buffers (`codec-protobuf`)
 
 The normal setup is exactly one backend; the ordering just makes the unusual
-case (a backend arriving transitively from another library) predictable.
+case (a backend arriving transitively from another library) predictable. If no
+backend is on the classpath, no `CodecFactory` bean exists and injection fails
+with `NoSuchBeanDefinitionException` — add exactly one of the modules above.
 
 ## Overriding
 

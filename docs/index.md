@@ -10,6 +10,8 @@ hide:
 
 <p class="jw-hero__tagline">Type-safe serialization abstraction for Java.</p>
 
+Java 25+ · Spring Boot 4.x (starter only)
+
 <div class="jw-tape" data-word="codec" role="img" aria-label="The word codec, shown as its bytes: 63 6F 64 65 63"></div>
 
 <p class="jw-hero__actions">
@@ -124,3 +126,6 @@ tiny and pushes the backend decision to the classpath.
 - [Encryption](guides/encryption.md) — envelope encryption and key management
 - [Threat Model](guides/threat-model.md) — assets, trust boundaries, and what's
   defended
+- [Apache Kafka](guides/kafka.md) — `Serializer`/`Deserializer`/`Serde` adapters
+- [Spring Data Redis](guides/redis.md) — `RedisSerializer` and cache
+  auto-configuration

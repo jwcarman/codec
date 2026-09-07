@@ -76,6 +76,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   4x the throughput of the previous implementation
 
 ### Documentation
+- Fixed a newcomer-walkthrough review's findings: the Composition guide's
+  chaining sample and the `Codec.andThen` Javadoc snippet now build
+  `EnvelopeCodec` (there is no `AesCodec`); the landing page states the Java
+  25 / Spring Boot 4.x requirement; the landing page and Getting Started link
+  Apache Kafka and Spring Data Redis; the Guides nav orders Handling Failures
+  before Evolving Stored Formats; the Kafka guide covers
+  `RecordDeserializationException`/`ErrorHandlingDeserializer` and declares
+  its `config` variable; the Spring Boot guide states what happens with no
+  backend on the classpath; and the Redis guide turns its auto-configuration
+  prerequisites into a checklist and adds a `codec.redis.cache.*` properties
+  table
 - Benchmarks re-run on 2026-09-06 with Fory 1.7.1, zstd-jni 1.5.7-15, and
   lz4-java 1.11.2: zstd decodes 1 MB payloads 18–29% faster at every level, the
   backend numbers and encoded sizes reflect Fory's compatible mode, and the Fory

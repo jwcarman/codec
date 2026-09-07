@@ -14,6 +14,7 @@ is what goes on the wire.
 ## Producers and consumers
 
 ```java
+Map<String, Object> config = Map.of(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 Codec<Person> codec = codecFactory.create(Person.class);
 
 Producer<String, Person> producer =
@@ -42,7 +43,11 @@ adapters are meant to be instantiated in code.
 The topic is ignored — a codec doesn't vary by topic — and `null` maps to
 `null` in both directions, which is Kafka's tombstone, through
 [`nullSafe()`](composition.md#null-handling). Everything else, including any
-exception the codec throws, passes through unchanged.
+exception the codec throws, passes through unchanged. `KafkaConsumer.poll()`
+surfaces it as `RecordDeserializationException` with the `CodecException` as
+the cause; with Spring Kafka, wrap the deserializer in
+`ErrorHandlingDeserializer` so a `DefaultErrorHandler` can dead-letter on
+`InvalidPayloadException` and retry on `TransientCodecException`.
 
 ## Kafka Streams
 

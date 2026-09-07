@@ -18,10 +18,12 @@ Transforms chain left to right on encode and unwind automatically in reverse
 order on decode:
 
 ```java
+EnvelopeCodec envelope = EnvelopeCodec.builder(provider).build(); // see Encryption
+
 Codec<Person> codec =
     codecFactory.create(Person.class)
-        .andThen(new GzipCodec())      // compress first...
-        .andThen(new AesCodec(key));   // ...then encrypt
+        .andThen(new GzipCodec())  // compress first...
+        .andThen(envelope);        // ...then encrypt
 ```
 
 Here `encode` produces JSON → gzip → ciphertext, and `decode` transparently

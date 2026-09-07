@@ -70,7 +70,8 @@ public interface Codec<T> {
    * on encode and unwind automatically in reverse order on decode:
    *
    * {@snippet lang = java :
-   * Codec<Person> codec = factory.create(Person.class).andThen(new GzipCodec()).andThen(aes);
+   * EnvelopeCodec envelope = EnvelopeCodec.builder(provider).build();
+   * Codec<Person> codec = factory.create(Person.class).andThen(new GzipCodec()).andThen(envelope);
    * }
    *
    * @param transform the byte transform to apply after encoding (and invert before decoding)

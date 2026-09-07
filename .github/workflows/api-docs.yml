@@ -56,6 +56,17 @@ jobs:
         with:
           ref: refs/tags/${{ inputs.tag || github.event.release.tag_name }}
           path: source
+          fetch-depth: 0
+
+      # The site publishes API docs for releases cut from main only, same rule as the publish workflow.
+      - name: Require the tagged commit to be on main
+        working-directory: source
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::tag $RELEASE_TAG is not on main; API docs are built for releases from main only"
+            exit 1
+          fi
 
       - name: Set up JDK 25
         uses: actions/setup-java@v6

@@ -319,6 +319,42 @@ class TypeRefTest {
     }
 
     @Test
+    void rejectsAWitnessWithNoTypeParameters() {
+      assertThatThrownBy(() -> TypeRef.<Envelope<Person>>parameterized(Object.class))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("java.lang.Object")
+          .hasMessageContaining("not a generic class");
+      assertThatThrownBy(() -> TypeRef.<String>parameterized(String.class))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("not a generic class");
+      assertThatThrownBy(() -> TypeRef.<String[]>parameterized(Object[].class))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("not a generic class");
+    }
+
+    @Test
+    void theArgumentsOfABuiltTypeAreACopy() {
+      ParameterizedType built =
+          (ParameterizedType) TypeRef.listOf(TypeRef.of(Person.class)).getType();
+
+      built.getActualTypeArguments()[0] = String.class;
+
+      assertThat(built.getActualTypeArguments()).containsExactly(Person.class);
+      assertThat(built).isEqualTo(new TypeRef<List<Person>>() {}.getType());
+    }
+
+    @Test
+    void aLocalGenericClassHasNoOwnerLikeTheJdk() {
+      record Local<T>(T value) {}
+      TypeRef<Local<Person>> built = TypeRef.parameterized(Local.class, TypeRef.of(Person.class));
+      TypeRef<Local<Person>> captured = new TypeRef<>() {};
+
+      assertThat(((ParameterizedType) built.getType()).getOwnerType())
+          .isEqualTo(((ParameterizedType) captured.getType()).getOwnerType());
+      assertThat(built).isEqualTo(captured).hasToString(captured.toString());
+    }
+
+    @Test
     void rejectsAPrimitiveTypeArgument() {
       TypeRef<Integer> primitive = TypeRef.of(int.class);
 
@@ -391,13 +427,14 @@ class TypeRefTest {
             }
           };
 
+      Type sameInstance = list; // reflexivity, part of the equals contract
       assertThat(list)
-          .isEqualTo(list)
+          .isEqualTo(sameInstance)
           .isNotEqualTo(List.class)
           .isNotEqualTo(TypeRef.setOf(TypeRef.of(Person.class)).getType())
           .isNotEqualTo(TypeRef.listOf(TypeRef.of(String.class)).getType())
           .hasSameHashCodeAs(new TypeRef<List<Person>>() {}.getType())
-          .hasToString(list.getTypeName());
+          .hasToString("java.util.List<" + Person.class.getTypeName() + ">");
       assertThat(entry).isNotEqualTo(entryWithoutOwner);
       assertThat(((ParameterizedType) list).getActualTypeArguments()).containsExactly(Person.class);
     }

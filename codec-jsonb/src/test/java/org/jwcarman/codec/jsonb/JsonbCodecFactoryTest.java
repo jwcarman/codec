@@ -49,6 +49,8 @@ class JsonbCodecFactoryTest {
 
   public record Person(String name, int age, boolean active) {}
 
+  public record Envelope<O>(String id, O payload) {}
+
   public record Renamed(@JsonbProperty("full_name") String name) {}
 
   private static Jsonb jsonb;
@@ -90,6 +92,18 @@ class JsonbCodecFactoryTest {
       List<Person> people = List.of(new Person("Alice", 30, true), new Person("Bob", 41, false));
 
       assertThat(codec.decode(codec.encode(people))).isEqualTo(people);
+    }
+
+    @Test
+    void round_trips_a_user_generic_type_built_from_an_element_type_ref() {
+      Codec<Envelope<Person>> codec =
+          factory.create(TypeRef.parameterized(Envelope.class, TypeRef.of(Person.class)));
+      Envelope<Person> original = new Envelope<>("e-1", new Person("Alice", 30, true));
+
+      Envelope<Person> decoded = codec.decode(codec.encode(original));
+
+      assertThat(decoded).isEqualTo(original);
+      assertThat(decoded.payload()).isInstanceOf(Person.class);
     }
 
     @Test

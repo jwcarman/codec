@@ -141,10 +141,12 @@ record Envelope<O>(String id, O payload) {}
 ```
 
 A built reference equals the same type captured by an anonymous subclass, so a
-factory cache sees one type, not two. The one thing the compiler cannot check is
-a declared type more specific than the class you name (`TypeRef<LinkedList<O>>`
-from `List.class`); that fails on the first decode, so round-trip a
-`parameterized` reference once in a test.
+factory cache sees one type, not two. What the compiler cannot check is that the
+arguments match the declared type's own, in identity and order, or a declared
+type more specific than the class you name (`TypeRef<LinkedList<O>>` from
+`List.class`). Such a mismatch does not fail inside the codec: decode succeeds
+with a value of the built type, and the `ClassCastException` appears where that
+value is first used. Round-trip a `parameterized` reference once in a test.
 
 ## Without Spring
 

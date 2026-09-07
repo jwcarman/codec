@@ -153,6 +153,20 @@ class GsonCodecFactoryTest {
     assertThat(errors).isEmpty();
   }
 
+  record Envelope<O>(String id, O payload) {}
+
+  @Test
+  void shouldRoundTripAUserGenericTypeBuiltFromAnElementTypeRef() {
+    Codec<Envelope<Person>> codec =
+        factory.create(TypeRef.parameterized(Envelope.class, TypeRef.of(Person.class)));
+    Envelope<Person> original = new Envelope<>("e-1", new Person("Alice", 30, true));
+
+    Envelope<Person> decoded = codec.decode(codec.encode(original));
+
+    assertThat(decoded).isEqualTo(original);
+    assertThat(decoded.payload()).isInstanceOf(Person.class);
+  }
+
   @Test
   void shouldRoundTripAListBuiltFromAnElementTypeRef() {
     Codec<List<Person>> codec = factory.create(TypeRef.listOf(TypeRef.of(Person.class)));

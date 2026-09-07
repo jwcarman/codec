@@ -96,7 +96,9 @@ combination:
   target is its own class, run in its own forked JVM, because jazzer-junit
   fuzzes only the first `@FuzzTest` per JVM. A committed seed corpus runs in
   regression mode with every normal test run; the `-Pfuzz` Maven profile
-  fuzzes both targets live, 120 seconds each.
+  fuzzes both targets live, 120 seconds each, and a scheduled GitHub Actions
+  workflow (`fuzz.yml`) runs it nightly, uploading any crashing input as a
+  build artifact.
 - **Mutation testing**: PIT runs in the `ci` profile and fails the build below
   85% mutation / 90% line coverage.
 - **Static analysis**: SpotBugs with the findsecbugs plugin runs in the `ci`

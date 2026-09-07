@@ -1,0 +1,40 @@
+name: Nightly fuzz
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v6
+      with:
+        java-version: '25'
+        distribution: 'liberica'
+        cache: maven
+
+    - name: Build the reactor
+      run: mvn -B -DskipTests install
+
+    - name: Fuzz codec-crypto
+      run: mvn -B -pl codec-crypto -Pfuzz test
+
+    - name: Upload findings
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-findings
+        path: |
+          codec-crypto/src/test/resources/**/*Inputs/**
+          codec-crypto/target/surefire-reports/**
+        if-no-files-found: ignore

@@ -12,3 +12,4 @@ target/
 .classpath
 .factorypath
 site/
+.cifuzz-corpus/

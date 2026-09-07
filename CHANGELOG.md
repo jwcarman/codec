@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   guide.
 
 ### Changed
+- The build compiles with `-Xlint:all,-processing,-unchecked -Werror`: any javac
+  warning in an enabled category fails compilation. `unchecked` is off because
+  `TypeRef.rawClass()` is the one unchecked cast the type system cannot express;
+  no other is permitted. The Gson, Protobuf and Fory backends no longer carry
+  unchecked casts, and every exception class declares a `serialVersionUID`
+- `codec-gson` encodes by the codec's declared type (`Gson.toJson(value, type)`)
+  rather than the value's runtime class, matching what decode already did; a
+  polymorphic value now serialises as its declared `T`
 - `codec-fory`: Apache Fory 1.1.0 → 1.7.1. `ForyCodecFactory.of(...)` takes Fory's
   defaults, and Fory's default changed from schema-consistent to compatible mode
   in 1.2.0 (without a release note), so payloads now carry their class schema:
@@ -46,6 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `encode` and `decode` before touching a stream, matching the other transforms
 
 ### Added
+- `TypeRef.rawClass()`: the erased class of the captured type, typed `Class<T>`,
+  so a backend can use the checked `Class.cast` instead of an unchecked cast of
+  its own. It is the single unchecked cast in the codebase and its Javadoc says so
 - `codec-versioned`: `VersionedCodec` prefixes each payload with a magic and
   version header and dispatches decoding on it, so a storage strategy can change
   without a flag day — old versions stay registered and readable while an

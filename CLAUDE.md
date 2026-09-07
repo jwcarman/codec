@@ -12,3 +12,5 @@ does not recognize AES Key Wrap (RFC 3394, transform `AES/KW/NoPadding`) as inte
 though it is (a 64-bit ICV verified on unwrap) — a documented gap in the detector's known-safe
 list, not a real finding, and specs 005/006 mandate AES-KW as the wrap scheme for this provider.
 See the comment in that file for the full analysis. Any other suppression remains forbidden.
+
+The build enforces this: javac runs with `-Xlint:all,-processing,-unchecked -Werror`, so any warning in an enabled category fails compilation. The `unchecked` category is off because the codebase contains exactly one unchecked cast — `TypeRef.rawClass()`, the type-token bridge the type system cannot express — and Java cannot write an unchecked cast without a warning. No other unchecked cast is permitted; every other cast is a checked `Class.cast` or none. A change that needs a second unchecked cast is a design problem, not a candidate for an annotation.

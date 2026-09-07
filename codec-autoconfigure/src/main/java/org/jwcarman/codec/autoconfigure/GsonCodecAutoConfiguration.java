@@ -33,6 +33,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({Gson.class, GsonCodecFactory.class})
 public class GsonCodecAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public GsonCodecAutoConfiguration() {}
+
   /**
    * Creates the factory, reusing the application's {@link Gson} bean when one exists.
    *

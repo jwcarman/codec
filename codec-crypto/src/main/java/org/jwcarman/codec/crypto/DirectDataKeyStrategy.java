@@ -27,6 +27,9 @@ package org.jwcarman.codec.crypto;
  */
 public final class DirectDataKeyStrategy implements DataKeyStrategy {
 
+  /** Creates the strategy. */
+  public DirectDataKeyStrategy() {}
+
   @Override
   public DataKey acquire(DataKeyProvider provider) {
     return provider.newDataKey();

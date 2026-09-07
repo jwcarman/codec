@@ -58,6 +58,16 @@ import org.springframework.util.ClassUtils;
 @EnableConfigurationProperties(CodecRedisCacheProperties.class)
 public class CodecRedisCacheAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public CodecRedisCacheAutoConfiguration() {}
+
+  /**
+   * Customizes the Redis cache manager so cache values are serialized through the codec factory.
+   *
+   * @param factory the codec factory that serializes cache values
+   * @param properties the {@code codec.redis.cache} settings
+   * @return the customizer
+   */
   @Bean
   public RedisCacheManagerBuilderCustomizer codecRedisCacheManagerBuilderCustomizer(
       CodecFactory factory, CodecRedisCacheProperties properties) {

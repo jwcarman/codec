@@ -31,6 +31,7 @@ public class UnknownVersionException extends UnsupportedFormatException {
 
   private static final long serialVersionUID = 1L;
 
+  /** The version byte the payload carried. */
   private final int version;
 
   /**

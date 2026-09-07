@@ -43,6 +43,15 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnBean(ThreadSafeFory.class)
 public class ForyCodecAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public ForyCodecAutoConfiguration() {}
+
+  /**
+   * Creates the factory around the application's {@link ThreadSafeFory} bean.
+   *
+   * @param fory the application's Fory instance
+   * @return the codec factory
+   */
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
   public ForyCodecFactory foryCodecFactory(ThreadSafeFory fory) {

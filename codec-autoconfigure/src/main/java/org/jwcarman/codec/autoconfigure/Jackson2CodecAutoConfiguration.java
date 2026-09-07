@@ -32,6 +32,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({ObjectMapper.class, Jackson2CodecFactory.class})
 public class Jackson2CodecAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public Jackson2CodecAutoConfiguration() {}
+
   /**
    * Creates the factory, reusing the application's Jackson 2.x {@link ObjectMapper} bean when one
    * exists.

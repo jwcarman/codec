@@ -37,6 +37,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({GeneratedMessage.class, ProtobufCodecFactory.class})
 public class ProtobufCodecAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public ProtobufCodecAutoConfiguration() {}
+
   /**
    * Creates the factory.
    *

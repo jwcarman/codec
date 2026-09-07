@@ -41,6 +41,15 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({Jsonb.class, JsonbCodecFactory.class})
 public class JsonbCodecAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public JsonbCodecAutoConfiguration() {}
+
+  /**
+   * Creates the factory, reusing the application's {@link Jsonb} bean when one exists.
+   *
+   * @param jsonb provider of the application's JSON-B instance, if any
+   * @return the codec factory
+   */
   @Bean
   @ConditionalOnMissingBean(CodecFactory.class)
   public JsonbCodecFactory jsonbCodecFactory(ObjectProvider<Jsonb> jsonb) {

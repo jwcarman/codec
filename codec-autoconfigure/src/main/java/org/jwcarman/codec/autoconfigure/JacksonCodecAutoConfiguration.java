@@ -32,6 +32,9 @@ import tools.jackson.databind.ObjectMapper;
 @ConditionalOnClass({ObjectMapper.class, JacksonCodecFactory.class})
 public class JacksonCodecAutoConfiguration {
 
+  /** Creates the auto-configuration. */
+  public JacksonCodecAutoConfiguration() {}
+
   /**
    * Creates the factory, reusing the application's {@link ObjectMapper} bean when one exists.
    *

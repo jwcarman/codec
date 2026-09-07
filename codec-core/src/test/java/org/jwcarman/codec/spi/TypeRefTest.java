@@ -251,12 +251,13 @@ class TypeRefTest {
       TypeRef<List<Person>> built = TypeRef.listOf(TypeRef.of(Person.class));
       TypeRef<List<Person>> captured = new TypeRef<>() {};
 
-      assertThat(built).isEqualTo(captured);
+      assertThat(built)
+          .isEqualTo(captured)
+          .hasSameHashCodeAs(captured)
+          .hasToString(captured.toString());
       assertThat(captured).isEqualTo(built);
-      assertThat(built.hashCode()).isEqualTo(captured.hashCode());
       assertThat(built.getType()).isEqualTo(captured.getType());
       assertThat(captured.getType()).isEqualTo(built.getType());
-      assertThat(built).hasToString(captured.toString());
     }
 
     @Test
@@ -271,8 +272,8 @@ class TypeRefTest {
       TypeRef<Map<String, Person>> built =
           TypeRef.mapOf(TypeRef.of(String.class), TypeRef.of(Person.class));
 
-      assertThat(built).isEqualTo(new TypeRef<Map<String, Person>>() {});
       assertThat(built)
+          .isEqualTo(new TypeRef<Map<String, Person>>() {})
           .hasToString(
               "TypeRef<java.util.Map<java.lang.String, " + Person.class.getTypeName() + ">>");
     }
@@ -291,8 +292,9 @@ class TypeRefTest {
       Map<TypeRef<?>, String> cache = new HashMap<>();
       cache.put(new TypeRef<List<Person>>() {}, "captured");
 
-      assertThat(cache.get(TypeRef.listOf(TypeRef.of(Person.class)))).isEqualTo("captured");
-      assertThat(cache.get(TypeRef.listOf(TypeRef.of(String.class)))).isNull();
+      assertThat(cache)
+          .containsEntry(TypeRef.listOf(TypeRef.of(Person.class)), "captured")
+          .doesNotContainKey(TypeRef.listOf(TypeRef.of(String.class)));
     }
 
     record Envelope<O>(String id, O payload) {}
@@ -358,9 +360,9 @@ class TypeRefTest {
               Map.Entry.class, TypeRef.of(String.class), TypeRef.of(Integer.class));
       TypeRef<Map.Entry<String, Integer>> captured = new TypeRef<>() {};
 
-      assertThat(built).isEqualTo(captured);
-      assertThat(built).hasToString(captured.toString());
       assertThat(built)
+          .isEqualTo(captured)
+          .hasToString(captured.toString())
           .hasToString("TypeRef<java.util.Map$Entry<java.lang.String, java.lang.Integer>>");
     }
 
@@ -389,14 +391,15 @@ class TypeRefTest {
             }
           };
 
-      assertThat(list).isEqualTo(list);
-      assertThat(list).isNotEqualTo(List.class);
-      assertThat(list).isNotEqualTo(TypeRef.setOf(TypeRef.of(Person.class)).getType());
-      assertThat(list).isNotEqualTo(TypeRef.listOf(TypeRef.of(String.class)).getType());
+      assertThat(list)
+          .isEqualTo(list)
+          .isNotEqualTo(List.class)
+          .isNotEqualTo(TypeRef.setOf(TypeRef.of(Person.class)).getType())
+          .isNotEqualTo(TypeRef.listOf(TypeRef.of(String.class)).getType())
+          .hasSameHashCodeAs(new TypeRef<List<Person>>() {}.getType())
+          .hasToString(list.getTypeName());
       assertThat(entry).isNotEqualTo(entryWithoutOwner);
-      assertThat(list.hashCode()).isEqualTo(new TypeRef<List<Person>>() {}.getType().hashCode());
       assertThat(((ParameterizedType) list).getActualTypeArguments()).containsExactly(Person.class);
-      assertThat(list).hasToString(list.getTypeName());
     }
   }
 }

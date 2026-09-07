@@ -15,7 +15,6 @@
  */
 package org.jwcarman.codec.transform.encoding;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
@@ -23,15 +22,23 @@ import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.InvalidPayloadException;
 
 /**
- * A byte-to-text-safe-byte transform using Base32 (RFC 4648 §6) or its "extended hex" variant (RFC
- * 4648 §7). Base32 is larger than Base64 (8 characters per 5 bytes) but its alphabet has no
- * lower-case letters and no symbols, which makes it safe for case-insensitive contexts — DNS
- * labels, file names, and values a person will read aloud or type. It is the encoding used for TOTP
- * secrets.
+ * A byte-to-text-safe-byte transform using Base32: eight ASCII symbols per five bytes, over any
+ * alphabet of 32 symbols. Base32 is larger than Base64 but its standard alphabet has no lower-case
+ * letters and no symbols, which makes it safe for case-insensitive contexts — DNS labels, file
+ * names, and values a person will read aloud or type. It is the encoding used for TOTP secrets.
  *
- * <p>Output is upper-case with {@code =} padding, exactly as the RFC specifies. Decoding is strict
- * but case-insensitive: a character outside the alphabet, misplaced padding, or a length that is
- * not a multiple of eight is rejected with {@link InvalidPayloadException}.
+ * <p>{@link #standard()} and {@link #hex()} are RFC 4648 §6 and §7: upper-case output with {@code
+ * =} padding. {@link #of(String)} and {@link #of(String, char)} take any 32-symbol alphabet —
+ * z-base-32, geohash, an alphabet of your own — with the same bit layout (RFC 4648 §3: input bytes
+ * most-significant bit first, five bits per symbol, the final partial symbol left-aligned with zero
+ * bits, and with padding the output padded to a whole group of eight).
+ *
+ * <p>Decoding is strict and canonical: it accepts exactly the strings {@link #encode} can produce.
+ * A symbol outside the alphabet, a length or padding that does not correspond to whole input bytes,
+ * a pad symbol before the end, or non-zero trailing bits in the final symbol is rejected with
+ * {@link InvalidPayloadException}. Canonical decoding gives every value exactly one encoded form,
+ * so encoded strings can be compared, deduplicated and signed (RFC 4648 §12). Lower-case input is
+ * an opt-in: {@code Base32Codec.standard().caseInsensitive()}.
  *
  * <p>Like {@link Base64Codec}, put it <em>last</em> in a chain. Instances are immutable and
  * thread-safe.
@@ -40,101 +47,275 @@ public final class Base32Codec implements Codec<byte[]> {
 
   private static final String STANDARD_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   private static final String HEX_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-  private static final char PAD = '=';
-  private static final int BITS_PER_CHAR = 5;
-  private static final int CHARS_PER_GROUP = 8;
-  private static final int BYTES_PER_GROUP = 5;
+  private static final char RFC_PAD = '=';
 
-  private final char[] alphabet;
+  private static final int ALPHABET_SIZE = 32;
+  private static final int MASK = 0x1F;
+  private static final int BITS = 5;
+  private static final int GROUP_BYTES = 5;
+  private static final int GROUP_SYMBOLS = 8;
+  private static final int NO_PAD = -1;
+  private static final int ASCII_LIMIT = 128;
+  private static final byte NOT_A_SYMBOL = -1;
+
+  private final byte[] alphabet;
   private final byte[] lookup;
+  private final int pad;
 
-  private Base32Codec(String alphabet) {
-    this.alphabet = alphabet.toCharArray();
-    this.lookup = new byte[128];
-    Arrays.fill(lookup, (byte) -1);
-    for (int i = 0; i < this.alphabet.length; i++) {
-      lookup[this.alphabet[i]] = (byte) i;
-      lookup[Character.toLowerCase(this.alphabet[i])] = (byte) i;
-    }
+  private Base32Codec(byte[] alphabet, byte[] lookup, int pad) {
+    this.alphabet = alphabet;
+    this.lookup = lookup;
+    this.pad = pad;
   }
 
   /**
-   * The standard alphabet ({@code A-Z2-7}), used by TOTP secrets and most Base32 consumers.
+   * The standard alphabet ({@code A-Z2-7}) with {@code =} padding, used by TOTP secrets and most
+   * Base32 consumers. Decoding is strict: upper case only.
    *
    * @return a codec for RFC 4648 §6 Base32
    */
   public static Base32Codec standard() {
-    return new Base32Codec(STANDARD_ALPHABET);
+    return of(STANDARD_ALPHABET, RFC_PAD);
   }
 
   /**
-   * The "extended hex" alphabet ({@code 0-9A-V}), whose encoded form sorts in the same order as the
-   * bytes it encodes — useful for sortable keys.
+   * The "extended hex" alphabet ({@code 0-9A-V}) with {@code =} padding, whose encoded form sorts
+   * in the same order as the bytes it encodes — useful for sortable keys. Decoding is strict: upper
+   * case only.
    *
    * @return a codec for RFC 4648 §7 base32hex
    */
   public static Base32Codec hex() {
-    return new Base32Codec(HEX_ALPHABET);
+    return of(HEX_ALPHABET, RFC_PAD);
+  }
+
+  /**
+   * A strict codec over {@code alphabet} with no padding.
+   *
+   * @param alphabet the 32 symbols in value order; distinct ASCII characters
+   * @return a strict, unpadded codec
+   * @throws NullPointerException if {@code alphabet} is null
+   * @throws IllegalArgumentException if the alphabet does not have exactly 32 symbols, or a symbol
+   *     is not ASCII, or a symbol appears twice
+   */
+  public static Base32Codec of(String alphabet) {
+    return create(alphabet, NO_PAD);
+  }
+
+  /**
+   * A strict codec over {@code alphabet}, padding the output to a whole group of eight symbols with
+   * {@code pad}.
+   *
+   * @param alphabet the 32 symbols in value order; distinct ASCII characters
+   * @param pad the pad symbol, an ASCII character that is not in the alphabet
+   * @return a strict, padded codec
+   * @throws NullPointerException if {@code alphabet} is null
+   * @throws IllegalArgumentException if the alphabet does not have exactly 32 symbols, or a symbol
+   *     is not ASCII, or a symbol appears twice, or the pad symbol is not ASCII or is in the
+   *     alphabet
+   */
+  public static Base32Codec of(String alphabet, char pad) {
+    if (pad >= ASCII_LIMIT) {
+      throw new IllegalArgumentException("pad symbol must be ASCII: " + describe(pad));
+    }
+    return create(alphabet, pad);
+  }
+
+  private static Base32Codec create(String alphabet, int pad) {
+    Objects.requireNonNull(alphabet, "alphabet must not be null");
+    int size = alphabet.length();
+    if (size != ALPHABET_SIZE) {
+      throw new IllegalArgumentException("alphabet must have 32 symbols: " + size);
+    }
+    byte[] symbols = new byte[size];
+    byte[] lookup = new byte[ASCII_LIMIT];
+    Arrays.fill(lookup, NOT_A_SYMBOL);
+    for (int i = 0; i < size; i++) {
+      char c = alphabet.charAt(i);
+      if (c >= ASCII_LIMIT) {
+        throw new IllegalArgumentException("alphabet symbol must be ASCII: " + describe(c));
+      }
+      if (lookup[c] != NOT_A_SYMBOL) {
+        throw new IllegalArgumentException("alphabet symbol appears twice: " + describe(c));
+      }
+      symbols[i] = (byte) c;
+      lookup[c] = (byte) i;
+    }
+    if (pad != NO_PAD && lookup[pad] != NOT_A_SYMBOL) {
+      throw new IllegalArgumentException("pad symbol is in the alphabet: " + describe(pad));
+    }
+    return new Base32Codec(symbols, lookup, pad);
+  }
+
+  /**
+   * The alphabet, in value order.
+   *
+   * @return the 32 symbols
+   */
+  public String alphabet() {
+    return new String(alphabet, StandardCharsets.US_ASCII);
   }
 
   @Override
   public byte[] encode(byte[] value) {
     Objects.requireNonNull(value, "value must not be null");
-    StringBuilder out =
-        new StringBuilder((value.length + BYTES_PER_GROUP - 1) / BYTES_PER_GROUP * CHARS_PER_GROUP);
-    int buffer = 0;
-    int bitsInBuffer = 0;
-    for (byte b : value) {
-      buffer = (buffer << 8) | (b & 0xFF);
-      bitsInBuffer += 8;
-      while (bitsInBuffer >= BITS_PER_CHAR) {
-        bitsInBuffer -= BITS_PER_CHAR;
-        out.append(alphabet[(buffer >> bitsInBuffer) & 0x1F]);
-      }
+    int full = value.length / GROUP_BYTES;
+    int rem = value.length - full * GROUP_BYTES;
+    int tailSymbols = rem == 0 ? 0 : symbolsFor(rem);
+    int length = full * GROUP_SYMBOLS + (rem == 0 || pad == NO_PAD ? tailSymbols : GROUP_SYMBOLS);
+    byte[] out = new byte[length];
+    encodeGroups(value, full, out);
+    if (rem != 0) {
+      encodeTail(value, full * GROUP_BYTES, rem, out, full * GROUP_SYMBOLS, tailSymbols);
     }
-    if (bitsInBuffer > 0) {
-      out.append(alphabet[(buffer << (BITS_PER_CHAR - bitsInBuffer)) & 0x1F]);
+    return out;
+  }
+
+  /**
+   * Five bytes to eight symbols with literal shifts; the JIT unrolls what a generic loop cannot.
+   */
+  private void encodeGroups(byte[] in, int groups, byte[] out) {
+    byte[] a = alphabet;
+    int i = 0;
+    int o = 0;
+    for (int g = 0; g < groups; g++) {
+      long v =
+          ((long) (in[i] & 0xFF) << 32)
+              | ((long) (in[i + 1] & 0xFF) << 24)
+              | ((in[i + 2] & 0xFF) << 16)
+              | ((in[i + 3] & 0xFF) << 8)
+              | (in[i + 4] & 0xFF);
+      out[o] = a[(int) (v >>> 35) & MASK];
+      out[o + 1] = a[(int) (v >>> 30) & MASK];
+      out[o + 2] = a[(int) (v >>> 25) & MASK];
+      out[o + 3] = a[(int) (v >>> 20) & MASK];
+      out[o + 4] = a[(int) (v >>> 15) & MASK];
+      out[o + 5] = a[(int) (v >>> 10) & MASK];
+      out[o + 6] = a[(int) (v >>> 5) & MASK];
+      out[o + 7] = a[(int) v & MASK];
+      i += GROUP_BYTES;
+      o += GROUP_SYMBOLS;
     }
-    while (out.length() % CHARS_PER_GROUP != 0) {
-      out.append(PAD);
+  }
+
+  private void encodeTail(byte[] in, int from, int count, byte[] out, int at, int symbols) {
+    long acc = 0;
+    for (int j = 0; j < count; j++) {
+      acc = (acc << 8) | (in[from + j] & 0xFF);
     }
-    return out.toString().getBytes(StandardCharsets.US_ASCII);
+    acc <<= symbols * BITS - count * 8; // left-align: the trailing bits are zero
+    for (int s = symbols - 1; s >= 0; s--) {
+      out[at + s] = alphabet[(int) (acc & MASK)];
+      acc >>>= BITS;
+    }
+    if (pad != NO_PAD) {
+      Arrays.fill(out, at + symbols, out.length, (byte) pad);
+    }
   }
 
   @Override
   public byte[] decode(byte[] bytes) {
     Objects.requireNonNull(bytes, "bytes must not be null");
-    if (bytes.length % CHARS_PER_GROUP != 0) {
+    int end = unpaddedLength(bytes);
+    int full = end / GROUP_SYMBOLS;
+    int tailSymbols = end - full * GROUP_SYMBOLS;
+    int tailBytes = tailSymbols * BITS / 8;
+    if (tailSymbols != 0 && (tailBytes == 0 || symbolsFor(tailBytes) != tailSymbols)) {
       throw new InvalidPayloadException(
-          "Base32 input length must be a multiple of " + CHARS_PER_GROUP + ": " + bytes.length);
+          pad == NO_PAD
+              ? "Invalid length: " + tailSymbols + " trailing symbols do not encode whole bytes"
+              : "Invalid padding: "
+                  + tailSymbols
+                  + " symbols before the padding do not encode whole bytes");
     }
-    int end = bytes.length;
-    while (end > 0 && bytes[end - 1] == PAD) {
-      end--;
+    byte[] out = new byte[full * GROUP_BYTES + tailBytes];
+    decodeGroups(bytes, full, out);
+    if (tailSymbols != 0) {
+      decodeTail(bytes, full * GROUP_SYMBOLS, tailSymbols, out, full * GROUP_BYTES, tailBytes);
     }
-    int padding = bytes.length - end;
-    if (padding > 6 || padding == 5 || padding == 2) {
-      throw new InvalidPayloadException("Invalid Base32 padding");
-    }
-    ByteArrayOutputStream out = new ByteArrayOutputStream(end * BITS_PER_CHAR / 8);
-    int buffer = 0;
-    int bitsInBuffer = 0;
-    for (int i = 0; i < end; i++) {
-      buffer = (buffer << BITS_PER_CHAR) | value(bytes[i]);
-      bitsInBuffer += BITS_PER_CHAR;
-      if (bitsInBuffer >= 8) {
-        bitsInBuffer -= 8;
-        out.write((buffer >> bitsInBuffer) & 0xFF);
-      }
-    }
-    return out.toByteArray();
+    return out;
   }
 
-  private int value(byte c) {
-    int v = c >= 0 ? lookup[c] : -1;
-    if (v < 0) {
-      throw new InvalidPayloadException("Invalid Base32 character: '" + (char) c + "'");
+  private int unpaddedLength(byte[] bytes) {
+    if (pad == NO_PAD) {
+      return bytes.length;
+    }
+    if (bytes.length % GROUP_SYMBOLS != 0) {
+      throw new InvalidPayloadException(
+          "Base32 input length must be a multiple of " + GROUP_SYMBOLS + ": " + bytes.length);
+    }
+    int end = bytes.length;
+    while (end > 0 && bytes[end - 1] == pad) {
+      end--;
+    }
+    if (bytes.length - end >= GROUP_SYMBOLS) {
+      throw new InvalidPayloadException("Invalid padding: a whole group of pad symbols");
+    }
+    return end;
+  }
+
+  /** Eight symbols to five bytes with literal shifts. */
+  private void decodeGroups(byte[] in, int groups, byte[] out) {
+    int i = 0;
+    int o = 0;
+    for (int g = 0; g < groups; g++) {
+      long v =
+          ((long) valueOf(in[i]) << 35)
+              | ((long) valueOf(in[i + 1]) << 30)
+              | ((long) valueOf(in[i + 2]) << 25)
+              | ((long) valueOf(in[i + 3]) << 20)
+              | ((long) valueOf(in[i + 4]) << 15)
+              | ((long) valueOf(in[i + 5]) << 10)
+              | ((long) valueOf(in[i + 6]) << 5)
+              | valueOf(in[i + 7]);
+      out[o] = (byte) (v >>> 32);
+      out[o + 1] = (byte) (v >>> 24);
+      out[o + 2] = (byte) (v >>> 16);
+      out[o + 3] = (byte) (v >>> 8);
+      out[o + 4] = (byte) v;
+      i += GROUP_SYMBOLS;
+      o += GROUP_BYTES;
+    }
+  }
+
+  private void decodeTail(byte[] in, int from, int symbols, byte[] out, int at, int count) {
+    long acc = 0;
+    for (int s = 0; s < symbols; s++) {
+      acc = (acc << BITS) | valueOf(in[from + s]);
+    }
+    int trailing = symbols * BITS - count * 8;
+    if ((acc & ((1L << trailing) - 1)) != 0) {
+      throw new InvalidPayloadException("Non-zero trailing bits in the final symbol");
+    }
+    acc >>>= trailing;
+    for (int j = count - 1; j >= 0; j--) {
+      out[at + j] = (byte) acc;
+      acc >>>= 8;
+    }
+  }
+
+  private int valueOf(byte c) {
+    int v = c >= 0 ? lookup[c] : NOT_A_SYMBOL;
+    if (v == NOT_A_SYMBOL) {
+      throw invalidSymbol(c);
     }
     return v;
+  }
+
+  private InvalidPayloadException invalidSymbol(byte c) {
+    int code = c & 0xFF;
+    if (code == pad) {
+      return new InvalidPayloadException(
+          "Invalid padding: " + describe(code) + " before the end of the input");
+    }
+    return new InvalidPayloadException("Invalid character: " + describe(code));
+  }
+
+  private static int symbolsFor(int byteCount) {
+    return (byteCount * 8 + BITS - 1) / BITS;
+  }
+
+  private static String describe(int c) {
+    return c >= 0x20 && c < 0x7F ? "'" + (char) c + "'" : String.format("U+%04X", c);
   }
 }

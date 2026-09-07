@@ -19,8 +19,10 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import java.util.Random;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -34,6 +36,70 @@ import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class Base32CodecTest {
+
+  static byte[] ascii(String s) {
+    return s.getBytes(US_ASCII);
+  }
+
+  @Nested
+  class Construction {
+
+    @Test
+    void reports_the_alphabet() {
+      assertThat(Base32Codec.standard().alphabet()).isEqualTo("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
+      assertThat(Base32Codec.hex().alphabet()).isEqualTo("0123456789ABCDEFGHIJKLMNOPQRSTUV");
+      assertThat(Base32Codec.of("ybndrfg8ejkmcpqxot1uwisza345h769").alphabet())
+          .isEqualTo("ybndrfg8ejkmcpqxot1uwisza345h769");
+    }
+
+    @ParameterizedTest(name = "rejects an alphabet of {0} symbols")
+    @ValueSource(ints = {0, 31, 33})
+    void rejects_an_alphabet_that_is_not_thirty_two_symbols(int length) {
+      String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567abcdefgh".substring(0, length);
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> Base32Codec.of(alphabet))
+          .withMessageContaining("32")
+          .withMessageContaining(String.valueOf(length));
+    }
+
+    @Test
+    void rejects_a_null_alphabet() {
+      assertThatNullPointerException().isThrownBy(() -> Base32Codec.of(null));
+    }
+
+    @Test
+    void rejects_a_non_ascii_symbol() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> Base32Codec.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ23456é"))
+          .withMessageContaining("ASCII")
+          .withMessageContaining("U+00E9");
+    }
+
+    @Test
+    void rejects_a_repeated_symbol() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> Base32Codec.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ23456A"))
+          .withMessageContaining("twice")
+          .withMessageContaining("'A'");
+    }
+
+    @Test
+    void rejects_a_pad_symbol_that_is_in_the_alphabet() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> Base32Codec.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", 'A'))
+          .withMessageContaining("pad")
+          .withMessageContaining("'A'");
+    }
+
+    @Test
+    void rejects_a_non_ascii_pad_symbol() {
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> Base32Codec.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", 'é'))
+          .withMessageContaining("pad")
+          .withMessageContaining("ASCII");
+    }
+  }
 
   @Nested
   class Rfc_4648_base32_vectors {
@@ -111,10 +177,77 @@ class Base32CodecTest {
   class Strict_decoding {
 
     @Test
-    void accepts_lower_case_input() {
-      byte[] decoded = Base32Codec.standard().decode("mzxw6ytboi======".getBytes(US_ASCII));
+    void rejects_lower_case_input_by_default() {
+      byte[] bytes = ascii("mzxw6ytboi======");
+      Base32Codec codec = Base32Codec.standard();
 
-      assertThat(new String(decoded, UTF_8)).isEqualTo("foobar");
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("character")
+          .withMessageContaining("'m'");
+    }
+
+    @Test
+    void rejects_non_zero_trailing_bits() {
+      byte[] bytes = ascii("MZ======");
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("trailing bits");
+      assertThat(codec.decode(ascii("MY======"))).isEqualTo("f".getBytes(UTF_8));
+    }
+
+    @ParameterizedTest(name = "rejects \"{0}\"")
+    @ValueSource(strings = {"MZ=W6YTB", "MZXW6Y=B"})
+    void rejects_a_pad_symbol_before_the_end(String bad) {
+      byte[] bytes = ascii(bad);
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("padding")
+          .withMessageContaining("'='");
+    }
+
+    @Test
+    void rejects_a_whole_group_of_padding() {
+      byte[] bytes = ascii("MZXW6YTB========");
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("padding");
+    }
+
+    @Test
+    void rejects_a_bad_symbol_inside_a_whole_group() {
+      byte[] bytes = ascii("MZXW6YTBOI!AAAAA");
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("'!'");
+    }
+
+    @Test
+    void names_a_non_ascii_byte_by_its_code_point() {
+      byte[] bytes = {(byte) 0xC3, 'Z', 'X', 'W', '6', 'Y', 'T', 'B'};
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("U+00C3");
+    }
+
+    @Test
+    void names_a_control_character_by_its_code_point() {
+      byte[] bytes = {(byte) 0x01, 'Z', 'X', 'W', '6', 'Y', 'T', 'B'};
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("U+0001");
     }
 
     @ParameterizedTest(name = "rejects \"{0}\"")
@@ -140,7 +273,7 @@ class Base32CodecTest {
     }
 
     @ParameterizedTest(name = "rejects \"{0}\"")
-    @ValueSource(strings = {"MZXW6Y=B", "MZXW6YT1", "MZXW6YT!", "0ZXW6YTB"})
+    @ValueSource(strings = {"MZXW6YT1", "MZXW6YT!", "0ZXW6YTB"})
     void rejects_characters_outside_the_alphabet(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
       Base32Codec codec = Base32Codec.standard();
@@ -177,6 +310,70 @@ class Base32CodecTest {
   }
 
   @Nested
+  class Without_padding {
+
+    final Base32Codec codec = Base32Codec.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
+
+    @ParameterizedTest(name = "BASE32(\"{0}\") = \"{1}\"")
+    @CsvSource({
+      "'', ''",
+      "f, MY",
+      "fo, MZXQ",
+      "foo, MZXW6",
+      "foob, MZXW6YQ",
+      "fooba, MZXW6YTB",
+      "foobar, MZXW6YTBOI"
+    })
+    void encodes_without_padding_and_decodes_it_back(String input, String expected) {
+      byte[] encoded = codec.encode(input.getBytes(UTF_8));
+
+      assertThat(new String(encoded, US_ASCII)).isEqualTo(expected);
+      assertThat(codec.decode(encoded)).isEqualTo(input.getBytes(UTF_8));
+    }
+
+    @ParameterizedTest(name = "rejects \"{0}\"")
+    @ValueSource(strings = {"M", "MZX", "MZXW6Y", "MZXW6YTBO"})
+    void rejects_a_tail_that_does_not_encode_whole_bytes(String bad) {
+      byte[] bytes = ascii(bad);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("length");
+    }
+
+    @Test
+    void treats_the_rfc_pad_symbol_as_any_other_bad_character() {
+      byte[] bytes = ascii("MY======");
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("character")
+          .withMessageContaining("'='");
+    }
+
+    @Test
+    void rejects_non_zero_trailing_bits() {
+      byte[] bytes = ascii("MZ");
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("trailing bits");
+    }
+
+    @Test
+    void round_trips_every_length_up_to_a_full_group_boundary() {
+      for (int length = 0; length <= 41; length++) {
+        byte[] input = new byte[length];
+        for (int i = 0; i < length; i++) {
+          input[i] = (byte) (i * 53 + length);
+        }
+
+        assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
+      }
+    }
+  }
+
+  @Nested
   class Round_tripping {
 
     @Test
@@ -190,6 +387,15 @@ class Base32CodecTest {
 
         assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
       }
+    }
+
+    @Test
+    void round_trips_a_large_payload() {
+      byte[] input = new byte[100_003];
+      new Random(100_003).nextBytes(input);
+      Base32Codec codec = Base32Codec.standard();
+
+      assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
     }
 
     @Test

@@ -20,8 +20,8 @@ without a flag day.
 </dependency>
 ```
 
-The module is not part of the [Spring Boot starter](spring-boot.md#the-starter);
-add it next to `codec-core`.
+The [Spring Boot starter](spring-boot.md#the-starter) includes it; without the
+starter, add it next to `codec-core`.
 
 ## The header, and what it costs
 

@@ -48,6 +48,11 @@
         </dependency>
         <dependency>
             <groupId>org.jwcarman.codec</groupId>
+            <artifactId>codec-versioned</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jwcarman.codec</groupId>
             <artifactId>codec-autoconfigure</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -72,6 +77,7 @@
                                     <ignoredUnusedDeclaredDependencies combine.children="append">
                                         <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-core</ignoredUnusedDeclaredDependency>
                                         <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-transforms</ignoredUnusedDeclaredDependency>
+                                        <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-versioned</ignoredUnusedDeclaredDependency>
                                         <ignoredUnusedDeclaredDependency>org.jwcarman.codec:codec-autoconfigure</ignoredUnusedDeclaredDependency>
                                     </ignoredUnusedDeclaredDependencies>
                                 </configuration>

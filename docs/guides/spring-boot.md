@@ -17,9 +17,12 @@ described in [Spring Data Redis](redis.md#auto-configuration) — that guide's
 `codec.redis.cache.*` properties are handled by a `codec-autoconfigure` class
 too, not by `codec-spring-data-redis` itself.
 
-What the starter does not include: `codec-versioned`, `codec-crypto`,
-`codec-zstd`, and `codec-lz4` are not among its dependencies, so add whichever
-of them you need next to the starter, the same as in a plain-Java build — see
+The starter also brings `codec-transforms` and `codec-versioned`, the two
+dependency-free modules, so compression, text encodings and
+[versioned storage](versioned.md) are there without another line in the pom.
+What it does not include: `codec-crypto`, `codec-zstd`, and `codec-lz4` each
+carry a library of their own, so add whichever of them you need next to the
+starter, the same as in a plain-Java build — see
 [Codec Composition](composition.md#the-transforms-module) and
 [Encryption](encryption.md#quickstart).
 

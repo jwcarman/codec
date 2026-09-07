@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `codec-kafka` no longer resolves the `lz4-java` 1.10.1 and `zstd-jni` 1.5.6 that
+  `kafka-clients` declares: the parent now manages both at the versions codec
+  ships (1.11.2 and 1.5.7), which closes GHSA-xx22-p4ch-683r (CVE-2026-59949, a
+  JVM crash in lz4-java's native XXHash on invalid array ranges) on that path
+
 ### Added
 - `TypeRef.listOf`, `setOf`, `optionalOf`, `mapOf` and `parameterized` build a
   parameterized type reference from the references of its arguments, so generic

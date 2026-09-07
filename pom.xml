@@ -129,6 +129,19 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- The native compressors codec ships with. kafka-clients declares older versions of both
+                 (lz4-java <= 1.11.0 carries GHSA-xx22-p4ch-683r); managing them here keeps every module,
+                 and every transitive path, on the versions codec tests against. -->
+            <dependency>
+                <groupId>at.yawk.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>${lz4-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd-jni.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

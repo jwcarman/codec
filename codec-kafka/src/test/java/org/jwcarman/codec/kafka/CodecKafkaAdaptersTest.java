@@ -17,6 +17,7 @@ package org.jwcarman.codec.kafka;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class CodecKafkaAdaptersTest {
@@ -91,6 +93,28 @@ class CodecKafkaAdaptersTest {
 
       assertThatIllegalArgumentException()
           .isThrownBy(() -> deserializer.deserialize("t", notAUuid));
+    }
+
+    @Test
+    void a_codec_exception_passes_through_unchanged() {
+      InvalidPayloadException rejection = new InvalidPayloadException("nope");
+      Codec<String> rejecting =
+          new Codec<>() {
+            @Override
+            public byte[] encode(String value) {
+              return new byte[0];
+            }
+
+            @Override
+            public String decode(byte[] bytes) {
+              throw rejection;
+            }
+          };
+      CodecDeserializer<String> deserializer = new CodecDeserializer<>(rejecting);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> deserializer.deserialize("t", new byte[] {1}))
+          .isSameAs(rejection);
     }
 
     @Test

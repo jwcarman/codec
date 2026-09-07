@@ -17,6 +17,7 @@ package org.jwcarman.codec.redis;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.spi.TypeRef;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 
@@ -76,6 +78,28 @@ class CodecRedisSerializerTest {
       byte[] notAUuid = UTF8.encode("nope");
 
       assertThatIllegalArgumentException().isThrownBy(() -> serializer.deserialize(notAUuid));
+    }
+
+    @Test
+    void a_codec_exception_passes_through_unchanged() {
+      InvalidPayloadException rejection = new InvalidPayloadException("nope");
+      Codec<String> rejecting =
+          new Codec<>() {
+            @Override
+            public byte[] encode(String value) {
+              return new byte[0];
+            }
+
+            @Override
+            public String decode(byte[] bytes) {
+              throw rejection;
+            }
+          };
+      CodecRedisSerializer<String> serializer = CodecRedisSerializer.of(rejecting);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> serializer.deserialize(new byte[] {1}))
+          .isSameAs(rejection);
     }
   }
 

@@ -16,6 +16,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
     - name: Checkout Code
       uses: actions/checkout@v7
@@ -30,6 +32,10 @@ jobs:
         cache: maven
 
     - name: Build with Maven
+      run: mvn -Pci -B verify
+
+    - name: Analyze with SonarCloud
+      if: env.SONAR_TOKEN != ''
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: mvn -Pci -B verify sonar:sonar
+      run: mvn -Pci -B sonar:sonar

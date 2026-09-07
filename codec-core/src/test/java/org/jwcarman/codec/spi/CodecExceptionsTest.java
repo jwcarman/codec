@@ -57,9 +57,12 @@ class CodecExceptionsTest {
     @Test
     void is_an_unchecked_codec_exception() {
       for (Family family : FAMILIES) {
-        assertThat(family.withMessage().apply("m"))
+        CodecException instance = family.withMessage().apply("m");
+        assertThat(instance)
             .isInstanceOf(CodecException.class)
             .isInstanceOf(RuntimeException.class);
+        // The families extend CodecException directly and nothing else.
+        assertThat(instance.getClass().getSuperclass()).isEqualTo(CodecException.class);
       }
     }
 

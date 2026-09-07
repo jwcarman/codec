@@ -25,12 +25,14 @@ import java.util.function.Function;
  * original. Codecs are expected to be thread-safe.
  *
  * <p><strong>Failures.</strong> Every failure {@code encode} or {@code decode} reports is a {@link
- * CodecException}, and more precisely one of four families keyed to what the caller does next:
- * {@link InvalidValueException} (fix the value), {@link InvalidPayloadException} (quarantine the
- * payload), {@link UnsupportedFormatException} (hold it for a newer reader), {@link
- * TransientCodecException} (retry). Implementations wrap their underlying library's exception as
- * the cause rather than letting it escape. A {@code null} argument is a programmer error and throws
- * {@link NullPointerException}; see {@link #nullSafe()} for the explicit pass-through.
+ * CodecException} for the codecs this library provides; a codec derived with {@link #xmap} also
+ * propagates whatever the caller's conversion functions throw. More precisely, a {@code
+ * CodecException} is one of four families keyed to what the caller does next: {@link
+ * InvalidValueException} (fix the value), {@link InvalidPayloadException} (quarantine the payload),
+ * {@link UnsupportedFormatException} (hold it for a newer reader), {@link TransientCodecException}
+ * (retry). Implementations wrap their underlying library's exception as the cause rather than
+ * letting it escape. A {@code null} argument is a programmer error and throws {@link
+ * NullPointerException}; see {@link #nullSafe()} for the explicit pass-through.
  *
  * @param <T> the type this codec converts
  */

@@ -44,7 +44,9 @@ class JsonbCodec<T> implements Codec<T> {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     try {
       jsonb.toJson(value, type, out);
-    } catch (JsonbException e) {
+    } catch (JsonbException | JsonException e) {
+      // Yasson wraps a generator failure in JsonbException; Johnzon can raise JSON-P's
+      // JsonException from its generator directly.
       throw new InvalidValueException("Unable to encode value as JSON", e);
     }
     return out.toByteArray();

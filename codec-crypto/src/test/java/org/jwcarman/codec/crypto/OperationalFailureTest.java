@@ -27,6 +27,7 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 /** The failure paths that only a misbehaving provider or key can reach. */
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -343,6 +344,34 @@ class OperationalFailureTest {
       assertThatExceptionOfType(DecryptionException.class)
           .isThrownBy(() -> zeroKeyReader.decode(envelope));
       assertThat(codec.decode(envelope)).isEqualTo(PLAINTEXT);
+    }
+
+    @Test
+    void a_provider_reporting_an_unsupported_wrap_scheme_keeps_that_exception() {
+      UnsupportedFormatException newerScheme = new UnsupportedFormatException("wrap scheme 0x02");
+      EnvelopeCodec codec = EnvelopeCodec.builder(unwrappingWith(newerScheme)).build();
+      byte[] envelope = codec.encode(PLAINTEXT);
+
+      assertThatExceptionOfType(UnsupportedFormatException.class)
+          .isThrownBy(() -> codec.decode(envelope))
+          .isSameAs(newerScheme);
+    }
+
+    /**
+     * A provider that issues a valid AES-256 data key but fails every unwrap with {@code failure}.
+     */
+    private static DataKeyProvider unwrappingWith(RuntimeException failure) {
+      return new DataKeyProvider() {
+        @Override
+        public DataKey newDataKey() {
+          return new DataKey("kek", aes256(), new byte[] {1});
+        }
+
+        @Override
+        public SecretKey unwrap(String keyId, byte[] wrapped) {
+          throw failure;
+        }
+      };
     }
 
     /** A provider that issues a valid AES-256 data key but unwraps to whatever it is told. */

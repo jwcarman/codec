@@ -296,8 +296,9 @@ should a consumer's threat model require one.
 
 ## Error taxonomy
 
-`codec-crypto` throws three exceptions of its own, all in
-`org.jwcarman.codec.crypto`, and never logs. Each slots into one of the SPI's
+`codec-crypto` reports failures through four exceptions — three of its own, all
+in `org.jwcarman.codec.crypto`, plus the SPI's `UnsupportedFormatException` —
+and never logs. Each slots into one of the SPI's
 [families](error-handling.md), which is what you catch:
 
 - **`DecryptionException`** — an `InvalidPayloadException`: "this data is bad."

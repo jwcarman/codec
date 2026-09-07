@@ -53,13 +53,13 @@ question as a boolean.
 ## Schema evolution
 
 `ForyCodecFactory.of(...)` is a helper: beyond requiring registration it takes
-Fory's defaults, and the wire format follows them. Since Fory 1.2.0 the default
-is **compatible mode**: every payload carries its class schema, so a reader
-whose class has gained a field since the payload was written sees `null` there,
-and one whose class has lost a field simply skips it. The alternative,
-schema-consistent mode, does not fail on that drift — it returns a *wrong
-object*, with the remaining values shifted into the wrong fields — which is why
-Fory changed its default.
+Fory's defaults, and the wire format follows them. That default is **compatible
+mode**: every payload carries its class schema, so a reader whose class has
+gained a field since the payload was written sees `null` there, and one whose
+class has lost a field simply skips it. The alternative, schema-consistent mode,
+does not fail on that drift — it returns a *wrong object*, with the remaining
+values shifted into the wrong fields — so compatible mode is the safe default
+for a format that outlives the class that wrote it.
 
 The cost is a few bytes of metadata per class per message. On a real payload it
 is noise (the 100-item order in the [benchmarks](../benchmarks.md) grows 2%),
@@ -69,7 +69,7 @@ JSON.
 Two things follow from inheriting the default. The two formats are not
 symmetric — a compatible-mode reader reads both, but a schema-consistent reader
 cannot read compatible-mode bytes — and a future Fory release could change the
-default again. If either matters to you, build your own `ThreadSafeFory` with
+default. If either matters to you, build your own `ThreadSafeFory` with
 the mode named explicitly and hand it to the constructor below; and put a
 [`VersionedCodec`](composition.md#versioning-the-format) in front of it before
 you ever need to change your mind.

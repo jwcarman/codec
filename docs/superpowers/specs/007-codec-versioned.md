@@ -121,9 +121,9 @@ The result is a plain `Codec<T>`, so it composes with `andThen`, `xmap`, and
 
 ### Errors
 
-- `VersionedFormatException extends RuntimeException` — the base; thrown
-  directly for a short buffer or a magic mismatch.
-- `UnknownVersionException extends VersionedFormatException` — magic is valid
+- `VersionedFormatException extends InvalidPayloadException` — thrown directly
+  for a short buffer or a magic mismatch.
+- `UnknownVersionException extends UnsupportedFormatException` — magic is valid
   but the version is not registered. Exposes `int version()`.
 
 The distinction is operational, not cosmetic: during a rollout,

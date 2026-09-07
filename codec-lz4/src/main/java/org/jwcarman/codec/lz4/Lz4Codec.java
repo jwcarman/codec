@@ -18,6 +18,7 @@ package org.jwcarman.codec.lz4;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PushbackInputStream;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameInputStream;
@@ -110,6 +111,22 @@ public class Lz4Codec extends CompressionStreamCodec {
 
   @Override
   protected InputStream decompressing(InputStream source) throws IOException {
-    return new LZ4FrameInputStream(source);
+    // lz4-java reports a corrupt frame descriptor as a bare RuntimeException (or
+    // IllegalArgumentException) rather than an IOException, so it would escape the base class's
+    // IOException handling and reach the caller unwrapped. The descriptor is parsed lazily on the
+    // first read, so the first byte is read here and pushed back, which puts the descriptor's
+    // validation inside a catch scoped to exactly that read and nothing else. This is the one
+    // place the codebase catches RuntimeException.
+    PushbackInputStream stream = new PushbackInputStream(new LZ4FrameInputStream(source));
+    int first;
+    try {
+      first = stream.read();
+    } catch (RuntimeException e) {
+      throw new IOException("Invalid LZ4 frame descriptor", e);
+    }
+    if (first != -1) {
+      stream.unread(first);
+    }
+    return stream;
   }
 }

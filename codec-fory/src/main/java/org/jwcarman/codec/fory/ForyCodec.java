@@ -15,6 +15,7 @@
  */
 package org.jwcarman.codec.fory;
 
+import java.util.Objects;
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.exception.ForyException;
 import org.jwcarman.codec.spi.Codec;
@@ -51,13 +52,19 @@ class ForyCodec<T> implements Codec<T> {
 
   @Override
   public T decode(byte[] bytes) {
+    Objects.requireNonNull(bytes, "bytes must not be null");
     Object value;
     try {
       value = fory.deserialize(bytes);
-    } catch (ForyException | IllegalArgumentException | IndexOutOfBoundsException e) {
-      // Fory reports malformed input three ways: its own exceptions for truncation and
+    } catch (ForyException
+        | IllegalArgumentException
+        | IndexOutOfBoundsException
+        | NullPointerException e) {
+      // Fory reports malformed input four ways: its own exceptions for truncation and
       // security-limit violations, IllegalArgumentException for a buffer it cannot parse at all,
-      // IndexOutOfBoundsException for an empty one. All three mean the same thing here.
+      // IndexOutOfBoundsException for an empty one, and NullPointerException when a corrupted
+      // header claims out-of-band buffers. All four mean the same thing here; the null check above
+      // keeps a null argument a programmer error rather than a payload rejection.
       throw new InvalidPayloadException("Unable to deserialize payload", e);
     }
     if (value != null && !rawType.isInstance(value)) {

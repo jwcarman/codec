@@ -46,7 +46,8 @@ tiny and pushes the backend decision to the classpath.
     ---
 
     `Codec<T>` encodes and decodes. `CodecFactory` produces a codec for any
-    type. That is the whole contract.
+    type. That is the whole contract. Every failure is a `CodecException` in one
+    of four [families](guides/error-handling.md) keyed to what you do next.
 
 -   **Generics that round-trip**
 

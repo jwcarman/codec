@@ -296,7 +296,9 @@ public final class EnvelopeCodec implements Codec<byte[]> {
   private SecretKey unwrapDataKey(String keyId, byte[] wrapped) {
     try {
       return provider.unwrap(keyId, wrapped);
-    } catch (DecryptionException e) {
+    } catch (DecryptionException | UnsupportedFormatException e) {
+      // A provider that rejects the wrapped key, or that signals a wrap scheme this build cannot
+      // read, has already classified the failure; demoting either to "retry" would be wrong.
       throw e;
     } catch (RuntimeException e) {
       throw new KeyAccessException("Key infrastructure unavailable", e);

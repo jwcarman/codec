@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import java.io.IOException;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -97,6 +98,32 @@ class Lz4CodecTest {
 
       assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(notCompressed));
+    }
+
+    @Test
+    void rejects_a_corrupted_frame_descriptor() {
+      byte[] bad = codec.encode("hello world".getBytes(UTF_8));
+      bad[4] ^= 0x40;
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bad))
+          .withMessage("Unable to decompress data")
+          .withCauseInstanceOf(IOException.class)
+          .havingCause()
+          .withMessage("Invalid LZ4 frame descriptor");
+    }
+
+    @Test
+    void rejects_a_corrupted_block_descriptor() {
+      byte[] bad = codec.encode("hello world".getBytes(UTF_8));
+      bad[5] ^= 0x40;
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bad))
+          .withMessage("Unable to decompress data")
+          .withCauseInstanceOf(IOException.class)
+          .havingCause()
+          .withMessage("Invalid LZ4 frame descriptor");
     }
 
     @Test

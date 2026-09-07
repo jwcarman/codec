@@ -145,9 +145,10 @@ like an empty cache.
 
 | Module | Situation | Family (and subclass) |
 |---|---|---|
-| `codec-transforms` | gzip/deflate/zstd/lz4 decode a corrupt stream | `InvalidPayloadException` |
-| `codec-transforms` | a payload that would expand past the decompression cap | `InvalidPayloadException` |
-| `codec-transforms` | a compressor fails on encode (dependency, not the value) | `TransientCodecException` |
+| `codec-transforms` | gzip/deflate decode a corrupt stream | `InvalidPayloadException` |
+| `codec-zstd`, `codec-lz4` | zstd/lz4 decode a corrupt stream | `InvalidPayloadException` |
+| `codec-transforms`, `codec-zstd`, `codec-lz4` | a payload that would expand past the decompression cap | `InvalidPayloadException` |
+| `codec-transforms`, `codec-zstd`, `codec-lz4` | a compressor fails on encode (dependency, not the value) | `TransientCodecException` |
 | `codec-transforms` | `ChecksumCodec` finds a mismatch or a truncated buffer | `InvalidPayloadException` |
 | `codec-transforms` | Base64/Base32/hex text outside the alphabet | `InvalidPayloadException` |
 | `codec-transforms` | `StringCodec` decodes bytes not valid in the charset | `InvalidPayloadException` |

@@ -327,6 +327,22 @@ class ForyCodecFactoryTest {
     }
 
     @Test
+    void a_corrupt_header_claiming_out_of_band_buffers_is_an_invalid_payload() {
+      Codec<Person> codec = factory.create(Person.class);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(new byte[] {2, -1, 28, 0, 22, -107, 122}))
+          .withCauseInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void decoding_null_is_a_programmer_error() {
+      Codec<Person> codec = factory.create(Person.class);
+
+      assertThatNullPointerException().isThrownBy(() -> codec.decode(null));
+    }
+
+    @Test
     void encoding_a_value_of_an_unregistered_class_is_an_invalid_value() {
       Codec<Object> codec = factory.create(Object.class);
 

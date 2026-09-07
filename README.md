@@ -206,6 +206,11 @@ public interface Codec<T> {
 }
 ```
 
+Every `encode`/`decode` failure is a `CodecException` in one of four families —
+fix the value, quarantine the payload, hold it for a newer reader, or retry —
+keyed to what the caller does next. See
+[Handling Failures](https://jwcarman.github.io/codec/guides/error-handling/).
+
 ### `CodecFactory`
 
 ```java

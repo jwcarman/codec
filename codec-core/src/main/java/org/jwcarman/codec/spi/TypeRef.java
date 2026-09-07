@@ -96,8 +96,8 @@ public abstract class TypeRef<T> {
    * the type-token bridge without it and cannot write an unchecked cast without a warning.
    *
    * @return the erased class of {@code T}
-   * @throws IllegalArgumentException if the captured type is a generic array type, which has no
-   *     single erased class a codec could be created for
+   * @throws IllegalArgumentException if the captured type has no single erased class (a wildcard or
+   *     a generic array type)
    */
   public Class<T> rawClass() {
     Class<?> raw =

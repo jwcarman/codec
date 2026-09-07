@@ -196,6 +196,33 @@ class GsonCodecFactoryTest {
         .withCauseInstanceOf(JsonIOException.class);
   }
 
+  static class Base {
+    String name;
+
+    Base(String name) {
+      this.name = name;
+    }
+  }
+
+  static class Extended extends Base {
+    String extra;
+
+    Extended(String name, String extra) {
+      super(name);
+      this.extra = extra;
+    }
+  }
+
+  @Test
+  void shouldEncodeByTheCodecsDeclaredTypeNotTheValuesRuntimeClass() {
+    Codec<Base> codec = factory.create(Base.class);
+    Extended value = new Extended("n", "x");
+
+    String json = new String(codec.encode(value), UTF_8);
+
+    assertThat(json).contains("\"name\"").doesNotContain("\"extra\"");
+  }
+
   @Test
   void shouldReportMalformedJsonAsInvalidPayload() {
     Codec<Person> codec = factory.create(Person.class);

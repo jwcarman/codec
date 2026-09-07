@@ -133,6 +133,13 @@ base type means the bytes were never ours.
 
 Exceptions thrown by a delegate codec propagate unchanged.
 
+Amended 2026-09-06 by spec 008: `VersionedFormatException` extends
+`InvalidPayloadException` and `UnknownVersionException` extends
+`UnsupportedFormatException`. `UnknownVersionException` is **no longer** a
+subtype of `VersionedFormatException` — that inheritance would have let a
+"quarantine invalid payloads" policy discard every message written by a newer
+deploy, which is the failure this module exists to prevent.
+
 ## Versioning transforms
 
 Because the builder is generic over `Codec<T>`, `T = byte[]` gives versioned

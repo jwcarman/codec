@@ -15,15 +15,19 @@
  */
 package org.jwcarman.codec.versioned;
 
+import org.jwcarman.codec.spi.UnsupportedFormatException;
+
 /**
  * Signals that a payload carries valid versioned framing but names a version this codec has no
  * codec registered for.
  *
- * <p>During a rollout this is the "written by a newer deploy" signal — a condition a caller may
- * choose to route or retry rather than treat as corruption — which is why it is distinguishable
- * from its {@link VersionedFormatException} parent.
+ * <p>During a rollout this is the "written by a newer deploy" signal: the data is fine, and the
+ * caller should hold it or route it to a newer reader rather than treat it as corrupt. It is an
+ * {@link UnsupportedFormatException} for exactly that reason, and deliberately <em>not</em> a
+ * {@link VersionedFormatException} — a policy that dead-letters invalid payloads must not discard
+ * every message written by the instances that have already been upgraded.
  */
-public class UnknownVersionException extends VersionedFormatException {
+public class UnknownVersionException extends UnsupportedFormatException {
 
   private final int version;
 

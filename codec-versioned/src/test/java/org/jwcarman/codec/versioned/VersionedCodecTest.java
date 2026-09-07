@@ -229,7 +229,8 @@ class VersionedCodecTest {
     void is_rejected_naming_the_version() {
       assertThatExceptionOfType(UnknownVersionException.class)
           .isThrownBy(() -> codec.decode(new byte[] {MAGIC_0, MAGIC_1, (byte) 9}))
-          .satisfies(e -> assertThat(e.version()).isEqualTo(9));
+          .satisfies(e -> assertThat(e.version()).isEqualTo(9))
+          .isNotInstanceOf(VersionedFormatException.class);
     }
 
     @Test

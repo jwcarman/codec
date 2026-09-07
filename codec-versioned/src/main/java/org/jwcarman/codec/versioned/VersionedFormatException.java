@@ -15,15 +15,19 @@
  */
 package org.jwcarman.codec.versioned;
 
+import org.jwcarman.codec.spi.InvalidPayloadException;
+
 /**
  * Signals that a buffer handed to a versioned codec is not a well-formed versioned payload: it is
  * shorter than the three-byte header, or it does not carry the versioned magic.
  *
  * <p>This is the "these bytes were never ours" failure — a codec pointed at data some other codec
- * wrote. Contrast {@link UnknownVersionException}, which means the framing is ours but the version
- * is not one this codec knows.
+ * wrote — and so an {@link InvalidPayloadException}: quarantine it. Contrast {@link
+ * UnknownVersionException}, which means the framing is ours but the version is one this codec does
+ * not know; that is an {@link org.jwcarman.codec.spi.UnsupportedFormatException}, and the two
+ * deliberately share no parent below {@link org.jwcarman.codec.spi.CodecException}.
  */
-public class VersionedFormatException extends RuntimeException {
+public class VersionedFormatException extends InvalidPayloadException {
 
   /**
    * Creates an exception with the given message.

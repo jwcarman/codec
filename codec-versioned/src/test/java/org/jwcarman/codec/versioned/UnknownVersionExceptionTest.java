@@ -21,6 +21,8 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class UnknownVersionExceptionTest {
@@ -43,8 +45,20 @@ class UnknownVersionExceptionTest {
     }
 
     @Test
-    void is_a_versioned_format_exception() {
-      assertThat(new UnknownVersionException(7)).isInstanceOf(VersionedFormatException.class);
+    void is_an_unsupported_format_not_an_invalid_payload() {
+      // A newer writer's output is fine data this reader cannot handle yet; a policy that
+      // dead-letters invalid payloads must never take it.
+      assertThat(new UnknownVersionException(7))
+          .isInstanceOf(UnsupportedFormatException.class)
+          .isNotInstanceOf(VersionedFormatException.class)
+          .isNotInstanceOf(InvalidPayloadException.class);
+    }
+
+    @Test
+    void the_framing_failure_is_an_invalid_payload() {
+      assertThat(new VersionedFormatException("bad magic"))
+          .isInstanceOf(InvalidPayloadException.class)
+          .isNotInstanceOf(UnsupportedFormatException.class);
     }
   }
 }

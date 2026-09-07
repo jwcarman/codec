@@ -45,7 +45,7 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
   private static final int BUFFER_SIZE = 8192;
 
   /** The largest cap that can be honoured: the decoded payload is held in a single array. */
-  private static final long MAX_DECODED_SIZE_CEILING = Integer.MAX_VALUE - 8;
+  private static final long MAX_DECODED_SIZE_CEILING = Integer.MAX_VALUE - 8L;
 
   private final long maxDecodedSize;
 

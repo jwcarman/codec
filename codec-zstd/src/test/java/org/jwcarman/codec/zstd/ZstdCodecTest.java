@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -87,6 +88,34 @@ class ZstdCodecTest {
 
       assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(notCompressed));
+    }
+
+    @Test
+    void rejects_a_frame_with_a_corrupt_header() {
+      // The zstd magic (0xFD2FB528, little-endian) followed by an impossible frame header.
+      byte[] corruptHeader = {
+        (byte) 0x28,
+        (byte) 0xB5,
+        (byte) 0x2F,
+        (byte) 0xFD,
+        (byte) 0xFF,
+        (byte) 0xFF,
+        (byte) 0xFF,
+        (byte) 0xFF
+      };
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(corruptHeader));
+    }
+
+    @Test
+    void rejects_a_truncated_frame() {
+      byte[] encoded =
+          codec.encode("the quick brown fox jumps over the lazy dog".repeat(50).getBytes(UTF_8));
+      byte[] truncated = Arrays.copyOf(encoded, encoded.length / 2);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(truncated));
     }
   }
 

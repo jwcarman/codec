@@ -23,6 +23,11 @@ edit_uri: edit/main/docs/
 
 docs_dir: docs
 
+validation:
+  anchors: warn
+  links:
+    absolute_links: warn
+
 # Process artifacts (specs) and internal working notes stay out of the site.
 exclude_docs: |
   /superpowers/

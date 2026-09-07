@@ -37,6 +37,8 @@ byte[] keyBytes = HexCodec.lowerCase().decode(hex.getBytes(StandardCharsets.US_A
 SecretKey fromConfig = new SecretKeySpec(keyBytes, "AES");   // or load from configuration
 ```
 
+`HexCodec` lives in `codec-transforms`; add it beside `codec-crypto` if you use it.
+
 ```java
 DataKeyProvider provider =
     new JceDataKeyProvider("kek-2026-08", Map.of("kek-2026-08", kek));

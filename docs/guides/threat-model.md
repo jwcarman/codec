@@ -90,7 +90,7 @@ combination:
   not a reimplementation alongside it.
 - **Decoder fuzzing**: `EnvelopeCodecDecodeFuzzTest` asserts that `decode`
   only ever throws `InvalidPayloadException`, `UnsupportedFormatException` or
-  `TransientCodecException` — the three outcomes `decode` is permitted;
+  `TransientCodecException` — the three outcomes `decode` is permitted to throw;
   `EnvelopeCodecMutationFuzzTest`
   asserts that encode-then-mutate either round-trips or is rejected. Each
   target is its own class, run in its own forked JVM, because jazzer-junit

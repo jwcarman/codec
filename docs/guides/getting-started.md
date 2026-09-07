@@ -70,9 +70,10 @@ implementation Codec is tested against; Apache Johnzon also works):
 </dependency>
 ```
 
-Its version comes from your BOM or Maven Central — `codec-bom` does not manage
-it. Either way, malformed input surfaces as `InvalidPayloadException` with the
-provider's own exception as the cause — see [Handling Failures](error-handling.md).
+Spring Boot's BOM manages Yasson's version; without it, pick the version from
+Maven Central — `codec-bom` manages only codec's own artifacts. Either way,
+malformed input surfaces as `InvalidPayloadException` with the provider's own
+exception as the cause — see [Handling Failures](error-handling.md).
 
 ## Use it
 

@@ -79,6 +79,43 @@ class TypeRefTest {
   }
 
   @Test
+  void rawClassOfAPlainClassIsTheClass() {
+    assertThat(TypeRef.of(String.class).rawClass()).isEqualTo(String.class);
+    assertThat(new TypeRef<Integer>() {}.rawClass()).isEqualTo(Integer.class);
+  }
+
+  @Test
+  void rawClassOfAParameterizedTypeIsItsRawType() {
+    assertThat(new TypeRef<List<String>>() {}.rawClass()).isEqualTo(List.class);
+    assertThat(new TypeRef<Map<String, List<Integer>>>() {}.rawClass()).isEqualTo(Map.class);
+  }
+
+  @Test
+  void rawClassOfAPrimitiveArrayIsTheArrayClass() {
+    assertThat(TypeRef.of(int[].class).rawClass()).isEqualTo(int[].class);
+  }
+
+  @Test
+  void rawClassOfAGenericArrayTypeIsRejected() {
+    TypeRef<List<String>[]> genericArray = new TypeRef<>() {};
+
+    assertThatThrownBy(genericArray::rawClass)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith("Unsupported type: ")
+        .hasMessageContaining("List<java.lang.String>[]");
+  }
+
+  @Test
+  void rawClassIsUsableAsACheckedCast() {
+    // The whole point: a Class<T> lets a backend use Class.cast instead of an unchecked (T) cast.
+    Class<List<String>> raw = new TypeRef<List<String>>() {}.rawClass();
+    Object value = List.of("a");
+
+    assertThat(raw.cast(value)).containsExactly("a");
+    assertThatThrownBy(() -> raw.cast("not a list")).isInstanceOf(ClassCastException.class);
+  }
+
+  @Test
   void ofClassShouldCaptureType() {
     TypeRef<String> ref = TypeRef.of(String.class);
     assertThat(ref.getType()).isEqualTo(String.class);

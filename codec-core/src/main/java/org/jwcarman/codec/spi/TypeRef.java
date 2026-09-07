@@ -82,6 +82,43 @@ public abstract class TypeRef<T> {
     return type;
   }
 
+  /**
+   * Returns the erased class of the captured type: {@code List.class} for {@code List<String>}, the
+   * class itself for a non-generic type.
+   *
+   * <p>This method contains the one unchecked cast in the codebase. It is sound by construction: a
+   * {@code TypeRef<T>} captures {@code T} and nothing else, so the erasure of the captured type is
+   * the erasure of {@code T}. Backends use the result with {@link Class#cast} — a checked cast —
+   * instead of an unchecked {@code (T)} cast of their own; every other cast in the reactor is a
+   * checked {@code Class.cast} or none at all, and no new unchecked cast is permitted anywhere
+   * else. The build compiles with {@code -Xlint:all,-processing,-unchecked -Werror}: the {@code
+   * unchecked} category is off precisely and only because of this method, since Java cannot express
+   * the type-token bridge without it and cannot write an unchecked cast without a warning.
+   *
+   * @return the erased class of {@code T}
+   * @throws IllegalArgumentException if the captured type is a generic array type, which has no
+   *     single erased class a codec could be created for
+   */
+  public Class<T> rawClass() {
+    Class<?> raw;
+    if (type instanceof Class<?> clazz) {
+      raw = clazz;
+    } else if (type instanceof ParameterizedType parameterized) {
+      raw = (Class<?>) parameterized.getRawType();
+    } else {
+      throw new IllegalArgumentException("Unsupported type: " + type.getTypeName());
+    }
+    return uncheckedTypeToken(raw);
+  }
+
+  /**
+   * The type-token bridge: the one place the erased class is asserted to be {@code Class<T>}.
+   * Isolated so the unchecked cast has exactly one line to live on.
+   */
+  private static <T> Class<T> uncheckedTypeToken(Class<?> raw) {
+    return (Class<T>) raw;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

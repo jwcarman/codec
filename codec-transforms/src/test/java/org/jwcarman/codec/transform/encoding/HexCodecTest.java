@@ -87,9 +87,10 @@ class HexCodecTest {
     @Test
     void rejects_odd_length_input() {
       byte[] odd = "abc".getBytes(US_ASCII);
+      HexCodec codec = HexCodec.lowerCase();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> HexCodec.lowerCase().decode(odd))
+          .isThrownBy(() -> codec.decode(odd))
           .withMessage("Input is not valid hex")
           .withCauseInstanceOf(IllegalArgumentException.class);
     }
@@ -97,16 +98,18 @@ class HexCodecTest {
     @Test
     void rejects_non_hex_characters() {
       byte[] bad = "zz".getBytes(US_ASCII);
+      HexCodec codec = HexCodec.lowerCase();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> HexCodec.lowerCase().decode(bad))
+          .isThrownBy(() -> codec.decode(bad))
           .withMessage("Input is not valid hex")
           .withCauseInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void rejects_null_input() {
-      assertThatNullPointerException().isThrownBy(() -> HexCodec.lowerCase().decode(null));
+      HexCodec codec = HexCodec.lowerCase();
+      assertThatNullPointerException().isThrownBy(() -> codec.decode(null));
     }
   }
 

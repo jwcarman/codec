@@ -104,15 +104,19 @@ class Base64CodecTest {
 
     @Test
     void rejects_input_outside_the_alphabet() {
+      Base64Codec codec = Base64Codec.basic();
+      byte[] bytes = "not*base64!".getBytes(US_ASCII);
+
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> Base64Codec.basic().decode("not*base64!".getBytes(US_ASCII)))
+          .isThrownBy(() -> codec.decode(bytes))
           .withMessage("Input is not valid Base64")
           .withCauseInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void rejects_null_input() {
-      assertThatNullPointerException().isThrownBy(() -> Base64Codec.basic().decode(null));
+      Base64Codec codec = Base64Codec.basic();
+      assertThatNullPointerException().isThrownBy(() -> codec.decode(null));
     }
   }
 

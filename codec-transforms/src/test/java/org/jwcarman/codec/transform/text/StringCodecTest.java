@@ -86,9 +86,10 @@ class StringCodecTest {
     @Test
     void rejects_malformed_utf8_instead_of_substituting() {
       byte[] truncatedSequence = {(byte) 'a', (byte) 0xC3};
+      StringCodec codec = StringCodec.utf8();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> StringCodec.utf8().decode(truncatedSequence))
+          .isThrownBy(() -> codec.decode(truncatedSequence))
           .withMessageContaining("UTF-8")
           .withCauseInstanceOf(java.nio.charset.CharacterCodingException.class);
     }
@@ -96,18 +97,17 @@ class StringCodecTest {
     @Test
     void rejects_bytes_unmappable_in_the_charset() {
       byte[] undefinedInAscii = {(byte) 0x80};
+      StringCodec codec = StringCodec.of(java.nio.charset.StandardCharsets.US_ASCII);
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(
-              () ->
-                  StringCodec.of(java.nio.charset.StandardCharsets.US_ASCII)
-                      .decode(undefinedInAscii));
+          .isThrownBy(() -> codec.decode(undefinedInAscii));
     }
 
     @Test
     void rejects_null_input() {
-      assertThatNullPointerException().isThrownBy(() -> StringCodec.utf8().decode(null));
-      assertThatNullPointerException().isThrownBy(() -> StringCodec.utf8().encode(null));
+      StringCodec codec = StringCodec.utf8();
+      assertThatNullPointerException().isThrownBy(() -> codec.decode(null));
+      assertThatNullPointerException().isThrownBy(() -> codec.encode(null));
     }
   }
 

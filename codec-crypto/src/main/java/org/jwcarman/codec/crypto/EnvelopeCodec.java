@@ -146,7 +146,7 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       throw new EncryptionException("Data key could not be inspected", e);
     }
     if (problem != null) {
-      throw new EncryptionException(problem, null);
+      throw new EncryptionException(problem);
     }
     byte[] keyIdBytes = dataKey.keyId().getBytes(StandardCharsets.UTF_8);
     byte[] wrapped = dataKey.wrapped();

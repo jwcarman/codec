@@ -42,28 +42,29 @@ class JceDataKeyProviderTest {
   class Construction {
     @Test
     void rejects_a_current_key_id_absent_from_the_map() {
+      Map<String, SecretKey> keks = Map.of("kek", aesKey((byte) 1));
       assertThatIllegalArgumentException()
-          .isThrownBy(() -> new JceDataKeyProvider("missing", Map.of("kek", aesKey((byte) 1))));
+          .isThrownBy(() -> new JceDataKeyProvider("missing", keks));
     }
 
     @Test
     void rejects_an_empty_kek_map() {
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> new JceDataKeyProvider("kek", Map.of()));
+      Map<String, SecretKey> keks = Map.of();
+      assertThatIllegalArgumentException().isThrownBy(() -> new JceDataKeyProvider("kek", keks));
     }
 
     @Test
     void rejects_a_non_aes_kek() {
       SecretKey hmac = new SecretKeySpec(new byte[32], "HmacSHA256");
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> new JceDataKeyProvider("kek", Map.of("kek", hmac)));
+      Map<String, SecretKey> keks = Map.of("kek", hmac);
+      assertThatIllegalArgumentException().isThrownBy(() -> new JceDataKeyProvider("kek", keks));
     }
 
     @Test
     void rejects_a_16_byte_aes_kek() {
       SecretKey shortKek = new SecretKeySpec(new byte[16], "AES");
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> new JceDataKeyProvider("kek", Map.of("kek", shortKek)));
+      Map<String, SecretKey> keks = Map.of("kek", shortKek);
+      assertThatIllegalArgumentException().isThrownBy(() -> new JceDataKeyProvider("kek", keks));
     }
 
     @Test

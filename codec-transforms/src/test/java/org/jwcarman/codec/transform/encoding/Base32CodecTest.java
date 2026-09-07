@@ -121,9 +121,10 @@ class Base32CodecTest {
     @ValueSource(strings = {"MZXW6YT", "MZXW6YTBO", "MZXW6YTBOI====="})
     void rejects_a_length_that_is_not_a_multiple_of_eight(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
+      Base32Codec codec = Base32Codec.standard();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> Base32Codec.standard().decode(bytes))
+          .isThrownBy(() -> codec.decode(bytes))
           .withMessageContaining("multiple of 8");
     }
 
@@ -131,9 +132,10 @@ class Base32CodecTest {
     @ValueSource(strings = {"MZX=====", "MZXW6Y==", "M======="})
     void rejects_padding_lengths_the_rfc_never_produces(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
+      Base32Codec codec = Base32Codec.standard();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> Base32Codec.standard().decode(bytes))
+          .isThrownBy(() -> codec.decode(bytes))
           .withMessageContaining("padding");
     }
 
@@ -141,32 +143,36 @@ class Base32CodecTest {
     @ValueSource(strings = {"MZXW6Y=B", "MZXW6YT1", "MZXW6YT!", "0ZXW6YTB"})
     void rejects_characters_outside_the_alphabet(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
+      Base32Codec codec = Base32Codec.standard();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> Base32Codec.standard().decode(bytes))
+          .isThrownBy(() -> codec.decode(bytes))
           .withMessageContaining("character");
     }
 
     @Test
     void rejects_non_ascii_bytes() {
       byte[] bytes = {(byte) 0xC3, (byte) 0xA9, 'A', 'A', 'A', 'A', 'A', 'A'};
+      Base32Codec codec = Base32Codec.standard();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> Base32Codec.standard().decode(bytes));
+          .isThrownBy(() -> codec.decode(bytes));
     }
 
     @Test
     void the_hex_alphabet_rejects_standard_only_letters() {
       byte[] bytes = "MZXW6YTB".getBytes(US_ASCII);
+      Base32Codec codec = Base32Codec.hex();
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> Base32Codec.hex().decode(bytes));
+          .isThrownBy(() -> codec.decode(bytes));
     }
 
     @Test
     void rejects_null_input() {
-      assertThatNullPointerException().isThrownBy(() -> Base32Codec.standard().decode(null));
-      assertThatNullPointerException().isThrownBy(() -> Base32Codec.standard().encode(null));
+      Base32Codec codec = Base32Codec.standard();
+      assertThatNullPointerException().isThrownBy(() -> codec.decode(null));
+      assertThatNullPointerException().isThrownBy(() -> codec.encode(null));
     }
   }
 

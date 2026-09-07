@@ -134,9 +134,10 @@ class ChecksumCodecTest {
     @Test
     void a_different_checksum_does_not_verify_the_same_trailer() {
       byte[] encoded = codec.encode(CHECK);
+      ChecksumCodec differentChecksum = new ChecksumCodec(CRC32::new);
 
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> new ChecksumCodec(CRC32::new).decode(encoded));
+          .isThrownBy(() -> differentChecksum.decode(encoded));
     }
   }
 
@@ -174,8 +175,10 @@ class ChecksumCodecTest {
             }
           };
 
+      ChecksumCodec wideChecksumCodec = new ChecksumCodec(() -> sixtyFourBit);
+
       assertThatExceptionOfType(TransientCodecException.class)
-          .isThrownBy(() -> new ChecksumCodec(() -> sixtyFourBit).encode(CHECK))
+          .isThrownBy(() -> wideChecksumCodec.encode(CHECK))
           .withMessageContaining("wider than 32 bits");
     }
 

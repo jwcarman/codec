@@ -44,8 +44,10 @@ class EnvelopeCodecEncodeTest {
   class Builder_validation {
     @Test
     void rejects_an_empty_aad() {
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> EnvelopeCodec.builder(provider()).aad(new byte[0]).build());
+      EnvelopeCodec.Builder builder = EnvelopeCodec.builder(provider());
+      byte[] emptyAad = new byte[0];
+
+      assertThatIllegalArgumentException().isThrownBy(() -> builder.aad(emptyAad));
     }
   }
 

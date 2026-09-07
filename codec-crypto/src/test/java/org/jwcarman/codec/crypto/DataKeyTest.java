@@ -46,8 +46,9 @@ class DataKeyTest {
 
     @Test
     void rejects_key_id_longer_than_uint16_in_utf8_bytes() {
+      String longKeyId = "x".repeat(65536);
       assertThatIllegalArgumentException()
-          .isThrownBy(() -> new DataKey("x".repeat(65536), KEY, new byte[] {1}));
+          .isThrownBy(() -> new DataKey(longKeyId, KEY, new byte[] {1}));
     }
 
     @Test

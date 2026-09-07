@@ -258,48 +258,57 @@ class VersionedCodecTest {
     @ParameterizedTest(name = "version {0}")
     @ValueSource(ints = {-1, 0, 256})
     void rejects_a_version_outside_the_valid_range(int version) {
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> VersionedCodec.<String>builder().version(version, plain()));
+      VersionedCodec.Builder<String> builder = VersionedCodec.builder();
+      Codec<String> plain = plain();
+
+      assertThatIllegalArgumentException().isThrownBy(() -> builder.version(version, plain));
     }
 
     @ParameterizedTest(name = "version {0}")
     @ValueSource(ints = {-1, 0, 256})
     void rejects_a_write_version_outside_the_valid_range(int version) {
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> VersionedCodec.<String>builder().writing(version));
+      VersionedCodec.Builder<String> builder = VersionedCodec.builder();
+
+      assertThatIllegalArgumentException().isThrownBy(() -> builder.writing(version));
     }
 
     @Test
     void rejects_a_null_codec() {
-      assertThatNullPointerException()
-          .isThrownBy(() -> VersionedCodec.<String>builder().version(1, null));
+      VersionedCodec.Builder<String> builder = VersionedCodec.builder();
+
+      assertThatNullPointerException().isThrownBy(() -> builder.version(1, null));
     }
 
     @Test
     void rejects_registering_the_same_version_twice() {
-      assertThatIllegalStateException()
-          .isThrownBy(
-              () -> VersionedCodec.<String>builder().version(1, plain()).version(1, upperCase()));
+      VersionedCodec.Builder<String> builder = VersionedCodec.<String>builder().version(1, plain());
+      Codec<String> upperCase = upperCase();
+
+      assertThatIllegalStateException().isThrownBy(() -> builder.version(1, upperCase));
     }
 
     @Test
     void rejects_building_with_no_versions_registered() {
+      VersionedCodec.Builder<String> builder = VersionedCodec.<String>builder().writing(1);
+
       assertThatIllegalStateException()
-          .isThrownBy(() -> VersionedCodec.<String>builder().writing(1).build())
+          .isThrownBy(() -> builder.build())
           .withMessage("at least one version must be registered");
     }
 
     @Test
     void rejects_building_without_a_write_version() {
-      assertThatIllegalStateException()
-          .isThrownBy(() -> VersionedCodec.<String>builder().version(1, plain()).build());
+      VersionedCodec.Builder<String> builder = VersionedCodec.<String>builder().version(1, plain());
+
+      assertThatIllegalStateException().isThrownBy(() -> builder.build());
     }
 
     @Test
     void rejects_a_write_version_with_no_registered_codec() {
-      assertThatIllegalStateException()
-          .isThrownBy(
-              () -> VersionedCodec.<String>builder().version(1, plain()).writing(2).build());
+      VersionedCodec.Builder<String> builder =
+          VersionedCodec.<String>builder().version(1, plain()).writing(2);
+
+      assertThatIllegalStateException().isThrownBy(() -> builder.build());
     }
 
     @Test

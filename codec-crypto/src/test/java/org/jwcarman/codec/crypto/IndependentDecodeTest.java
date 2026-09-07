@@ -147,10 +147,11 @@ class IndependentDecodeTest {
         Arrays.copyOf(VECTOR, h.length() - 12), // header minus the nonce
         Arrays.copyOf(VECTOR, h.length() + 1), // header plus one ciphertext byte
       };
+      byte[] nonce = h.nonce();
 
       for (byte[] aad : wrongSpans) {
         assertThatExceptionOfType(AEADBadTagException.class)
-            .isThrownBy(() -> gcmOpen(dek, h.nonce(), aad, body));
+            .isThrownBy(() -> gcmOpen(dek, nonce, aad, body));
       }
     }
   }

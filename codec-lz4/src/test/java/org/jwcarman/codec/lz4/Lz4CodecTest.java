@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -200,6 +202,55 @@ class Lz4CodecTest {
       byte[] input = "layered".repeat(100).getBytes(UTF_8);
 
       assertThat(chain.decode(chain.encode(input))).isEqualTo(input);
+    }
+  }
+
+  @Nested
+  class The_frame_descriptor_guard {
+
+    @Test
+    void single_byte_read_returns_the_first_decompressed_byte() throws IOException {
+      byte[] encoded = codec.encode("hello world".getBytes(UTF_8));
+
+      try (InputStream in = codec.decompressing(new ByteArrayInputStream(encoded))) {
+        assertThat(in.read()).isEqualTo('h');
+      }
+    }
+
+    @Test
+    void skip_advances_past_decompressed_bytes_for_a_later_single_byte_read() throws IOException {
+      byte[] encoded = codec.encode("hello world".getBytes(UTF_8));
+
+      try (InputStream in = codec.decompressing(new ByteArrayInputStream(encoded))) {
+        in.skip(6);
+        assertThat(in.read()).isEqualTo('w');
+      }
+    }
+
+    @Test
+    void single_byte_read_on_a_corrupt_frame_descriptor_is_an_io_exception() throws IOException {
+      byte[] bad = codec.encode("hello world".getBytes(UTF_8));
+      bad[4] ^= 0x40;
+
+      try (InputStream in = codec.decompressing(new ByteArrayInputStream(bad))) {
+        assertThatExceptionOfType(IOException.class)
+            .isThrownBy(in::read)
+            .withMessage("Invalid LZ4 frame descriptor")
+            .withCauseInstanceOf(RuntimeException.class);
+      }
+    }
+
+    @Test
+    void skip_on_a_corrupt_frame_descriptor_is_an_io_exception() throws IOException {
+      byte[] bad = codec.encode("hello world".getBytes(UTF_8));
+      bad[4] ^= 0x40;
+
+      try (InputStream in = codec.decompressing(new ByteArrayInputStream(bad))) {
+        assertThatExceptionOfType(IOException.class)
+            .isThrownBy(() -> in.skip(1))
+            .withMessage("Invalid LZ4 frame descriptor")
+            .withCauseInstanceOf(RuntimeException.class);
+      }
     }
   }
 }

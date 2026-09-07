@@ -136,8 +136,9 @@ class ProviderInjectionTest {
     @Test
     void codec_builder_rejects_a_provider_without_aes_gcm() {
       JceDataKeyProvider keys = new JceDataKeyProvider("kek", keks());
+      EnvelopeCodec.Builder builder = EnvelopeCodec.builder(keys).provider(new EmptyProvider());
       assertThatIllegalStateException()
-          .isThrownBy(() -> EnvelopeCodec.builder(keys).provider(new EmptyProvider()).build())
+          .isThrownBy(() -> builder.build())
           .withMessageContaining("AES/GCM/NoPadding")
           // Names the explicitly-supplied provider rather than falling back to "<default>": kills
           // a `provider == null` negated-conditional mutant in checkTransform's message-building.
@@ -146,9 +147,10 @@ class ProviderInjectionTest {
 
     @Test
     void jce_builder_rejects_a_provider_without_aes_wrap() {
+      JceDataKeyProvider.Builder builder =
+          JceDataKeyProvider.builder("kek", keks()).provider(new EmptyProvider());
       assertThatIllegalStateException()
-          .isThrownBy(
-              () -> JceDataKeyProvider.builder("kek", keks()).provider(new EmptyProvider()).build())
+          .isThrownBy(() -> builder.build())
           .withMessageContaining("AES/KW/NoPadding")
           // Names the explicitly-supplied provider rather than falling back to "<default>": kills
           // a `provider == null` negated-conditional mutant in the constructor's message-building.

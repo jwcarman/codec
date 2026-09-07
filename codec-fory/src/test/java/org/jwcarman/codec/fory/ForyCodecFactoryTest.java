@@ -315,14 +315,16 @@ class ForyCodecFactoryTest {
       Codec<Person> codec = factory.create(Person.class);
       byte[] valid = codec.encode(new Person("Alice", 30, true));
 
+      byte[] notFory = "not fory".getBytes(UTF_8);
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> codec.decode("not fory".getBytes(UTF_8)))
+          .isThrownBy(() -> codec.decode(notFory))
           .withCauseInstanceOf(IllegalArgumentException.class);
       assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(new byte[0]))
           .withCauseInstanceOf(IndexOutOfBoundsException.class);
+      byte[] truncated = Arrays.copyOf(valid, valid.length / 2);
       assertThatExceptionOfType(InvalidPayloadException.class)
-          .isThrownBy(() -> codec.decode(Arrays.copyOf(valid, valid.length / 2)))
+          .isThrownBy(() -> codec.decode(truncated))
           .withCauseInstanceOf(DeserializationException.class);
     }
 
@@ -345,9 +347,10 @@ class ForyCodecFactoryTest {
     @Test
     void encoding_a_value_of_an_unregistered_class_is_an_invalid_value() {
       Codec<Object> codec = factory.create(Object.class);
+      Unregistered unregistered = new Unregistered("x");
 
       assertThatExceptionOfType(InvalidValueException.class)
-          .isThrownBy(() -> codec.encode(new Unregistered("x")))
+          .isThrownBy(() -> codec.encode(unregistered))
           .withMessage("Unable to serialize value")
           .withCauseInstanceOf(InsecureException.class);
     }

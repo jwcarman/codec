@@ -181,9 +181,10 @@ class JacksonCodecFactoryTest {
   @Test
   void shouldReportMalformedJsonAsInvalidPayload() {
     Codec<Person> codec = factory.create(Person.class);
+    byte[] notJson = "not json".getBytes(UTF_8);
 
     assertThatExceptionOfType(InvalidPayloadException.class)
-        .isThrownBy(() -> codec.decode("not json".getBytes(UTF_8)))
+        .isThrownBy(() -> codec.decode(notJson))
         .withMessage("Unable to decode JSON")
         .withCauseInstanceOf(JacksonException.class);
   }

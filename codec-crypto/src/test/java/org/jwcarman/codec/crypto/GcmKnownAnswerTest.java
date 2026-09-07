@@ -151,17 +151,12 @@ class GcmKnownAnswerTest {
     void every_nist_fail_vector_is_rejected_at_tag_verification() {
       for (Vector v : DECRYPT_FAIL) {
         byte[] data = HEX.parseHex(v.ct() + v.tag());
+        SecretKeySpec key = new SecretKeySpec(HEX.parseHex(v.key()), "AES");
+        byte[] iv = HEX.parseHex(v.iv());
+        byte[] aad = HEX.parseHex(v.aad());
         assertThatExceptionOfType(AEADBadTagException.class)
             .as(v.source())
-            .isThrownBy(
-                () ->
-                    EnvelopeCodec.gcmDecrypt(
-                        null,
-                        new SecretKeySpec(HEX.parseHex(v.key()), "AES"),
-                        HEX.parseHex(v.iv()),
-                        HEX.parseHex(v.aad()),
-                        null,
-                        data));
+            .isThrownBy(() -> EnvelopeCodec.gcmDecrypt(null, key, iv, aad, null, data));
       }
     }
   }

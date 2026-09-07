@@ -179,9 +179,10 @@ class GsonCodecFactoryTest {
         };
     Gson gson = new GsonBuilder().registerTypeAdapter(Person.class, failing).create();
     Codec<Person> codec = new GsonCodecFactory(gson).create(Person.class);
+    Person person = new Person("Alice", 30, true);
 
     assertThatExceptionOfType(InvalidValueException.class)
-        .isThrownBy(() -> codec.encode(new Person("Alice", 30, true)))
+        .isThrownBy(() -> codec.encode(person))
         .withMessage("Unable to encode value as JSON")
         .withCauseInstanceOf(JsonIOException.class);
   }
@@ -189,9 +190,10 @@ class GsonCodecFactoryTest {
   @Test
   void shouldReportMalformedJsonAsInvalidPayload() {
     Codec<Person> codec = factory.create(Person.class);
+    byte[] notJson = "not json".getBytes(UTF_8);
 
     assertThatExceptionOfType(InvalidPayloadException.class)
-        .isThrownBy(() -> codec.decode("not json".getBytes(UTF_8)))
+        .isThrownBy(() -> codec.decode(notJson))
         .withMessage("Unable to decode JSON")
         .withCauseInstanceOf(JsonSyntaxException.class);
   }

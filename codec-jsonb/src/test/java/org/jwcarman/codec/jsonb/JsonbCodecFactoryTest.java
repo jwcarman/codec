@@ -153,9 +153,10 @@ class JsonbCodecFactoryTest {
     @Test
     void a_value_the_binding_cannot_serialize_is_an_invalid_value() {
       Codec<ThrowingGetter> codec = factory.create(ThrowingGetter.class);
+      ThrowingGetter value = new ThrowingGetter();
 
       assertThatExceptionOfType(InvalidValueException.class)
-          .isThrownBy(() -> codec.encode(new ThrowingGetter()))
+          .isThrownBy(() -> codec.encode(value))
           .withMessage("Unable to encode value as JSON")
           .withCauseInstanceOf(JsonbException.class);
     }

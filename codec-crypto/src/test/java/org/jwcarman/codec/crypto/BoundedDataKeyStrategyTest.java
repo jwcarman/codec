@@ -57,14 +57,15 @@ class BoundedDataKeyStrategyTest {
   class Construction {
     @Test
     void rejects_zero_message_cap() {
-      assertThatIllegalArgumentException()
-          .isThrownBy(() -> new BoundedDataKeyStrategy(0, Duration.ofMinutes(5)));
+      Duration maxAge = Duration.ofMinutes(5);
+      assertThatIllegalArgumentException().isThrownBy(() -> new BoundedDataKeyStrategy(0, maxAge));
     }
 
     @Test
     void rejects_message_cap_over_two_to_the_24() {
+      Duration maxAge = Duration.ofMinutes(5);
       assertThatIllegalArgumentException()
-          .isThrownBy(() -> new BoundedDataKeyStrategy((1L << 24) + 1, Duration.ofMinutes(5)));
+          .isThrownBy(() -> new BoundedDataKeyStrategy((1L << 24) + 1, maxAge));
     }
 
     @Test
@@ -80,14 +81,16 @@ class BoundedDataKeyStrategyTest {
 
     @Test
     void rejects_a_negative_max_age() {
+      Duration negativeMaxAge = Duration.ofSeconds(-1);
       assertThatIllegalArgumentException()
-          .isThrownBy(() -> new BoundedDataKeyStrategy(10, Duration.ofSeconds(-1)));
+          .isThrownBy(() -> new BoundedDataKeyStrategy(10, negativeMaxAge));
     }
 
     @Test
     void rejects_a_max_age_the_ticker_cannot_represent() {
+      Duration unrepresentableMaxAge = ChronoUnit.FOREVER.getDuration();
       assertThatIllegalArgumentException()
-          .isThrownBy(() -> new BoundedDataKeyStrategy(10, ChronoUnit.FOREVER.getDuration()))
+          .isThrownBy(() -> new BoundedDataKeyStrategy(10, unrepresentableMaxAge))
           .withMessageContaining("maxAge must not exceed");
     }
 

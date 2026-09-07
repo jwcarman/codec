@@ -79,6 +79,7 @@ nav:
   - Guides:
       - Getting Started: guides/getting-started.md
       - Codec Composition: guides/composition.md
+      - Handling Failures: guides/error-handling.md
       - Jackson Dataformats: guides/dataformats.md
       - Apache Fory: guides/fory.md
       - Encryption: guides/encryption.md

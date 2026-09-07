@@ -46,9 +46,9 @@ CBOR, Smile, YAML, and XML — see [Jackson Dataformats](dataformats.md).
 
 `codec-jsonb` depends on the Jakarta JSON Binding API only; bring a provider.
 Codec is tested against [Eclipse Yasson](https://github.com/eclipse-ee4j/yasson),
-the reference implementation. Apache Johnzon also works, with one difference
-worth knowing: it surfaces malformed input as JSON-P's `JsonParsingException`
-rather than wrapping it in `JsonbException` as the spec describes.
+the reference implementation; Apache Johnzon also works. Either way, malformed
+input surfaces as `InvalidPayloadException` with the provider's own exception
+as the cause — see [Handling failures](error-handling.md).
 
 ## Use it
 

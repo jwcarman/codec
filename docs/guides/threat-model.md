@@ -89,8 +89,9 @@ combination:
   (`EnvelopeCodec.gcmEncrypt`/`gcmDecrypt`, `JceDataKeyProvider.newDataKey`) —
   not a reimplementation alongside it.
 - **Decoder fuzzing**: `EnvelopeCodecDecodeFuzzTest` asserts that `decode`
-  only ever throws `DecryptionException` (the only legitimate outcome from
-  the in-process `JceDataKeyProvider`); `EnvelopeCodecMutationFuzzTest`
+  only ever throws `InvalidPayloadException`, `UnsupportedFormatException` or
+  `TransientCodecException` — the three outcomes spec 006 permits;
+  `EnvelopeCodecMutationFuzzTest`
   asserts that encode-then-mutate either round-trips or is rejected. Each
   target is its own class, run in its own forked JVM, because jazzer-junit
   fuzzes only the first `@FuzzTest` per JVM. A committed seed corpus runs in

@@ -154,7 +154,7 @@ after `SecretKeySpec` copies it, so key material does not linger in a byte
 array beyond its useful lifetime.
 
 **Wrap-scheme tag:** the blob returned as `DataKey.wrapped()` is
-`[scheme:1][payload]` — a one-byte wrap-scheme tag followed by the wrap
+`[scheme:1][wrapped key]` — a one-byte wrap-scheme tag followed by the wrap
 payload. Scheme `0x01` = AES-KW (RFC 3394) over the 32-byte DEK: payload 40
 bytes, blob 41 bytes. `unwrap` rejects a blob shorter than 2 bytes or tagged
 with an unrecognized scheme via `DecryptionException.cryptographic` (the
@@ -328,9 +328,9 @@ Deliberate exclusions:
 
 Consistent with the rest of the codebase: every failure throws, nothing logs.
 
-- `DecryptionException` (extends `IllegalArgumentException`): "this data is
-  bad." Structural failures (bad magic, unknown version/algorithm, bounds
-  violations, disallowed keyId) carry stage-specific messages; cryptographic
+- `DecryptionException` (an `InvalidPayloadException`): "this data is bad."
+  Structural failures (bad magic, bounds violations, disallowed keyId) carry
+  stage-specific messages; cryptographic
   rejections (tag mismatch, unwrap *rejection* — AES-KW ICV failure, KMS
   invalid-ciphertext) share one indistinguishable message. Scope of that claim:
   the exception *message* only. The cause is preserved for diagnosis and
@@ -338,7 +338,7 @@ Consistent with the rest of the codebase: every failure throws, nothing logs.
   unknown KEK id); consumers that expose stack traces expose the stage. The timing side channel is unavoidable — a KMS
   unwrap round trip and a local tag check differ observably, and structural
   rejections return before any provider call — and is documented as such.
-- `KeyAccessException` (extends `IllegalStateException`): "the key
+- `KeyAccessException` (a `TransientCodecException`): "the key
   infrastructure is unavailable" — timeouts, throttling, credential expiry, or
   any other provider failure that does not assert the ciphertext is invalid.
   Cause preserved. The distinction is normative on the `DataKeyProvider`
@@ -356,7 +356,7 @@ Consistent with the rest of the codebase: every failure throws, nothing logs.
   infrastructure, not quarantine a day of recoverable records as corrupt. The
   message names the violation (never the key material or its actual length);
   a provider-supplied algorithm name is sanitized like a wire keyId.
-- `EncryptionException` (extends `IllegalStateException`): provider or strategy
+- `EncryptionException` (a `TransientCodecException`): provider or strategy
   failure during encode, wrapping the cause.
 
 All three live in `org.jwcarman.codec.crypto`.

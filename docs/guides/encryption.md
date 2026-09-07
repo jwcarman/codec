@@ -21,9 +21,9 @@ Add the module:
 `codec-crypto` has zero external dependencies — all cryptography is JCE, built
 into the JDK. It ships one in-process key provider, `JceDataKeyProvider`, for
 consumers without a KMS. It wraps each DEK with AES key-wrap (RFC 3394) under
-a KEK you supply, and returns a wrapped blob laid out as `[scheme:1][payload]`
+a KEK you supply, and returns a wrapped blob laid out as `[scheme:1][wrapped key]`
 — a one-byte wrap-scheme tag (`0x01` = AES-KW) followed by the 40-byte AES-KW
-payload, 41 bytes total for a 32-byte DEK. The tag is invisible to
+output, 41 bytes total for a 32-byte DEK. The tag is invisible to
 `EnvelopeCodec`, which treats the whole blob as opaque; it exists so this
 provider has its own wrap-algorithm migration story, the way a KMS-backed
 provider gets one for free from its own versioned ciphertext format:
@@ -296,28 +296,33 @@ should a consumer's threat model require one.
 
 ## Error taxonomy
 
-`codec-crypto` throws three exceptions, all in `org.jwcarman.codec.crypto`,
-never logs:
+`codec-crypto` throws three exceptions of its own, all in
+`org.jwcarman.codec.crypto`, and never logs. Each slots into one of the SPI's
+[families](error-handling.md), which is what you catch:
 
-- **`DecryptionException`** (extends `IllegalArgumentException`) — "this data
-  is bad." Covers bad magic, unknown version/algorithm, bounds violations, a
-  disallowed keyId, and cryptographic rejection (GCM tag mismatch, or a
-  provider affirmatively rejecting the wrapped DEK). Cryptographic rejections
-  all share the exact message `"Unable to decrypt data"`, deliberately
-  indistinguishable from each other.
-- **`KeyAccessException`** (extends `IllegalStateException`) — "the key
-  infrastructure is unavailable": timeouts, throttling, credential expiry, or
-  any other provider failure that does not assert the ciphertext itself is
-  invalid. The cause is preserved.
-- **`EncryptionException`** (extends `IllegalStateException`) — a provider or
+- **`DecryptionException`** — an `InvalidPayloadException`: "this data is bad."
+  Covers bad magic, bounds violations, a disallowed keyId, and cryptographic
+  rejection (GCM tag mismatch, or a provider affirmatively rejecting the wrapped
+  DEK). Cryptographic rejections all share the exact message
+  `"Unable to decrypt data"`, deliberately indistinguishable from each other;
+  the exception's *cause* is preserved for diagnosis and does differ by stage.
+- **`UnsupportedFormatException`** (the SPI's own, not a crypto subclass) — the
+  envelope names a format version or algorithm id this build does not know. A
+  newer writer produced it; hold it or route it, do not quarantine it.
+- **`KeyAccessException`** — a `TransientCodecException`: "the key
+  infrastructure is unavailable, or misbehaving": timeouts, throttling,
+  credential expiry, a provider whose `unwrap` returns a key that violates its
+  contract, a key the JCE provider cannot use. The cause is preserved.
+- **`EncryptionException`** — a `TransientCodecException`: a provider or
   strategy failure during `encode`, wrapping the cause.
 
-!!! danger "Never quarantine or discard data on KeyAccessException"
-    `KeyAccessException` means the KMS was unreachable, not that the data is
-    invalid. A pipeline that quarantines or discards ciphertext on any
-    decryption failure must distinguish `KeyAccessException` from
-    `DecryptionException` — conflating them turns a transient KMS outage into
-    permanent data loss. Retain the encrypted data and retry.
+!!! danger "Never quarantine or discard data on a TransientCodecException"
+    `KeyAccessException` means the KMS was unreachable or the key was unusable,
+    not that the data is invalid. A pipeline that quarantines or discards
+    ciphertext on decryption failure must catch `InvalidPayloadException`
+    (which `DecryptionException` is) and nothing wider — conflating the families
+    turns a transient KMS outage into permanent data loss. Retain the encrypted
+    data and retry.
 
 This distinction is normative on `DataKeyProvider`: `unwrap` MUST throw
 `DecryptionException` only when the KMS or JCE layer has affirmatively

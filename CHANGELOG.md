@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+- Every failure `Codec.encode` and `Codec.decode` report is now a
+  `CodecException` from `codec-core`, in one of four families keyed to what the
+  caller does next: `InvalidValueException` (fix the value),
+  `InvalidPayloadException` (quarantine), `UnsupportedFormatException` (hold for
+  a newer reader), `TransientCodecException` (retry). Anything catching
+  `IllegalArgumentException`, `IllegalStateException`, `UncheckedIOException`,
+  `ClassCastException`, or a Jackson/Gson/JSON-B/Fory/protobuf exception from
+  `encode`/`decode` must catch the family (or `CodecException`) instead; the
+  library's exception is still there as the cause. Construction-time exceptions
+  are unchanged. `codec-crypto`'s `DecryptionException`, `KeyAccessException`
+  and `EncryptionException` keep their names and messages and now extend
+  `InvalidPayloadException`, `TransientCodecException` and
+  `TransientCodecException` respectively; an unknown envelope version or
+  algorithm id is now `UnsupportedFormatException`, not a rejection.
+  `codec-versioned`'s `UnknownVersionException` now extends
+  `UnsupportedFormatException` and is no longer a `VersionedFormatException`.
+  See the new [Handling failures](https://jwcarman.github.io/codec/guides/error-handling/)
+  guide.
+
 ### Changed
 - `codec-fory`: Apache Fory 1.1.0 → 1.7.1. `ForyCodecFactory.of(...)` takes Fory's
   defaults, and Fory's default changed from schema-consistent to compatible mode

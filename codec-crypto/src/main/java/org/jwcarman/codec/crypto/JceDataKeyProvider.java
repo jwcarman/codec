@@ -36,8 +36,8 @@ import javax.crypto.spec.SecretKeySpec;
  * ciphertext, and its integrity check value (ICV) causes unwrap of a tampered or foreign-key blob
  * to fail rather than silently return garbage key material.
  *
- * <p>The blob returned as {@link DataKey#wrapped()} is {@code [scheme:1][payload]}: a one-byte
- * wrap-scheme tag ({@link #WRAP_SCHEME_AES_KW}, {@code 0x01}) followed by the AES-KW payload — 41
+ * <p>The blob returned as {@link DataKey#wrapped()} is {@code [scheme:1][wrapped key]}: a one-byte
+ * wrap-scheme tag ({@link #WRAP_SCHEME_AES_KW}, {@code 0x01}) followed by the AES-KW output — 41
  * bytes total for a 32-byte DEK. This is invisible to {@code EnvelopeCodec}, which treats the whole
  * blob as opaque; it exists so this provider has the same wrap-algorithm migration story a
  * KMS-backed provider gets from its own versioned ciphertext format. Scheme values {@code 0x02} and

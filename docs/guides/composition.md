@@ -250,10 +250,11 @@ The write version is explicit rather than "newest wins", and that is the point.
 Deploy with version 2 registered but still `.writing(1)`, let it reach every
 instance, then flip to `.writing(2)` in a second deploy. No instance is ever
 handed data it cannot read. Data written by a version the reader does not know
-raises `UnknownVersionException`, which carries the offending version — during a
-rollout that means "written by a newer deploy", a condition you may want to
-route or retry rather than treat as corruption. A buffer that is not versioned
-at all raises the parent `VersionedFormatException`.
+raises `UnknownVersionException` — an `UnsupportedFormatException` carrying the
+offending version — which during a rollout means "written by a newer deploy":
+hold or route it, never quarantine it. A buffer that is not versioned at all
+raises `VersionedFormatException`, an `InvalidPayloadException`. The two share
+no parent below `CodecException`; see [Handling failures](error-handling.md).
 
 Because the builder is generic over `Codec<T>`, versioning a *transform* is the
 `T = byte[]` case:

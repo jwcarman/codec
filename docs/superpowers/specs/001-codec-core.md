@@ -70,6 +70,12 @@ public abstract class TypeRef<T> {
 
 Usage: `new TypeRef<List<String>>() {}`
 
+Amended 2026-09-06 by spec 008: `codec-core` also ships the failure contract
+for `encode` and `decode` — `CodecException` and its four families
+(`InvalidValueException`, `InvalidPayloadException`,
+`UnsupportedFormatException`, `TransientCodecException`), documented as
+`@throws` on the two methods.
+
 ### Built-in codecs
 
 Package: `org.jwcarman.codec.builtin`

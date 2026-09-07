@@ -284,7 +284,7 @@ Codec<Person> versioned = VersionedCodec.<Person>builder()
         .writing(2)
         .build();
 
-// header now inside gzip — gzip must be undone to read it, so gzip can never change
+// header sits inside gzip here — gzip must be undone to read it, so gzip can never change
 Codec<Person> frozen = versioned.andThen(new GzipCodec());
 ```
 

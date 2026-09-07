@@ -69,7 +69,7 @@ below for the exact layout.
 
 Rotation happens at the KEK level, using keyIds — not by re-keying every
 message. `JceDataKeyProvider` is constructed with a `Map<String, SecretKey>` of
-every KEK it trusts, plus the id of the *current* KEK used to wrap new DEKs:
+every KEK it trusts, plus the id of the *current* KEK for wrapping new DEKs:
 
 ```java
 DataKeyProvider provider =

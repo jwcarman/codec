@@ -20,11 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import jakarta.json.JsonException;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbConfig;
 import jakarta.json.bind.JsonbException;
 import jakarta.json.bind.annotation.JsonbProperty;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
@@ -162,6 +168,96 @@ class JsonbCodecFactoryTest {
           .isThrownBy(() -> codec.encode(value))
           .withMessage("Unable to encode value as JSON")
           .withCauseInstanceOf(JsonbException.class);
+    }
+
+    /** A Jsonb whose generator and parser fail with JSON-P's own exception, as Johnzon's can. */
+    static final class JsonExceptionJsonb implements Jsonb {
+      private static final JsonException FAILURE = new JsonException("generator failed");
+
+      @Override
+      public <T> T fromJson(String str, Class<T> type) {
+        throw FAILURE;
+      }
+
+      @Override
+      public <T> T fromJson(String str, Type runtimeType) {
+        throw FAILURE;
+      }
+
+      @Override
+      public <T> T fromJson(Reader reader, Class<T> type) {
+        throw FAILURE;
+      }
+
+      @Override
+      public <T> T fromJson(Reader reader, Type runtimeType) {
+        throw FAILURE;
+      }
+
+      @Override
+      public <T> T fromJson(InputStream stream, Class<T> type) {
+        throw FAILURE;
+      }
+
+      @Override
+      public <T> T fromJson(InputStream stream, Type runtimeType) {
+        throw FAILURE;
+      }
+
+      @Override
+      public String toJson(Object object) {
+        throw FAILURE;
+      }
+
+      @Override
+      public String toJson(Object object, Type runtimeType) {
+        throw FAILURE;
+      }
+
+      @Override
+      public void toJson(Object object, Writer writer) {
+        throw FAILURE;
+      }
+
+      @Override
+      public void toJson(Object object, Type runtimeType, Writer writer) {
+        throw FAILURE;
+      }
+
+      @Override
+      public void toJson(Object object, OutputStream stream) {
+        throw FAILURE;
+      }
+
+      @Override
+      public void toJson(Object object, Type runtimeType, OutputStream stream) {
+        throw FAILURE;
+      }
+
+      @Override
+      public void close() {}
+    }
+
+    @Test
+    void a_json_p_failure_on_encode_is_an_invalid_value() {
+      Codec<Person> codec = new JsonbCodecFactory(new JsonExceptionJsonb()).create(Person.class);
+      Person person = new Person("Alice", 30, true);
+
+      assertThatExceptionOfType(InvalidValueException.class)
+          .isThrownBy(() -> codec.encode(person))
+          .withMessage("Unable to encode value as JSON")
+          .withCauseInstanceOf(JsonException.class);
+    }
+
+    @Test
+    void a_json_p_failure_on_decode_is_an_invalid_payload() {
+      Codec<Person> codec = new JsonbCodecFactory(new JsonExceptionJsonb()).create(Person.class);
+      byte[] json = "{}".getBytes(UTF_8);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(json))
+          .withMessage("Unable to decode JSON")
+          .withCauseInstanceOf(JsonException.class);
     }
 
     @Test

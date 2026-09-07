@@ -74,7 +74,8 @@ to import a library type to handle a codec failure.
 Some modules add a more specific subclass where it carries information the
 family does not: `codec-versioned`'s `UnknownVersionException` (an
 `UnsupportedFormatException` that carries the version), and `codec-crypto`'s
-`DecryptionException` (an `InvalidPayloadException` whose message is
+`DecryptionException` (an `InvalidPayloadException`; see
+[Error taxonomy](encryption.md#error-taxonomy) for why its message is
 deliberately uniform across cryptographic rejections), `KeyAccessException` and
 `EncryptionException` (both `TransientCodecException`). You catch the family; the
 subclass is there when you want to know more.
@@ -97,9 +98,12 @@ below `CodecException`.
 Construction and configuration errors are programmer errors at wiring time, not
 runtime outcomes a pipeline reacts to, and they keep the JDK's types: a bad
 builder argument is `IllegalArgumentException`, an inconsistent builder
-`IllegalStateException`, a `null` anywhere — including `encode(null)` and
-`decode(null)` on a bare codec — `NullPointerException`. `CodecFactory.create`
-failing for a type it cannot handle is likewise `IllegalArgumentException`.
+`IllegalStateException`, and a `null` handed to a transform's `encode` or
+`decode`, or a `null` `TypeRef` handed to a factory, `NullPointerException`.
+Whether a backend accepts `null` is its own business — the JSON backends
+encode it as the literal `null`; see [Null handling](composition.md#null-handling).
+`CodecFactory.create` failing for a type it cannot handle is likewise
+`IllegalArgumentException`.
 
 Composition passes failures through: `andThen`, `nullSafe` and `xmap` propagate
 whatever the underlying codec throws. The functions you hand to `xmap` may throw
@@ -171,3 +175,12 @@ One rule: **subclass by what the caller does next.** A new failure whose answer
 is one of the four above is a subclass of that family, never a fifth sibling; a
 more specific subclass earns its existence only when it carries information the
 family does not.
+
+## Where next
+
+- [Codec Composition](composition.md) — `andThen`, `xmap`, and versioning,
+  all built on the same four families
+- [Encryption](encryption.md) — `codec-crypto`'s exception subclasses in
+  detail
+- [Apache Kafka](kafka.md) and [Spring Data Redis](redis.md) — how the two
+  adapters propagate these families unchanged

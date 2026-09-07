@@ -33,8 +33,10 @@ runs decrypt → gunzip → JSON.
 
 ## The transforms module
 
-The zero-dependency transforms live in `codec-transforms` (the starter includes
-it; without Spring, add it next to `codec-core`):
+The transforms, which have no dependencies beyond `codec-core`, live in
+`codec-transforms` (the starter includes it — see [Spring Boot](spring-boot.md#the-starter)
+for what else it does and does not bundle; without Spring, add it next to
+`codec-core`):
 
 ```xml
 <dependency>
@@ -138,7 +140,7 @@ input.
 `Lz4Codec` (in `codec-lz4`, backed by `lz4-java`) writes the standard LZ4
 frame format. The default compressor is the fast one; `Lz4Codec.highCompression()`
 selects LZ4-HC for a better ratio at a slower compression speed — decompression
-is equally fast either way:
+is at least as fast either way:
 
 ```java
 new Lz4Codec();                           // fast compressor
@@ -227,8 +229,8 @@ deploys.
 
 `codec-versioned` fixes that by writing a three-byte header ahead of the
 payload, `0xC0 0xDC` followed by an unsigned version, and dispatching decoding
-on it. It lives in its own module, which the starter does not include — add it
-next to `codec-core`:
+on it. It lives in its own module, which the starter does not include (see
+[Spring Boot](spring-boot.md#the-starter)) — add it next to `codec-core`:
 
 ```xml
 <dependency>
@@ -321,3 +323,11 @@ public class ZstdCodec extends CompressionStreamCodec {
 For anything else — encryption, encoding, checksumming — implement
 `Codec<byte[]>` directly. Keep `encode`/`decode` symmetric and thread-safe, and
 it composes like everything else.
+
+## Where next
+
+- [Handling Failures](error-handling.md) — the four exception families every
+  transform and backend reports through
+- [Encryption](encryption.md) — `EnvelopeCodec`, the encryption transform this
+  page's ordering advice is written for
+- [Getting Started](getting-started.md) — dependencies and first codec

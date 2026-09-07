@@ -37,8 +37,10 @@ RedisCacheConfiguration.defaultCacheConfig()
 
 ### Auto-configuration
 
-With the starter, Spring Boot's cache support, and Spring Data Redis on the
-classpath, the auto-configured `CodecFactory` serializes cache values for the
+With `codec-spring-data-redis`, the starter, `spring-boot-starter-cache` (and
+`@EnableCaching`), and `spring-boot-starter-data-redis` on the classpath, and
+a `CodecFactory` bean present — which a backend module and the starter give
+you — the auto-configured `CodecFactory` serializes cache values for the
 caches you name:
 
 ```properties
@@ -82,3 +84,12 @@ CodecFactory codecFactory(ObjectMapper mapper, DataKeyProvider keys) {
 
 Every cache named in `codec.redis.cache.caches` now holds compressed,
 authenticated ciphertext.
+
+## Where next
+
+- [Spring Boot](spring-boot.md) — the starter and auto-configuration this
+  page's cache support builds on
+- [Codec Composition](composition.md#null-handling) — `nullSafe()`, used here
+  to match Redis's "`null` on a miss" contract
+- [Handling Failures](error-handling.md#in-practice) — what `CodecException`
+  through a `CacheErrorHandler` means for a cache read

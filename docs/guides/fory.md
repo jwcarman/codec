@@ -104,12 +104,15 @@ ThreadSafeFory fory() {
     ThreadSafeFory fory = Fory.builder()
         .withLanguage(Language.JAVA)
         .requireClassRegistration(true)
+        .withDeserializeUnknownClass(false)
         .buildThreadSafeFory();
     fory.register(Person.class);
     fory.register(Order.class);
     return fory;
 }
 ```
+
+This mirrors what `ForyCodecFactory.of(...)` builds; keep both flags.
 
 ## Where next
 

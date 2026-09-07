@@ -8,6 +8,11 @@
 
 ## Add the dependencies
 
+!!! note "Version"
+    The dependency snippets name the latest release. This site tracks `main`;
+    anything the [Changelog](https://github.com/jwcarman/codec/blob/main/CHANGELOG.md)
+    lists under *Unreleased* is not in that release yet.
+
 Import the BOM for version alignment:
 
 ```xml
@@ -44,17 +49,39 @@ Backend choices: `codec-jackson` (Jackson 3.x), `codec-jackson2` (Jackson 2.x),
 see [Apache Fory](fory.md)). The Jackson backends also cover
 CBOR, Smile, YAML, and XML — see [Jackson Dataformats](dataformats.md).
 
-`codec-jsonb` depends on the Jakarta JSON Binding API only; bring a provider.
-Codec is tested against [Eclipse Yasson](https://github.com/eclipse-ee4j/yasson),
-the reference implementation; Apache Johnzon also works. Either way, malformed
-input surfaces as `InvalidPayloadException` with the provider's own exception
-as the cause — see [Handling Failures](error-handling.md).
+### Which backend?
+
+| You have | Add | Because |
+|---|---|---|
+| No preference | `codec-jackson` | JSON, the most widely understood format; Jackson 3 is the classpath-detected default when several backends are present |
+| An app already on Jackson 2 (`com.fasterxml`) | `codec-jackson2` | Reuses your `ObjectMapper` bean |
+| Gson or JSON-B already in the app | `codec-gson` / `codec-jsonb` | Reuses the bean you have |
+| `.proto` contracts shared with other systems | `codec-protobuf` | Generated messages are the type |
+| JVM on both ends, speed and size matter | `codec-fory` | 10-15× faster than the JSON backends on a real object graph ([benchmarks](../benchmarks.md)); class registration required |
+
+`codec-jsonb` depends on the Jakarta JSON Binding API only; bring a provider,
+e.g. [Eclipse Yasson](https://github.com/eclipse-ee4j/yasson) (the reference
+implementation Codec is tested against; Apache Johnzon also works):
+
+```xml
+<dependency>
+    <groupId>org.eclipse</groupId>
+    <artifactId>yasson</artifactId>
+</dependency>
+```
+
+Its version comes from your BOM or Maven Central — `codec-bom` does not manage
+it. Either way, malformed input surfaces as `InvalidPayloadException` with the
+provider's own exception as the cause — see [Handling Failures](error-handling.md).
 
 ## Use it
 
 Inject the auto-configured `CodecFactory` and create codecs for your types:
 
 ```java
+import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.CodecFactory;
+
 @Service
 public class PersonStore {
 
@@ -90,13 +117,48 @@ to use as a cache key.
 
 ## Without Spring
 
-Skip the starter and construct the factory directly:
+Skip the starter and add a backend module directly — no `codec-spring-boot-starter`,
+no auto-configuration:
+
+```xml
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-jackson</artifactId>
+</dependency>
+```
+
+Add `codec-transforms` next to it if you want compression, encoding, or
+checksum transforms — the starter pulls it in for you, but a plain-Java build
+adds it explicitly (see [Codec Composition](composition.md#the-transforms-module)):
+
+```xml
+<dependency>
+    <groupId>org.jwcarman.codec</groupId>
+    <artifactId>codec-transforms</artifactId>
+</dependency>
+```
+
+Then construct the factory directly:
 
 ```java
-CodecFactory factory = new JacksonCodecFactory(objectMapper);
+import org.jwcarman.codec.jackson.JacksonCodecFactory;
+import tools.jackson.databind.json.JsonMapper;
+
+CodecFactory factory = new JacksonCodecFactory(JsonMapper.builder().build());
 Codec<Person> codec = factory.create(Person.class);
 ```
 
 Every backend factory has a public constructor taking its underlying library's
-entry point (`ObjectMapper`, `Gson`, `Jsonb`) — or none at all
-(`ProtobufCodecFactory`).
+entry point (`ObjectMapper`, `Gson`, `Jsonb`), a caller-built `ThreadSafeFory`
+(`ForyCodecFactory`, or the `ForyCodecFactory.of(...)` helper — see
+[Apache Fory](fory.md)) — or none at all (`ProtobufCodecFactory`).
+
+## Where next
+
+- [Codec Composition](composition.md) — compression, encryption, and custom
+  transforms
+- [Handling Failures](error-handling.md) — the four exception families and
+  what to do with each
+- [Spring Boot](spring-boot.md) — auto-configuration, backend precedence, and
+  what the starter does not include
+- [Encryption](encryption.md) — envelope encryption and key management

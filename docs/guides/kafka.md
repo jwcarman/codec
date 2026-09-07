@@ -26,9 +26,12 @@ With Spring Kafka, hand the instances to the factories:
 
 ```java
 @Bean
-ProducerFactory<String, Person> producerFactory(KafkaProperties properties, Codec<Person> codec) {
+ProducerFactory<String, Person> producerFactory(
+        KafkaProperties properties, CodecFactory codecFactory) {
     return new DefaultKafkaProducerFactory<>(
-        properties.buildProducerProperties(), new StringSerializer(), new CodecSerializer<>(codec));
+        properties.buildProducerProperties(),
+        new StringSerializer(),
+        new CodecSerializer<>(codecFactory.create(Person.class)));
 }
 ```
 
@@ -61,3 +64,12 @@ Kafka can compress batches itself (`compression.type`), which is usually the
 better place for compression on a busy topic; a codec-level transform is for
 when the payload must be compressed or encrypted *as a unit* — end-to-end
 encryption being the typical reason.
+
+## Where next
+
+- [Handling Failures](error-handling.md#in-practice) — dead-lettering,
+  parking, and retrying around `codec.decode` in a consumer
+- [Codec Composition](composition.md) — the `andThen` chain a Kafka
+  `Serializer`/`Deserializer` pair carries unchanged
+- [Encryption](encryption.md) — `EnvelopeCodec`, used above for end-to-end
+  encryption

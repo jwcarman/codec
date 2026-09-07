@@ -63,7 +63,7 @@ combination:
 |---|---|
 | Ciphertext tampering — payload or header fields modified in storage or transit | AES-256-GCM authenticates the payload; the header (version, algorithm id, keyId, wrapped DEK, nonce) is authenticated as additional authenticated data (AAD), so modifying any of it invalidates the GCM tag. See [Wire format](encryption.md#wire-format). |
 | An attacker-supplied keyId selecting an untrusted KEK | `EnvelopeCodec` evaluates the `allowedKeyIds` predicate (or the provider's `allowsKeyId`) against the wire keyId and rejects before `unwrap` is ever called — admission strictly precedes key access. |
-| Distinguishing failure modes to learn about the ciphertext | Every cryptographic rejection — GCM tag mismatch, AES-KW ICV failure, a KMS's own invalid-ciphertext response — surfaces as the same `DecryptionException` message, `"Unable to decrypt data"`. The exception's *cause* is preserved for diagnosis and does differ by stage, so a consumer that exposes stack traces exposes which stage rejected the input; log the message where that must not leak. |
+| Distinguishing failure modes to learn about the ciphertext | Every cryptographic rejection surfaces as the same `DecryptionException` message; see [Error taxonomy](encryption.md#error-taxonomy) for the uniform message and the caveat about the preserved cause. |
 | Oversized or malformed length fields driving excessive allocation | All length fields (keyId length, wrapped-DEK length, derived ciphertext region) are bounds-checked against the remaining buffer before any array is allocated and before the provider is called. |
 | Nonce reuse under a shared key | The default `DirectDataKeyStrategy` draws a fresh DEK from the provider on every `encode`, so no two messages share a key by default — assuming independent RNG state; see the clone caveat below. Under `BoundedDataKeyStrategy` a DEK is shared for at most 2^24 messages with random 96-bit nonces, a collision probability of about 2^-49 at the ceiling. |
 | Conflating "the ciphertext is bad" with "the key infrastructure is unreachable" | `KeyAccessException` (KMS timeout, throttling, credential expiry) is distinct from `DecryptionException` (affirmative cryptographic rejection); a consumer pipeline can retry the former and quarantine only the latter. See [Error taxonomy](encryption.md#error-taxonomy). |
@@ -74,7 +74,7 @@ combination:
 |---|---|
 | **Ciphertext substitution between records** under one codec instance and KEK — an attacker with datastore write access swaps row A's encrypted field into row B; both were encrypted under the same AAD, so decode accepts the swap cleanly. | Construct a distinct `EnvelopeCodec` per context where rows must not be interchangeable, or bind an identity value inside the plaintext itself and verify it after decode. |
 | **Timing side channel** between structural rejection (fast, no provider call) and cryptographic rejection after a KMS round trip. | Not addressable at this layer; do not build timing-independent guarantees on top of `codec-crypto` alone. |
-| **Nonce reuse under cloned RNG state** — a VM or container snapshot-and-clone can duplicate in-process `SecureRandom` state. Under `BoundedDataKeyStrategy` the clones share the cached DEK and repeat its nonces. Under `DirectDataKeyStrategy` with `JceDataKeyProvider` it is no better: the DEK is drawn from the same cloned RNG, so both clones produce the *same* DEK and the *same* nonce for their next messages, with different plaintexts — the worst case for GCM. | Use a KMS-backed provider, whose DEK entropy comes from outside the cloned process; reseed or replace the `SecureRandom` (and roll the bounded strategy's key) on resume from a snapshot; or run on a platform that reseeds on VM-generation change. Switching strategies alone does not address it. |
+| **Nonce reuse under cloned RNG state** — a VM or container snapshot-and-clone can duplicate in-process `SecureRandom` state, and neither data-key strategy fixes this on its own. See the [snapshot-and-clone caveat](encryption.md#choosing-a-data-key-strategy) for the mechanism and both strategies' exposure. | Use a KMS-backed provider, whose DEK entropy comes from outside the cloned process; reseed or replace the `SecureRandom` (and roll the bounded strategy's key) on resume from a snapshot; or run on a platform that reseeds on VM-generation change. |
 | **DEK-sharing windows are visible in ciphertext** — AES-KW is deterministic, so every message in a `BoundedDataKeyStrategy` window carries byte-identical wrapped-DEK bytes; a reader of the datastore can group messages by window and correlate them in time. Not a confidentiality break. | Use `DirectDataKeyStrategy` where message grouping must not be inferable, or accept it as the cost of amortised wrapping. |
 | **A compromised KEK that is still in the provider's map** — until it is dropped, its holder can wrap an arbitrary DEK and forge messages under that keyId that decode cleanly. The rotation window is a deliberate trade-off. | Removing the KEK from the map is the containment action, not housekeeping; do it as soon as the old keyId is no longer needed for reads. |
 | **A `DataKeyProvider` that violates its own contract** — e.g. an `unwrap` implementation that doesn't restrict the KMS decrypt call to the supplied keyId, or that returns a key for a keyId it hasn't verified is trusted. | `EnvelopeCodec`'s own admission check is a second layer, not a substitute; provider implementations must independently honor the SPI's normative contract. |
@@ -90,16 +90,15 @@ combination:
   not a reimplementation alongside it.
 - **Decoder fuzzing**: `EnvelopeCodecDecodeFuzzTest` asserts that `decode`
   only ever throws `InvalidPayloadException`, `UnsupportedFormatException` or
-  `TransientCodecException` — the three outcomes spec 006 permits;
+  `TransientCodecException` — the three outcomes `decode` is permitted;
   `EnvelopeCodecMutationFuzzTest`
   asserts that encode-then-mutate either round-trips or is rejected. Each
   target is its own class, run in its own forked JVM, because jazzer-junit
   fuzzes only the first `@FuzzTest` per JVM. A committed seed corpus runs in
   regression mode with every normal test run; the `-Pfuzz` Maven profile
   fuzzes both targets live, 120 seconds each.
-- **Mutation testing**: PIT runs in the `ci` profile with an 85% mutation and
-  90% line-coverage threshold. The current score is 100% of generated mutations killed,
-  a run the maintainer verified stable across repeated runs.
+- **Mutation testing**: PIT runs in the `ci` profile and fails the build below
+  85% mutation / 90% line coverage.
 - **Static analysis**: SpotBugs with the findsecbugs plugin runs in the `ci`
   profile at `effort=Max`, `threshold=Low`. One finding is excluded:
   `CIPHER_INTEGRITY` on `JceDataKeyProvider.wrapCipher`, a documented false
@@ -108,11 +107,10 @@ combination:
   every unwrap. The exclusion is recorded in
   `codec-crypto/spotbugs-exclude.xml` and in this repository's `CLAUDE.md`; it
   is the only sanctioned suppression anywhere in the codebase.
-- **Adversarial review history**: spec 005 was revised after adversarial
-  review before this module's implementation began, and this assurance
-  program (spec 006) added known-answer tests, fuzzing, mutation testing, and
-  static analysis specifically to check the implementation against external
-  references and mechanical adversaries rather than against its own tests.
+- **Design review**: the wire format and the `DataKeyProvider` contract were
+  reviewed adversarially before implementation; the program above checks the
+  implementation against external references and mechanical adversaries, not
+  against its own tests.
 
 ## Independent review checklist
 

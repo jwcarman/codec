@@ -12,11 +12,8 @@ Add the module:
 <dependency>
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-crypto</artifactId>
-    <version>0.7.0</version>
 </dependency>
 ```
-
-`codec-crypto` ships starting with 0.5.0.
 
 `codec-crypto` has zero external dependencies — all cryptography is JCE, built
 into the JDK. It ships one in-process key provider, `JceDataKeyProvider`, for
@@ -26,10 +23,21 @@ a KEK you supply, and returns a wrapped blob laid out as `[scheme:1][wrapped key
 output, 41 bytes total for a 32-byte DEK. The tag is invisible to
 `EnvelopeCodec`, which treats the whole blob as opaque; it exists so this
 provider has its own wrap-algorithm migration story, the way a KMS-backed
-provider gets one for free from its own versioned ciphertext format:
+provider gets one for free from its own versioned ciphertext format.
+
+A KEK is any AES-256 `SecretKey` you manage — generate one once and store it
+securely, or load one from configuration:
 
 ```java
-SecretKey kek = ...; // an AES-256 key you manage
+KeyGenerator generator = KeyGenerator.getInstance("AES");
+generator.init(256);
+SecretKey kek = generator.generateKey();   // generate once, store securely
+
+byte[] keyBytes = HexCodec.lowerCase().decode(hex.getBytes(StandardCharsets.US_ASCII));
+SecretKey fromConfig = new SecretKeySpec(keyBytes, "AES");   // or load from configuration
+```
+
+```java
 DataKeyProvider provider =
     new JceDataKeyProvider("kek-2026-08", Map.of("kek-2026-08", kek));
 
@@ -44,7 +52,22 @@ Order restored = codec.decode(wire);
 
 `EnvelopeCodec` is built through `EnvelopeCodec.builder(provider)` — the option
 set (key-acquisition strategy, AAD, keyId allowlist, `SecureRandom`) makes a
-plain constructor unworkable.
+plain constructor unworkable:
+
+```java
+EnvelopeCodec envelope =
+    EnvelopeCodec.builder(provider)
+        .aad("orders-v1".getBytes(StandardCharsets.UTF_8))   // binds this codec's context
+        .allowedKeyIds(Set.of("kek-2026-08", "kek-2026-09")::contains)
+        .build();
+```
+
+`aad` binds every message this codec produces to a fixed context — see
+[Ciphertext substitution](#ordering-and-composition) for what that does and
+does not protect against. `allowedKeyIds` overrides the provider's own
+`allowsKeyId` as the admission check; leave it unset to defer to the provider,
+which is what `JceDataKeyProvider` already does from its KEK map (see
+[Key rotation](#key-rotation-via-keyids)).
 
 ## The envelope model
 
@@ -111,7 +134,10 @@ to a fresh one after a message cap or a duration, whichever comes first. Both
 bounds are required at construction:
 
 ```java
-new BoundedDataKeyStrategy(1 << 20, Duration.ofMinutes(5));
+EnvelopeCodec envelope =
+    EnvelopeCodec.builder(provider)
+        .strategy(new BoundedDataKeyStrategy(1 << 20, Duration.ofMinutes(5)))
+        .build();
 ```
 
 The message cap is validated to `[1, 2^24]`. `2^20` (roughly one million
@@ -171,7 +197,9 @@ rather than letting the misconfiguration surface later as a
 
 `DataKeyProvider` is the SPI you implement to back `EnvelopeCodec` with a
 remote KMS (AWS KMS, HashiCorp Vault, GCP Cloud KMS, ...). `codec-crypto` ships
-no KMS bindings — this keeps the module dependency-free.
+no KMS bindings — this keeps the module free of any KMS SDK dependency, on top
+of its own no-dependencies-beyond-`codec-core` baseline (see the
+[Quickstart](#quickstart)).
 
 ```java
 public interface DataKeyProvider {

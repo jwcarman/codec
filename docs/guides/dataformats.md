@@ -16,8 +16,8 @@ The same works for Jackson 2.x with `Jackson2CodecFactory` and the
 ## Dependencies
 
 Add the dataformat next to the backend. Versions come from the Jackson BOM, so
-none are needed when you import `codec-bom` alongside a Spring Boot or Jackson
-BOM.
+add a Jackson BOM (or Spring Boot's, which manages one) to
+`dependencyManagement`; `codec-bom` does not manage Jackson.
 
 | Format | Jackson 3.x artifact (`tools.jackson.dataformat`) | Mapper | Good for |
 |--------|---------------------------------------------------|--------|----------|

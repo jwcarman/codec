@@ -78,13 +78,13 @@ nav:
   - Home: index.md
   - Guides:
       - Getting Started: guides/getting-started.md
+      - Spring Boot: guides/spring-boot.md
       - Codec Composition: guides/composition.md
       - Handling Failures: guides/error-handling.md
       - Jackson Dataformats: guides/dataformats.md
       - Apache Fory: guides/fory.md
       - Encryption: guides/encryption.md
       - Threat Model: guides/threat-model.md
-      - Spring Boot: guides/spring-boot.md
       - Spring Data Redis: guides/redis.md
       - Apache Kafka: guides/kafka.md
   - Benchmarks: benchmarks.md

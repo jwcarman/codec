@@ -45,21 +45,22 @@ measured at 1, 3 (the default), 9 and 19.
   ~5× faster than the JSON backends. Their output is also half the size:
   4.5 KB (Fory) and 4.8 KB (Protobuf) against 9.1 KB of JSON.
 - **Fory's compatible mode costs bytes only on tiny payloads.** `codec-fory`
-  takes Fory's default, compatible mode since Fory 1.2.0 (see the
+  takes Fory's default, compatible mode (see the
   [Fory guide](guides/fory.md#schema-evolution)), which writes each class's
   schema once per message: the lone four-field record
   is 74 bytes, no smaller than its 72 bytes of JSON, while the 100-item order
   pays 2%. Throughput is unaffected.
-- **Among the JSON backends, Jackson 2 decodes fastest** in this run — twice
-  as fast as Jackson 3 on the order — and JSON-B (Yasson) is the slowest at
-  both sizes.
-- **`BoundedDataKeyStrategy` doubles encrypt throughput on small payloads**
-  (1.0 M vs 0.42 M ops/s) by amortising the KEK wrap; decode is unchanged,
-  since every message is unwrapped on its own.
+- **Among the JSON backends, Jackson 2 decodes fastest** in this run — almost
+  twice as fast as Jackson 3 on the order — and JSON-B (Yasson) is the slowest
+  at both sizes.
+- **`BoundedDataKeyStrategy` more than doubles encrypt throughput on small
+  payloads** (1.0 M vs 0.42 M ops/s) by amortising the KEK wrap; decode is
+  unchanged, because every message is unwrapped on its own.
 
 ## Encoded sizes by backend
 
-From `EncodedSizes`:
+From `EncodedSizes`, committed at
+[`codec-benchmarks/results/2026-09-06-encoded-sizes.md`](https://github.com/jwcarman/codec/blob/main/codec-benchmarks/results/2026-09-06-encoded-sizes.md):
 
 | Backend | small (bytes) | medium (bytes) |
 |---|---:|---:|
@@ -175,3 +176,12 @@ python3 codec-benchmarks/render.py results.json ratios.json     # the throughput
 Run a subset by name (`CompressionBenchmark`) or parameter (`-p codec=zstd3`).
 The module is not published and not part of CI — benchmark numbers from shared
 runners are noise.
+
+## Where next
+
+- [Codec Composition](guides/composition.md) — the transforms these numbers
+  measure, and how to choose one
+- [Apache Fory](guides/fory.md) — the backend these numbers show pulling
+  furthest ahead on JVM-to-JVM payloads
+- [Encryption](guides/encryption.md) — the envelope-encryption strategies
+  benchmarked above

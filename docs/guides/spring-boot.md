@@ -12,7 +12,44 @@
 The starter bundles `codec-core`, `codec-transforms`, and `codec-autoconfigure`. Add one backend
 module alongside it, and a `CodecFactory` bean is registered for that backend.
 The backend modules themselves contain no Spring code — all auto-configuration
-lives in `codec-autoconfigure`.
+lives in `codec-autoconfigure`, including the Redis cache auto-configuration
+described in [Spring Data Redis](redis.md#auto-configuration) — that guide's
+`codec.redis.cache.*` properties are handled by a `codec-autoconfigure` class
+too, not by `codec-spring-data-redis` itself.
+
+What the starter does not include: `codec-versioned`, `codec-crypto`,
+`codec-zstd`, and `codec-lz4` are not among its dependencies, so add whichever
+of them you need next to the starter, the same as in a plain-Java build — see
+[Codec Composition](composition.md#the-transforms-module) and
+[Encryption](encryption.md#quickstart).
+
+## Use it
+
+Inject the auto-configured `CodecFactory` the same way regardless of which
+backend activated it:
+
+```java
+import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.CodecFactory;
+
+@Service
+public class PersonStore {
+
+    private final Codec<Person> codec;
+
+    public PersonStore(CodecFactory codecFactory) {
+        this.codec = codecFactory.create(Person.class);
+    }
+
+    public byte[] serialize(Person person) {
+        return codec.encode(person);
+    }
+
+    public Person deserialize(byte[] bytes) {
+        return codec.decode(bytes);
+    }
+}
+```
 
 ## Backend selection
 
@@ -50,3 +87,13 @@ The Jackson, Gson, and JSON-B configurations reuse the application's existing
 `ObjectMapper` / `Gson` / `Jsonb` bean when one exists — so your configured
 modules, serialization features, and naming strategies apply to codecs too. When
 no such bean exists, a default instance is created instead.
+
+## Where next
+
+- [Getting Started](getting-started.md) — dependencies and first codec
+- [Apache Fory](fory.md#spring-boot) — the one backend that needs a bean to
+  activate at all
+- [Spring Data Redis](redis.md#auto-configuration) — the cache
+  auto-configuration this starter also brings in
+- [Codec Composition](composition.md) — compression, encryption, and
+  versioning on top of the auto-configured `CodecFactory`

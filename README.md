@@ -22,11 +22,18 @@ specific implementation.
 ## Requirements
 
 - Java 25+
-- Spring Boot 4.x (for auto-configuration)
+- Spring Boot 4.x (only if you use the starter — the backends themselves are
+  Spring-free)
 
 ## Quick Start
 
 ### 1. Add the dependency
+
+> [!NOTE]
+> The dependency snippets below name the latest release. This repository's
+> `main` branch tracks ahead of it — anything the
+> [Changelog](https://github.com/jwcarman/codec/blob/main/CHANGELOG.md) lists
+> under *Unreleased* is not in that release yet.
 
 Use the BOM for version alignment:
 
@@ -64,7 +71,7 @@ directly (e.g. `new JacksonCodecFactory(objectMapper)`). Backend choices:
     <artifactId>codec-jackson</artifactId>
 </dependency>
 
-<!-- Jackson 2 (JSON, for projects still on com.fasterxml Jackson) -->
+<!-- Jackson 2 (JSON, for projects on Jackson 2, com.fasterxml.jackson) -->
 <dependency>
     <groupId>org.jwcarman.codec</groupId>
     <artifactId>codec-jackson2</artifactId>
@@ -101,6 +108,9 @@ directly (e.g. `new JacksonCodecFactory(objectMapper)`). Backend choices:
 Inject a `CodecFactory` and create codecs for your types:
 
 ```java
+import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.CodecFactory;
+
 @Service
 public class MyService {
 
@@ -128,33 +138,15 @@ Codec<List<Person>> codec = codecFactory.create(new TypeRef<List<Person>>() {});
 
 ### 3. Compose codecs
 
-Layer any `Codec<byte[]>` transform (compression, encryption, …) onto a codec
-with `andThen`. Encoding applies transforms left to right; decoding inverts
-them automatically. Gzip ships built in:
+Layer any `Codec<byte[]>` transform (compression, encryption, a custom one)
+onto a codec with `andThen`. Encoding applies transforms left to right;
+decoding inverts them automatically. See
+[Codec Composition](https://jwcarman.github.io/codec/guides/composition/) for
+the built-in compression transforms, decompression-bomb protection, and how to
+write your own:
 
 ```java
 Codec<Person> codec = codecFactory.create(Person.class).andThen(new GzipCodec());
-```
-
-Two compression transforms ship built in: `GzipCodec` (gzip framing, best for
-interop) and `DeflateCodec` (zlib framing, ~12 bytes less overhead per payload,
-with an optional compression level: `new DeflateCodec(Deflater.BEST_COMPRESSION,
-maxDecodedSize)`). Both extend `CompressionStreamCodec`, which you can subclass
-to wrap any stream-based compression library in two one-line methods.
-
-To guard against decompression bombs, both codecs refuse to decode payloads
-that expand beyond 64 MiB by default; pass a byte limit to the constructor
-(e.g. `new GzipCodec(maxDecodedSize)`) to raise or lower the cap. The cap is
-enforced by `CompressionStreamCodec`, so subclasses inherit it automatically.
-
-Bring your own transform by implementing `Codec<byte[]>` — `encode` is the
-forward direction (e.g. encrypt), `decode` its inverse:
-
-```java
-Codec<Person> codec =
-    codecFactory.create(Person.class)
-        .andThen(new GzipCodec())
-        .andThen(new AesCodec(key)); // your own Codec<byte[]>
 ```
 
 To change your storage strategy later without rewriting stored data, wrap the
@@ -175,7 +167,7 @@ Codec<Person> codec = VersionedCodec.<Person>builder()
 | Module | What it is | Artifact |
 |--------|------------|----------|
 | Core | SPI interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
-| Transforms | Zero-dependency byte transforms: gzip, deflate, Base64, Base32, hex, checksum, text | `codec-transforms` |
+| Transforms | Byte transforms with no dependencies beyond `codec-core`: gzip, deflate, Base64, Base32, hex, checksum, text | `codec-transforms` |
 | Versioned | Format versioning: a version header that lets the storage strategy change | `codec-versioned` |
 | Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
 | Jackson 2 | Jackson 2.x JSON (`com.fasterxml.jackson`) | `codec-jackson2` |
@@ -245,28 +237,21 @@ making it safe to use as a map key for caching codecs.
 
 The `codec-spring-boot-starter` (via `codec-autoconfigure`) registers a
 `CodecFactory` bean for whichever backend is on the classpath. The backend
-modules themselves are Spring-free.
-
-When several backends are present, precedence is deterministic. An
-application-defined `ThreadSafeFory` bean activates the Fory backend ahead of
-everything else — Fory needs your classes registered, so it cannot be configured
-on your behalf, and the bean is read as intent. Otherwise the backend is chosen
-by classpath detection: Jackson 3 → Jackson 2 → Gson → JSON-B → Protobuf.
-Defining your own `CodecFactory` bean always wins. The Jackson, Gson, and JSON-B
-configurations reuse the application's `ObjectMapper`/`Gson`/`Jsonb` bean when
-one exists, falling back to a default instance otherwise.
+modules themselves are Spring-free. See
+[Spring Boot](https://jwcarman.github.io/codec/guides/spring-boot/) for
+backend precedence, bean reuse, and what the starter does not include.
 
 ## Building
 
 ```bash
 # Compile and run tests
-mvn clean verify
+./mvnw clean verify
 
 # Apply code formatting
-mvn spotless:apply
+./mvnw spotless:apply
 
 # Apply license headers
-mvn -Plicense license:format
+./mvnw -Plicense license:format
 ```
 
 ## Contributing

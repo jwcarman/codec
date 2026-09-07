@@ -23,6 +23,11 @@ Two small interfaces — `Codec<T>` and `CodecFactory` — sit between your code
 whichever serialization library you pick. Choose the backend by adding a module;
 nothing in your code changes.
 
+For library authors who need to serialize values without choosing a serializer
+for their users, and for the applications that consume those libraries. It is
+not a serializer itself and not a replacement for Apache Commons Codec — it is
+the seam that lets Jackson, Gson, Protobuf, or Fory sit behind one interface.
+
 ```java
 Codec<Person> codec = codecFactory.create(Person.class);
 
@@ -92,7 +97,7 @@ tiny and pushes the backend decision to the classpath.
 | Module | What it is |
 |--------|------------|
 | `codec-core` | The SPI: `Codec`, `CodecFactory`, `TypeRef` — nothing else |
-| `codec-transforms` | Zero-dependency `Codec<byte[]>` transforms: gzip, deflate, Base64, Base32, hex, checksum, text |
+| `codec-transforms` | `Codec<byte[]>` transforms with no dependencies beyond `codec-core`: gzip, deflate, Base64, Base32, hex, checksum, text |
 | `codec-versioned` | Format versioning: a version header that lets the storage strategy change |
 | `codec-jackson` | Jackson 3.x (`tools.jackson`) JSON backend |
 | `codec-jackson2` | Jackson 2.x (`com.fasterxml.jackson`) JSON backend |
@@ -112,7 +117,10 @@ tiny and pushes the backend decision to the classpath.
 ## Where next
 
 - [Getting Started](guides/getting-started.md) — dependencies and first codec
+- [Spring Boot](guides/spring-boot.md) — auto-configuration details
 - [Codec Composition](guides/composition.md) — compression, encryption, and
   custom transforms
+- [Handling Failures](guides/error-handling.md) — the four exception families
 - [Encryption](guides/encryption.md) — envelope encryption and key management
-- [Spring Boot](guides/spring-boot.md) — auto-configuration details
+- [Threat Model](guides/threat-model.md) — assets, trust boundaries, and what's
+  defended

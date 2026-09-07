@@ -235,7 +235,9 @@ class JsonbCodecFactoryTest {
       }
 
       @Override
-      public void close() {}
+      public void close() {
+        // Nothing to release: the fake holds no resources.
+      }
     }
 
     @Test

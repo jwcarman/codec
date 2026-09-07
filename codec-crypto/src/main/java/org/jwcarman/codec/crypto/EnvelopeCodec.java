@@ -27,6 +27,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 /**
  * Envelope-encryption {@link Codec} for {@code byte[]}: encrypts with AES-256-GCM under a
@@ -186,10 +187,11 @@ public final class EnvelopeCodec implements Codec<byte[]> {
       throw new DecryptionException("message too short: " + bytes.length + " bytes");
     }
     if (bytes[2] != FORMAT_VERSION) {
-      throw new DecryptionException("unknown format version: " + bytes[2]);
+      // Well-formed framing from a writer this build does not know: hold it, do not quarantine it.
+      throw new UnsupportedFormatException("unknown format version: " + bytes[2]);
     }
     if (bytes[3] != ALGORITHM_AES_256_GCM) {
-      throw new DecryptionException("unknown algorithm id: " + bytes[3]);
+      throw new UnsupportedFormatException("unknown algorithm id: " + bytes[3]);
     }
     int keyIdLength = readUint16(bytes, 4);
     if (keyIdLength < 1 || 6 + keyIdLength + 2 > bytes.length) {

@@ -78,9 +78,12 @@ AWS's default; the id byte preserves the option.
 
 - Jazzer (`com.code-intelligence:jazzer-junit`, test scope — no compile
   dependency change). Targets: (a) `decode(byte[])` may only throw
-  `DecryptionException` or `KeyAccessException`; (b) encode-then-mutate via
-  `FuzzedDataProvider` must either round-trip (no mutation) or throw
-  `DecryptionException`.
+  `InvalidPayloadException`, `UnsupportedFormatException` or
+  `TransientCodecException` (each possibly via its crypto subclass; amended
+  2026-09-06 by spec 008); (b) encode-then-mutate via
+  `FuzzedDataProvider` must either round-trip (no mutation) or throw one of
+  those same three (amended 2026-09-06 by spec 008: a flip in the version or
+  algorithm byte surfaces as `UnsupportedFormatException`).
 - Regression mode (corpus replay) runs in the normal test suite against a
   committed seed corpus (frozen vector, structural edge cases). A `fuzz`
   Maven profile runs live fuzzing with `JAZZER_FUZZ=1` for a bounded duration;

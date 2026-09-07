@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class EnvelopeCodecDecodeTest {
@@ -113,7 +114,7 @@ class EnvelopeCodecDecodeTest {
     }
 
     @ParameterizedTest(name = "byte {0} set to {1} is rejected with a message naming the {2}")
-    @CsvSource({"0, 0x00, magic", "2, 0x02, version", "3, 0x7F, algorithm"})
+    @CsvSource({"0, 0x00, magic"})
     void rejects_a_corrupted_header_field_with_a_structural_message(
         int index, int value, String stage) {
       byte[] message = EnvelopeCodec.builder(provider()).build().encode(new byte[] {1});
@@ -507,6 +508,46 @@ class EnvelopeCodecDecodeTest {
           .doesNotContain("\u2028")
           .doesNotContain("\u2029")
           .doesNotContain("\u202E");
+    }
+  }
+
+  @Nested
+  class Unsupported_format {
+
+    @Test
+    void an_unknown_format_version_is_unsupported_not_invalid() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      byte[] message = codec.encode("x".getBytes(UTF_8));
+      message[2] = 0x02; // a version this build does not know
+
+      assertThatExceptionOfType(UnsupportedFormatException.class)
+          .isThrownBy(() -> codec.decode(message))
+          .withMessage("unknown format version: 2")
+          .isNotInstanceOf(DecryptionException.class);
+    }
+
+    @Test
+    void an_unknown_algorithm_id_is_unsupported_not_invalid() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      byte[] message = codec.encode("x".getBytes(UTF_8));
+      message[3] = 0x02; // the id spec 006 reserves for a future key-committing suite
+
+      assertThatExceptionOfType(UnsupportedFormatException.class)
+          .isThrownBy(() -> codec.decode(message))
+          .withMessage("unknown algorithm id: 2")
+          .isNotInstanceOf(DecryptionException.class);
+    }
+
+    @Test
+    void the_version_is_checked_before_the_algorithm() {
+      EnvelopeCodec codec = EnvelopeCodec.builder(provider()).build();
+      byte[] message = codec.encode("x".getBytes(UTF_8));
+      message[2] = 0x02;
+      message[3] = 0x02;
+
+      assertThatExceptionOfType(UnsupportedFormatException.class)
+          .isThrownBy(() -> codec.decode(message))
+          .withMessageContaining("version");
     }
   }
 }

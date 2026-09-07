@@ -16,6 +16,9 @@
 package org.jwcarman.codec.crypto;
 
 import com.code_intelligence.jazzer.junit.FuzzTest;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.TransientCodecException;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 /**
  * Fuzz target for the decode path. In the normal test run Jazzer replays the committed seed corpus
@@ -32,8 +35,8 @@ class EnvelopeCodecDecodeFuzzTest {
   void decode_only_throws_the_documented_exceptions(byte[] input) {
     try {
       EnvelopeCodecFuzzSupport.codec().decode(input);
-    } catch (DecryptionException _) {
-      // documented outcome
+    } catch (InvalidPayloadException | UnsupportedFormatException | TransientCodecException _) {
+      // documented outcomes: spec 006 §2.2 as amended by spec 008
     }
     // any other Throwable escapes and Jazzer records it as a finding
   }

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -50,10 +51,13 @@ class EnvelopeCodecAdversarialTest {
         byte[] mutated = message.clone();
         mutated[i] ^= 0x01;
         int index = i;
+        // Bytes 2 and 3 are the version and algorithm ids: a flip there is well-formed framing
+        // this build cannot read, so it surfaces as UnsupportedFormatException rather than a
+        // rejection. Either way nothing is accepted, which is what this matrix asserts.
         assertThatExceptionOfType(RuntimeException.class)
             .as("flipping byte %d must be rejected", index)
             .isThrownBy(() -> codec.decode(mutated))
-            .isInstanceOfAny(DecryptionException.class);
+            .isInstanceOfAny(DecryptionException.class, UnsupportedFormatException.class);
       }
     }
 

@@ -19,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.TransientCodecException;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 /**
  * Fuzz target for the encode-then-mutate-then-decode path. In the normal test run Jazzer replays
@@ -55,8 +58,8 @@ class EnvelopeCodecMutationFuzzTest {
       // A mutation that is accepted must still yield the original plaintext — anything else is a
       // forgery.
       assertThat(out).isEqualTo(plaintext);
-    } catch (DecryptionException _) {
-      // documented outcome
+    } catch (InvalidPayloadException | UnsupportedFormatException | TransientCodecException _) {
+      // documented outcomes: spec 006 §2.2 as amended by spec 008
     }
   }
 }

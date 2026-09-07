@@ -15,14 +15,17 @@
  */
 package org.jwcarman.codec.crypto;
 
+import org.jwcarman.codec.spi.TransientCodecException;
+
 /**
  * Exception indicating a failure during the encryption operation.
  *
  * <p>This exception signals that the encryption process could not complete successfully. This may
  * occur due to cryptographic provider failures, state violations, or other encode-side issues. The
- * message and cause provide diagnostic details about the underlying failure.
+ * message and cause provide diagnostic details about the underlying failure. It is a {@link
+ * TransientCodecException}: the value is not at fault, the provider or strategy is.
  */
-public class EncryptionException extends IllegalStateException {
+public class EncryptionException extends TransientCodecException {
 
   /**
    * Creates an encode-side failure.

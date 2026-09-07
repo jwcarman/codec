@@ -20,13 +20,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.TransientCodecException;
+import org.jwcarman.codec.spi.UnsupportedFormatException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class ExceptionTaxonomyTest {
 
   @Test
-  void decryption_exception_is_an_illegal_argument_exception() {
-    assertThat(new DecryptionException("bad magic")).isInstanceOf(IllegalArgumentException.class);
+  void decryption_exception_is_an_invalid_payload() {
+    assertThat(new DecryptionException("bad magic"))
+        .isInstanceOf(InvalidPayloadException.class)
+        .isNotInstanceOf(TransientCodecException.class)
+        .isNotInstanceOf(UnsupportedFormatException.class);
   }
 
   @Test
@@ -37,18 +43,20 @@ class ExceptionTaxonomyTest {
   }
 
   @Test
-  void key_access_exception_is_an_illegal_state_exception_preserving_cause() {
+  void key_access_exception_is_transient_preserving_cause() {
     var cause = new RuntimeException("kms timeout");
     assertThat(new KeyAccessException("key infrastructure unavailable", cause))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(TransientCodecException.class)
+        .isNotInstanceOf(InvalidPayloadException.class)
         .hasCause(cause);
   }
 
   @Test
-  void encryption_exception_is_an_illegal_state_exception_preserving_cause() {
+  void encryption_exception_is_transient_preserving_cause() {
     var cause = new RuntimeException("provider down");
     assertThat(new EncryptionException("unable to encrypt", cause))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(TransientCodecException.class)
+        .isNotInstanceOf(InvalidPayloadException.class)
         .hasCause(cause);
   }
 }

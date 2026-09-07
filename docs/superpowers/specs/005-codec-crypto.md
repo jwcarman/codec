@@ -361,6 +361,17 @@ Consistent with the rest of the codebase: every failure throws, nothing logs.
 
 All three live in `org.jwcarman.codec.crypto`.
 
+Amended 2026-09-06 by spec 008: the three classes keep their names and messages
+and slot into the SPI's families — `DecryptionException extends
+InvalidPayloadException`, `KeyAccessException` and `EncryptionException` extend
+`TransientCodecException`. An unknown format version or algorithm id is no
+longer a `DecryptionException`: it is the base `UnsupportedFormatException`,
+because a payload from a newer writer is fine data this build cannot read, and
+a quarantine policy must not take it. The disallowed-keyId rejection stays a
+`DecryptionException` on purpose: it is a security admission decision, and
+"route it to a reader that would accept it" is what an attacker steering keyIds
+wants.
+
 ## Thread-safety
 
 - `EnvelopeCodec`: stateless per call; thread-safe. `Cipher` instances are

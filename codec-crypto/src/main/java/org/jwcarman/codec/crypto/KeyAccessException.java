@@ -15,18 +15,21 @@
  */
 package org.jwcarman.codec.crypto;
 
+import org.jwcarman.codec.spi.TransientCodecException;
+
 /**
  * Exception indicating that key infrastructure is unavailable.
  *
  * <p>This exception signals that the encryption or decryption operation could not proceed because
  * the key management system or key provider is not accessible. This is a transient state failure —
- * the operation may succeed if retried later.
+ * the operation may succeed if retried later. It is a {@link TransientCodecException}: retry, or
+ * alert on key infrastructure; never quarantine the data.
  *
  * <p>Important: Never quarantine the encrypted data when this exception occurs. The inability to
  * access keys is a temporary infrastructure issue, not a data validation failure. Encrypted data
  * should be retained for retry.
  */
-public class KeyAccessException extends IllegalStateException {
+public class KeyAccessException extends TransientCodecException {
 
   /**
    * Creates a key-infrastructure availability failure.

@@ -64,7 +64,7 @@
         <spring-boot.version>4.1.1</spring-boot.version>
         <protobuf.version>4.36.1</protobuf.version>
         <fory.version>1.7.1</fory.version>
-        <zstd-jni.version>1.5.7-15</zstd-jni.version>
+        <zstd-jni.version>1.5.7-16</zstd-jni.version>
         <lz4-java.version>1.11.2</lz4-java.version>
 
         <!-- Build plugin versions -->

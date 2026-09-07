@@ -100,6 +100,47 @@ class Base32CodecTest {
           .withMessageContaining("pad")
           .withMessageContaining("ASCII");
     }
+
+    @Test
+    void rejects_a_null_alphabet_before_checking_the_pad() {
+      assertThatNullPointerException().isThrownBy(() -> Base32Codec.of(null, 'Ā'));
+    }
+  }
+
+  @Nested
+  class Custom_padding {
+
+    final Base32Codec codec = Base32Codec.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", '*');
+
+    @Test
+    void pads_with_the_given_symbol_and_decodes_it_back() {
+      byte[] encoded = codec.encode("foobar".getBytes(UTF_8));
+
+      assertThat(new String(encoded, US_ASCII)).isEqualTo("MZXW6YTBOI******");
+      assertThat(codec.decode(encoded)).isEqualTo("foobar".getBytes(UTF_8));
+    }
+
+    @Test
+    void treats_the_rfc_pad_symbol_as_a_bad_character() {
+      byte[] bytes = ascii("MZXW6YTBOI======");
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("character")
+          .withMessageContaining("'='");
+    }
+
+    @Test
+    void round_trips_every_length_up_to_a_full_group_boundary() {
+      for (int length = 0; length <= 41; length++) {
+        byte[] input = new byte[length];
+        for (int i = 0; i < length; i++) {
+          input[i] = (byte) (i * 29 + length);
+        }
+
+        assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
+      }
+    }
   }
 
   @Nested
@@ -436,6 +477,13 @@ class Base32CodecTest {
     }
 
     @Test
+    void case_insensitive_is_idempotent() {
+      Base32Codec twice = strict.caseInsensitive().caseInsensitive();
+
+      assertThat(twice.decode(ascii("mzxw6ytboi======"))).isEqualTo("foobar".getBytes(UTF_8));
+    }
+
+    @Test
     void case_insensitive_folds_a_lower_case_alphabet_upwards() {
       Base32Codec lenient = Base32Codec.of("abcdefghijklmnopqrstuvwxyz234567").caseInsensitive();
 
@@ -640,6 +688,20 @@ class Base32CodecTest {
           .isThrownBy(() -> codec.decode(upper))
           .withMessageContaining("character");
       assertThat(codec.caseInsensitive().decode(upper)).isEqualTo("foobar".getBytes(UTF_8));
+    }
+
+    @Test
+    void z_base_32_and_geohash_round_trip_every_length_up_to_a_group_boundary() {
+      for (Base32Codec codec : new Base32Codec[] {Base32Codec.zBase32(), Base32Codec.geohash()}) {
+        for (int length = 0; length <= 41; length++) {
+          byte[] input = new byte[length];
+          for (int i = 0; i < length; i++) {
+            input[i] = (byte) (i * 67 + length);
+          }
+
+          assertThat(codec.decode(codec.encode(input))).as(codec.alphabet()).isEqualTo(input);
+        }
+      }
     }
   }
 }

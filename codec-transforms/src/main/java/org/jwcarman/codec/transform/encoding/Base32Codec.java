@@ -157,6 +157,7 @@ public final class Base32Codec implements Codec<byte[]> {
    *     alphabet
    */
   public static Base32Codec of(String alphabet, char pad) {
+    Objects.requireNonNull(alphabet, "alphabet must not be null");
     if (pad >= ASCII_LIMIT) {
       throw new IllegalArgumentException("pad symbol must be ASCII: " + describe(pad));
     }

@@ -17,7 +17,7 @@ package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.InvalidPayloadException;
@@ -31,17 +31,17 @@ import org.jwcarman.codec.spi.InvalidValueException;
 class GsonCodec<T> implements Codec<T> {
 
   private final Gson gson;
-  private final TypeToken<T> typeToken;
+  private final Type type;
 
-  GsonCodec(Gson gson, TypeToken<T> typeToken) {
+  GsonCodec(Gson gson, Type type) {
     this.gson = gson;
-    this.typeToken = typeToken;
+    this.type = type;
   }
 
   @Override
   public byte[] encode(T value) {
     try {
-      return gson.toJson(value).getBytes(StandardCharsets.UTF_8);
+      return gson.toJson(value, type).getBytes(StandardCharsets.UTF_8);
     } catch (JsonParseException e) {
       throw new InvalidValueException("Unable to encode value as JSON", e);
     }
@@ -50,7 +50,7 @@ class GsonCodec<T> implements Codec<T> {
   @Override
   public T decode(byte[] bytes) {
     try {
-      return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), typeToken);
+      return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), type);
     } catch (JsonParseException e) {
       throw new InvalidPayloadException("Unable to decode JSON", e);
     }

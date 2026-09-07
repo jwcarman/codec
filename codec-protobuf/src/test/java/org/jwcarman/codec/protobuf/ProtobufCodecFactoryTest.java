@@ -82,6 +82,16 @@ class ProtobufCodecFactoryTest {
   }
 
   @Test
+  void shouldDecodeToTheRequestedMessageClass() {
+    Codec<TestMessages.Person> codec = factory.create(TestMessages.Person.class);
+    TestMessages.Person person = TestMessages.Person.newBuilder().setName("Alice").build();
+
+    TestMessages.Person decoded = codec.decode(codec.encode(person));
+
+    assertThat(decoded).isInstanceOf(TestMessages.Person.class).isEqualTo(person);
+  }
+
+  @Test
   void shouldThrowForNonProtobufType() {
     assertThatThrownBy(() -> factory.create(String.class))
         .isInstanceOf(IllegalArgumentException.class)

@@ -110,7 +110,7 @@ public class ForyCodecFactory implements CodecFactory {
   public <T> Codec<T> create(TypeRef<T> typeRef) {
     Objects.requireNonNull(typeRef, "typeRef must not be null");
     requireRegistered(typeRef.getType());
-    return new ForyCodec<>(fory, rawClass(typeRef.getType()));
+    return new ForyCodec<>(fory, typeRef.rawClass());
   }
 
   /**
@@ -163,15 +163,5 @@ public class ForyCodecFactory implements CodecFactory {
         collectUnregistered(argument, unregistered);
       }
     }
-  }
-
-  private static Class<?> rawClass(Type type) {
-    if (type instanceof Class<?> raw) {
-      return raw;
-    }
-    if (type instanceof ParameterizedType parameterized) {
-      return (Class<?>) parameterized.getRawType();
-    }
-    throw new IllegalArgumentException("Unsupported type: " + type.getTypeName());
   }
 }

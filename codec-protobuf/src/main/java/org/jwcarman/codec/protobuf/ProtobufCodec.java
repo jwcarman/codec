@@ -27,23 +27,27 @@ import org.jwcarman.codec.spi.InvalidPayloadException;
  *
  * @param <T> the message type this codec converts
  */
-class ProtobufCodec<T extends GeneratedMessage> implements Codec<T> {
+class ProtobufCodec<T> implements Codec<T> {
 
-  private final Parser<T> parser;
+  private final Parser<? extends GeneratedMessage> parser;
+  private final Class<T> type;
 
-  ProtobufCodec(Parser<T> parser) {
+  ProtobufCodec(Parser<? extends GeneratedMessage> parser, Class<T> type) {
     this.parser = parser;
+    this.type = type;
   }
 
   @Override
   public byte[] encode(T value) {
-    return value.toByteArray();
+    // type was verified to be a GeneratedMessage subclass at creation, so this cast is checked
+    // and cannot fail for a T.
+    return GeneratedMessage.class.cast(value).toByteArray();
   }
 
   @Override
   public T decode(byte[] bytes) {
     try {
-      return parser.parseFrom(bytes);
+      return type.cast(parser.parseFrom(bytes));
     } catch (InvalidProtocolBufferException e) {
       throw new InvalidPayloadException("Failed to decode protobuf message", e);
     }

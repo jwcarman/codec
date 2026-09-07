@@ -311,6 +311,16 @@ class ForyCodecFactoryTest {
     }
 
     @Test
+    void a_wrong_type_payload_never_surfaces_as_a_class_cast_exception() {
+      byte[] person = factory.create(Person.class).encode(new Person("Alice", 30, true));
+      Codec<Order> orders = factory.create(Order.class);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> orders.decode(person))
+          .isNotInstanceOf(ClassCastException.class);
+    }
+
+    @Test
     void corrupt_input_is_an_invalid_payload_whichever_way_fory_reports_it() {
       Codec<Person> codec = factory.create(Person.class);
       byte[] valid = codec.encode(new Person("Alice", 30, true));

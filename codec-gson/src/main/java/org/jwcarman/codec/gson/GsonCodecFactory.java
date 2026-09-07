@@ -16,7 +16,6 @@
 package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.CodecFactory;
@@ -39,7 +38,6 @@ public class GsonCodecFactory implements CodecFactory {
   @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
     Objects.requireNonNull(typeRef, "typeRef must not be null");
-    TypeToken<T> typeToken = (TypeToken<T>) TypeToken.get(typeRef.getType());
-    return new GsonCodec<>(gson, typeToken);
+    return new GsonCodec<>(gson, typeRef.getType());
   }
 }

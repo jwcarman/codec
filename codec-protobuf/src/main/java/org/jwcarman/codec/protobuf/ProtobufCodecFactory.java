@@ -32,18 +32,17 @@ public class ProtobufCodecFactory implements CodecFactory {
   @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {
     Type type = typeRef.getType();
-    if (!(type instanceof Class<?> clazz)) {
+    if (!(type instanceof Class<?>)) {
       throw new IllegalArgumentException(
           "Protobuf codecs do not support parameterized types: " + type);
     }
+    Class<T> clazz = typeRef.rawClass();
     if (!GeneratedMessage.class.isAssignableFrom(clazz)) {
       throw new IllegalArgumentException(
           "Type " + clazz.getName() + " is not a GeneratedMessage subclass");
     }
-    Class<? extends GeneratedMessage> messageType = clazz.asSubclass(GeneratedMessage.class);
-    Parser<? extends GeneratedMessage> parser = getParser(messageType);
-    ProtobufCodec<? extends GeneratedMessage> codec = new ProtobufCodec<>(parser);
-    return (Codec<T>) codec;
+    Parser<? extends GeneratedMessage> parser = getParser(clazz.asSubclass(GeneratedMessage.class));
+    return new ProtobufCodec<>(parser, clazz);
   }
 
   private static Parser<? extends GeneratedMessage> getParser(

@@ -34,9 +34,9 @@ import org.jwcarman.codec.spi.InvalidValueException;
 class ForyCodec<T> implements Codec<T> {
 
   private final ThreadSafeFory fory;
-  private final Class<?> rawType;
+  private final Class<T> rawType;
 
-  ForyCodec(ThreadSafeFory fory, Class<?> rawType) {
+  ForyCodec(ThreadSafeFory fory, Class<T> rawType) {
     this.fory = fory;
     this.rawType = rawType;
   }
@@ -71,6 +71,6 @@ class ForyCodec<T> implements Codec<T> {
       throw new InvalidPayloadException(
           "Decoded a " + value.getClass().getName() + " but expected " + rawType.getName());
     }
-    return (T) value;
+    return rawType.cast(value);
   }
 }

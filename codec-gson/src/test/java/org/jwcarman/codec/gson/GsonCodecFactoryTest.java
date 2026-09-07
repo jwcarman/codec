@@ -154,6 +154,15 @@ class GsonCodecFactoryTest {
   }
 
   @Test
+  void shouldRoundTripAParameterizedTypeThroughItsType() {
+    Codec<Map<String, List<Integer>>> codec =
+        factory.create(new TypeRef<Map<String, List<Integer>>>() {});
+    Map<String, List<Integer>> value = Map.of("a", List.of(1, 2));
+
+    assertThat(codec.decode(codec.encode(value))).isEqualTo(value);
+  }
+
+  @Test
   void shouldRejectNullEngine() {
     assertThatNullPointerException().isThrownBy(() -> new GsonCodecFactory(null));
   }

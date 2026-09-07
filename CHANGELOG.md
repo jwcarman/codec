@@ -19,8 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   code can create a `Codec<List<O>>` or `Codec<Envelope<O>>` from a caller's
   `TypeRef<O>`. A built reference equals the same type captured by an anonymous
   subclass. `parameterized` takes the class as `Class<? super T>`, so the
-  compiler rejects a class that is not the declared type's; the argument count
-  is checked at construction and primitive arguments are rejected
+  compiler rejects a class that is not the declared type's; a class with no type
+  parameters, a wrong argument count and primitive arguments are rejected at
+  construction. The argument list against the declared type's own arguments is
+  the caller's to get right
 
 ## [0.8.0] - 2026-09-07
 

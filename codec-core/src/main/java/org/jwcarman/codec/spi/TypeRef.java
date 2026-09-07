@@ -108,6 +108,7 @@ public abstract class TypeRef<T> {
    * @param <E> the element type
    * @return a reference to {@code Set<E>}
    * @throws NullPointerException if {@code element} is null
+   * @throws IllegalArgumentException if {@code element} is a primitive type
    */
   public static <E> TypeRef<Set<E>> setOf(TypeRef<E> element) {
     return new TypeRef<Set<E>>(parameterizedType(Set.class, element)) {};
@@ -120,6 +121,7 @@ public abstract class TypeRef<T> {
    * @param <E> the element type
    * @return a reference to {@code Optional<E>}
    * @throws NullPointerException if {@code element} is null
+   * @throws IllegalArgumentException if {@code element} is a primitive type
    */
   public static <E> TypeRef<Optional<E>> optionalOf(TypeRef<E> element) {
     return new TypeRef<Optional<E>>(parameterizedType(Optional.class, element)) {};
@@ -134,6 +136,7 @@ public abstract class TypeRef<T> {
    * @param <V> the value type
    * @return a reference to {@code Map<K, V>}
    * @throws NullPointerException if {@code key} or {@code value} is null
+   * @throws IllegalArgumentException if {@code key} or {@code value} is a primitive type
    */
   public static <K, V> TypeRef<Map<K, V>> mapOf(TypeRef<K> key, TypeRef<V> value) {
     return new TypeRef<Map<K, V>>(parameterizedType(Map.class, key, value)) {};
@@ -153,9 +156,13 @@ public abstract class TypeRef<T> {
    * <p>The class literal is a witness for {@code T}: because a raw type is a supertype of each of
    * its parameterizations, {@code Class<? super T>} lets the compiler reject {@code
    * TypeRef<List<O>> ref = parameterized(Set.class, o)} and {@code TypeRef<Object>} alike. The
-   * arity of {@code arguments} is checked at construction. What remains unchecked is {@code T}
-   * naming a subtype of {@code raw} ({@code TypeRef<LinkedList<O>>} from {@code List.class}); that
-   * mismatch surfaces at the first decode.
+   * arity of {@code arguments} is checked at construction, and a class with no type parameters is
+   * rejected. What remains unchecked is the identity and order of {@code arguments} against {@code
+   * T}'s own type arguments, and {@code T} naming a subtype of {@code raw} ({@code
+   * TypeRef<LinkedList<O>>} from {@code List.class}). Such a mismatch does not fail in the codec:
+   * decode succeeds with a value of the built type, and the caller sees a {@code
+   * ClassCastException} where the decoded value is first used. Round-trip a reference built here
+   * once in a test.
    *
    * @param raw the generic class, such as {@code Envelope.class}
    * @param arguments one type reference per type parameter of {@code raw}, in declaration order;
@@ -163,8 +170,8 @@ public abstract class TypeRef<T> {
    * @param <T> {@code raw} applied to {@code arguments}
    * @return a reference to {@code raw} applied to {@code arguments}
    * @throws NullPointerException if {@code raw}, {@code arguments} or any argument is null
-   * @throws IllegalArgumentException if the number of arguments does not match the number of type
-   *     parameters {@code raw} declares, or an argument is a primitive type
+   * @throws IllegalArgumentException if {@code raw} declares no type parameters, if the number of
+   *     arguments does not match the number it declares, or if an argument is a primitive type
    */
   public static <T> TypeRef<T> parameterized(Class<? super T> raw, TypeRef<?>... arguments) {
     return new TypeRef<T>(parameterizedType(raw, arguments)) {};
@@ -174,6 +181,9 @@ public abstract class TypeRef<T> {
     Objects.requireNonNull(raw, "raw must not be null");
     Objects.requireNonNull(arguments, "arguments must not be null");
     int expected = raw.getTypeParameters().length;
+    if (expected == 0) {
+      throw new IllegalArgumentException(raw.getName() + " is not a generic class");
+    }
     if (arguments.length != expected) {
       throw new IllegalArgumentException(
           raw.getSimpleName()

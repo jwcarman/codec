@@ -15,10 +15,10 @@
  */
 package org.jwcarman.codec.lz4;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PushbackInputStream;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameInputStream;
@@ -111,22 +111,48 @@ public class Lz4Codec extends CompressionStreamCodec {
 
   @Override
   protected InputStream decompressing(InputStream source) throws IOException {
-    // lz4-java reports a corrupt frame descriptor as a bare RuntimeException (or
-    // IllegalArgumentException) rather than an IOException, so it would escape the base class's
-    // IOException handling and reach the caller unwrapped. The descriptor is parsed lazily on the
-    // first read, so the first byte is read here and pushed back, which puts the descriptor's
-    // validation inside a catch scoped to exactly that read and nothing else. This is the one
-    // place the codebase catches RuntimeException.
-    PushbackInputStream stream = new PushbackInputStream(new LZ4FrameInputStream(source));
-    int first;
-    try {
-      first = stream.read();
-    } catch (RuntimeException e) {
-      throw new IOException("Invalid LZ4 frame descriptor", e);
+    return new FrameDescriptorSafeInputStream(new LZ4FrameInputStream(source));
+  }
+
+  /**
+   * Translates lz4-java's frame-descriptor failures into {@link IOException}. lz4-java reports a
+   * corrupt frame descriptor as a bare {@link RuntimeException} (or {@link
+   * IllegalArgumentException}), and because the stream reads concatenated frames that can happen on
+   * any read, not only the first, so every read is wrapped. This is the one place the codebase
+   * catches {@code RuntimeException}, and only to convert it to the {@link IOException} the base
+   * class maps to an invalid-payload rejection.
+   */
+  private static final class FrameDescriptorSafeInputStream extends FilterInputStream {
+
+    private FrameDescriptorSafeInputStream(InputStream in) {
+      super(in);
     }
-    if (first != -1) {
-      stream.unread(first);
+
+    @Override
+    public int read() throws IOException {
+      try {
+        return in.read();
+      } catch (RuntimeException e) {
+        throw new IOException("Invalid LZ4 frame descriptor", e);
+      }
     }
-    return stream;
+
+    @Override
+    public int read(byte[] buffer, int offset, int length) throws IOException {
+      try {
+        return in.read(buffer, offset, length);
+      } catch (RuntimeException e) {
+        throw new IOException("Invalid LZ4 frame descriptor", e);
+      }
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+      try {
+        return in.skip(n);
+      } catch (RuntimeException e) {
+        throw new IOException("Invalid LZ4 frame descriptor", e);
+      }
+    }
   }
 }

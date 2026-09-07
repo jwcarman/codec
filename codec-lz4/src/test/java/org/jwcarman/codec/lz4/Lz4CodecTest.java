@@ -127,6 +127,33 @@ class Lz4CodecTest {
     }
 
     @Test
+    void rejects_a_corrupt_descriptor_in_a_later_frame() {
+      byte[] first = codec.encode("hello world".getBytes(UTF_8));
+      byte[] secondFrameHeader = {0x04, 0x22, 0x4D, 0x18, 0x41, 0x70, 0x00};
+      byte[] concatenated = new byte[first.length + secondFrameHeader.length];
+      System.arraycopy(first, 0, concatenated, 0, first.length);
+      System.arraycopy(secondFrameHeader, 0, concatenated, first.length, secondFrameHeader.length);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(concatenated))
+          .withMessage("Unable to decompress data")
+          .withCauseInstanceOf(IOException.class)
+          .havingCause()
+          .withMessage("Invalid LZ4 frame descriptor");
+    }
+
+    @Test
+    void reads_concatenated_frames_as_one_payload() {
+      byte[] first = codec.encode("hello ".getBytes(UTF_8));
+      byte[] second = codec.encode("world".getBytes(UTF_8));
+      byte[] concatenated = new byte[first.length + second.length];
+      System.arraycopy(first, 0, concatenated, 0, first.length);
+      System.arraycopy(second, 0, concatenated, first.length, second.length);
+
+      assertThat(codec.decode(concatenated)).isEqualTo("hello world".getBytes(UTF_8));
+    }
+
+    @Test
     void rejects_a_corrupted_frame() {
       byte[] encoded = codec.encode("the quick brown fox jumps".repeat(20).getBytes(UTF_8));
       encoded[encoded.length - 6] ^= 0x55;

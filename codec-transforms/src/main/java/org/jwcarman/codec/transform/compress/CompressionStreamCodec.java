@@ -17,12 +17,13 @@ package org.jwcarman.codec.transform.compress;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.StreamingTransform;
 import org.jwcarman.codec.spi.TransientCodecException;
 
 /**
@@ -37,7 +38,7 @@ import org.jwcarman.codec.spi.TransientCodecException;
  * <p>Any stream-based compression library can be adapted by overriding the two factory methods,
  * e.g. wrapping zstd or lz4 streams from a third-party dependency.
  */
-public abstract class CompressionStreamCodec implements Codec<byte[]> {
+public abstract class CompressionStreamCodec implements StreamingTransform {
 
   /** Default maximum decoded size (64 MiB). */
   protected static final long DEFAULT_MAX_DECODED_SIZE = 64L * 1024 * 1024;
@@ -82,6 +83,45 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
    * @throws IOException if the stream cannot be created
    */
   protected abstract InputStream decompressing(InputStream source) throws IOException;
+
+  @Override
+  public final OutputStream encoding(OutputStream sink) throws IOException {
+    return compressing(sink);
+  }
+
+  /** The decompressing stream, refusing to yield more than the decoded-size cap. */
+  @Override
+  public final InputStream decoding(InputStream source) throws IOException {
+    return new FilterInputStream(decompressing(source)) {
+      private long total;
+
+      @Override
+      public int read() throws IOException {
+        int b = in.read();
+        if (b != -1) {
+          count(1);
+        }
+        return b;
+      }
+
+      @Override
+      public int read(byte[] b, int off, int len) throws IOException {
+        int read = in.read(b, off, len);
+        if (read > 0) {
+          count(read);
+        }
+        return read;
+      }
+
+      private void count(int read) {
+        total += read;
+        if (total > maxDecodedSize) {
+          throw new InvalidPayloadException(
+              "Decoded size exceeds the maximum of " + maxDecodedSize + " bytes");
+        }
+      }
+    };
+  }
 
   @Override
   public final byte[] encode(byte[] value) {

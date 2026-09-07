@@ -15,6 +15,9 @@
  */
 package org.jwcarman.codec.spi;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -63,6 +66,38 @@ public interface Codec<T> {
   T decode(byte[] bytes);
 
   /**
+   * Encodes a value onto a stream. The default buffers through {@link #encode(Object)}; a codec
+   * with a native streaming path overrides it. The stream is the caller's: it is written and
+   * flushed, never closed.
+   *
+   * @param value the value to encode
+   * @param out the stream receiving the encoded bytes
+   * @throws IOException if {@code out} fails
+   * @throws InvalidValueException if the value cannot be encoded by this codec
+   * @throws TransientCodecException if something the codec depends on failed
+   */
+  default void encodeTo(T value, OutputStream out) throws IOException {
+    out.write(encode(value));
+  }
+
+  /**
+   * Decodes one value from a stream. The default reads the stream to its end and delegates to
+   * {@link #decode(byte[])}; a codec with a native streaming path overrides it. The stream is the
+   * caller's and is not closed.
+   *
+   * @param in the stream supplying the encoded bytes
+   * @return the decoded value
+   * @throws IOException if {@code in} fails
+   * @throws InvalidPayloadException if the bytes are malformed, corrupt, or forged
+   * @throws UnsupportedFormatException if the bytes are well-formed but in a format this codec
+   *     cannot read
+   * @throws TransientCodecException if something the codec depends on failed
+   */
+  default T decodeFrom(InputStream in) throws IOException {
+    return decode(in.readAllBytes());
+  }
+
+  /**
    * Layers a byte-level transform (compression, encryption, etc.) onto this codec.
    *
    * <p>The returned codec applies {@code transform.encode} after this codec's {@code encode}, and
@@ -90,6 +125,29 @@ public interface Codec<T> {
       @Override
       public T decode(byte[] bytes) {
         return self.decode(transform.decode(bytes));
+      }
+
+      // A stream-shaped transform wraps the caller's stream and the inner codec writes through it;
+      // any other transform buffers at this stage while the stages inside it still stream.
+      @Override
+      public void encodeTo(T value, OutputStream out) throws IOException {
+        if (transform instanceof StreamingTransform streaming) {
+          try (OutputStream wrapped = streaming.encoding(Streams.nonClosing(out))) {
+            self.encodeTo(value, wrapped);
+          }
+        } else {
+          out.write(encode(value));
+        }
+      }
+
+      @Override
+      public T decodeFrom(InputStream in) throws IOException {
+        if (transform instanceof StreamingTransform streaming) {
+          try (InputStream wrapped = streaming.decoding(Streams.nonClosing(in))) {
+            return self.decodeFrom(wrapped);
+          }
+        }
+        return decode(in.readAllBytes());
       }
     };
   }

@@ -15,6 +15,9 @@
  */
 package org.jwcarman.codec.jackson;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.spi.InvalidValueException;
@@ -50,6 +53,24 @@ class JacksonCodec<T> implements Codec<T> {
   public T decode(byte[] bytes) {
     try {
       return objectMapper.readValue(bytes, javaType);
+    } catch (JacksonException e) {
+      throw new InvalidPayloadException("Unable to decode JSON", e);
+    }
+  }
+
+  @Override
+  public void encodeTo(T value, OutputStream out) throws IOException {
+    try {
+      objectMapper.writeValue(out, value);
+    } catch (JacksonException e) {
+      throw new InvalidValueException("Unable to encode value as JSON", e);
+    }
+  }
+
+  @Override
+  public T decodeFrom(InputStream in) throws IOException {
+    try {
+      return objectMapper.readValue(in, javaType);
     } catch (JacksonException e) {
       throw new InvalidPayloadException("Unable to decode JSON", e);
     }

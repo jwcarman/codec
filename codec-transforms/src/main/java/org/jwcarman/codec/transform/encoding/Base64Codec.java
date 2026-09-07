@@ -15,10 +15,12 @@
  */
 package org.jwcarman.codec.transform.encoding;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Base64;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.StreamingTransform;
 
 /**
  * A byte-to-text-safe-byte transform: encodes any bytes as Base64 (RFC 4648) and decodes them back.
@@ -40,7 +42,7 @@ import org.jwcarman.codec.spi.InvalidPayloadException;
  *
  * <p>Instances are immutable and thread-safe.
  */
-public final class Base64Codec implements Codec<byte[]> {
+public final class Base64Codec implements StreamingTransform {
 
   private final Base64.Encoder encoder;
   private final Base64.Decoder decoder;
@@ -86,6 +88,16 @@ public final class Base64Codec implements Codec<byte[]> {
    */
   public static Base64Codec mime() {
     return new Base64Codec(Base64.getMimeEncoder(), Base64.getMimeDecoder());
+  }
+
+  @Override
+  public OutputStream encoding(OutputStream sink) {
+    return encoder.wrap(sink);
+  }
+
+  @Override
+  public InputStream decoding(InputStream source) {
+    return decoder.wrap(source);
   }
 
   @Override

@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `UnsupportedFormatException` and is no longer a `VersionedFormatException`.
   See the new [Handling failures](https://jwcarman.github.io/codec/guides/error-handling/)
   guide.
+- `Base32Codec.standard()` and `.hex()` decode canonically: upper case only, and
+  non-zero trailing bits in the final symbol are rejected (`MZ======` is an
+  error; `MY======` is `f`). Callers who fed lower-case input opt back in with
+  `.caseInsensitive()`
 
 ### Changed
 - The build compiles with `-Xlint:all,-processing,-unchecked -Werror`: any javac
@@ -65,6 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and zstd at several levels), encoding, backend (a small record and a
   100-item object graph), and the envelope-encryption strategies (not
   published), with the results and a benchmarks page in the docs
+- `Base32Codec.of(alphabet)` and `of(alphabet, pad)`: a strict codec over any
+  32-symbol ASCII alphabet, with `caseInsensitive()` and `aliasing(...)` as
+  decode-side opt-ins; `crockford()` (ULIDs), `zBase32()` and `geohash()`
+  presets. The encode and decode loops are specialised for whole groups, about
+  4x the throughput of the previous implementation
 
 ### Documentation
 - Benchmarks re-run on 2026-09-06 with Fory 1.7.1, zstd-jni 1.5.7-15, and

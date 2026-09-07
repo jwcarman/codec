@@ -37,8 +37,10 @@ measured at 1, 3 (the default), 9 and 19.
 - **LZ4-HC is a decode-side optimisation.** It compresses ~22× slower than
   plain LZ4 (about gzip's speed) for a better ratio, and decodes fastest of
   anything measured. Use it for write-rarely, read-constantly data.
-- **The text encodings are negligible next to any backend or transform**, with
-  the pure-Java Base32 the slowest of them (~440 MB/s).
+- **The text encodings are negligible next to any backend or transform.**
+  Base64 and hex run on the JDK's intrinsics; the pure-Java Base32 encodes at
+  ~1.8 GB/s and decodes at ~1.5 GB/s, a few times slower than Base64 and well
+  clear of anything it would be chained behind.
 - **Binary backends pull further ahead as the payload grows.** On the small
   record Fory decodes ~5× faster than Jackson 2; on the 100-item order it is
   ~10× faster on decode and ~15× on encode (1.4 M orders/s), and Protobuf is
@@ -127,7 +129,7 @@ the level trade-offs read in one place.
 | Transform | encode ops/s | decode ops/s |
 |---|---:|---:|
 | base64 | 1,787,991 | 1,148,057 |
-| base32 | 52,531 | 48,224 |
+| base32 | 220,631 | 182,517 |
 | hex | 406,702 | 104,500 |
 | crc32c | 1,091,752 | 1,160,519 |
 

@@ -64,6 +64,7 @@ it text-safe, and who else has to read it?
 | Bytes in a URL, filename, or token | `Base64Codec.urlSafe()` / `urlSafeWithoutPadding()` | No `/`, `+`, or `=` to escape |
 | A value a person will type or read aloud | `Base32Codec.standard()` | No lower case, no symbols, and no `0`/`1`/`8`/`9` — the confusable digits; the encoding used for TOTP secrets |
 | A text form that sorts like the bytes | `Base32Codec.hex()` | base32hex preserves byte order under lexicographic sort |
+| A ULID-style identifier, z-base-32, geohash, or your own 32-symbol alphabet | `Base32Codec.crockford()` / `zBase32()` / `geohash()` / `of(...)` | The alphabet those formats use; `of(...)` takes any 32 ASCII symbols |
 | A value for logs, diagnostics, or checksums | `HexCodec` | Twice the size, but instantly recognisable and copy-pasteable |
 | Corruption detection on an uncompressed, unencrypted payload | `ChecksumCodec.crc32c()` | Four bytes; rejects bit rot and truncation before a parser sees them. Compressed frames and encrypted payloads already have this |
 | The bytes *are* the text | `StringCodec.utf8()` | Raw text, not a JSON string; strict decoding; a backend-free base for `xmap` |
@@ -152,8 +153,30 @@ new Lz4Codec(16L * 1024 * 1024);          // fast, with a 16 MiB decoded cap
 alphabet TOTP secrets and DNS-safe identifiers use — no lower case, no
 symbols, so it survives case-insensitive contexts; `hex()` is base32hex,
 whose encoded form sorts in the same order as the bytes it encodes. Output
-is upper-case and padded; decoding is case-insensitive and rejects bad
-lengths, padding, or characters.
+is upper-case and padded. Decoding is strict and canonical: it accepts exactly
+what `encode` produces — upper case only, whole groups, zero trailing bits —
+so one value has one encoded form and encoded strings can be compared or
+signed. Lower-case input is an opt-in:
+
+```java
+Base32Codec.standard().caseInsensitive();
+```
+
+Three more presets cover the other alphabets in common use, all unpadded:
+`crockford()` is the alphabet ULIDs use, folding case and reading `I`, `L`
+and `O` as `1`, `1` and `0`; `zBase32()` and `geohash()` are strict. For any
+other alphabet, `of(...)` takes 32 ASCII symbols with the same strict
+decoding, and `caseInsensitive()` and `aliasing(...)` are the opt-ins:
+
+```java
+Base32Codec ulid = Base32Codec.crockford();
+Base32Codec geohash = Base32Codec.geohash().caseInsensitive();
+Base32Codec mine = Base32Codec.of("ybndrfg8ejkmcpqxot1uwisza345h769");
+```
+
+One asymmetry: `Base64Codec` decodes trailing bits as leniently as
+`java.util.Base64`, which has no strict mode, while `Base32Codec` rejects
+them.
 
 ## Corruption detection
 

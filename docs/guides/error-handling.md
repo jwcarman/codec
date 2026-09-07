@@ -154,7 +154,7 @@ like an empty cache.
 | `codec-transforms`, `codec-zstd`, `codec-lz4` | a payload that would expand past the decompression cap | `InvalidPayloadException` |
 | `codec-transforms`, `codec-zstd`, `codec-lz4` | a compressor fails on encode (dependency, not the value) | `TransientCodecException` |
 | `codec-transforms` | `ChecksumCodec` finds a mismatch or a truncated buffer | `InvalidPayloadException` |
-| `codec-transforms` | Base64/Base32/hex text outside the alphabet | `InvalidPayloadException` |
+| `codec-transforms` | Base64/Base32/hex text outside the alphabet; Base32 input that is not canonical (wrong case, bad padding, non-zero trailing bits) | `InvalidPayloadException` |
 | `codec-transforms` | `StringCodec` decodes bytes not valid in the charset | `InvalidPayloadException` |
 | `codec-jackson`, `codec-jackson2`, `codec-gson`, `codec-jsonb` | malformed JSON on decode | `InvalidPayloadException` |
 | `codec-jackson`, `codec-jackson2`, `codec-gson`, `codec-jsonb` | a value the backend cannot serialize on encode | `InvalidValueException` |

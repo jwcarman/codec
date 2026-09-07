@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `codec-spring-boot-starter` now brings `codec-versioned` along with
+  `codec-core`, `codec-transforms` and `codec-autoconfigure`: the module has
+  no dependencies of its own, and versioned storage is part of the toolkit the
+  starter promises
+
 ### Fixed
 - `codec-kafka` no longer resolves the `lz4-java` 1.10.1 and `zstd-jni` 1.5.6 that
   `kafka-clients` declares: the parent now manages both at the versions codec

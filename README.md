@@ -17,7 +17,7 @@ interface that your libraries depend on, letting applications choose their seria
 framework (Jackson, Gson, Protocol Buffers, etc.) without coupling library code to a
 specific implementation.
 
-**📖 Documentation: [jwcarman.github.io/codec](https://jwcarman.github.io/codec/)**
+**📖 Documentation: [jwcarman.github.io/codec](https://jwcarman.github.io/codec/) · API reference: [jwcarman.github.io/codec/api](https://jwcarman.github.io/codec/api/)**
 
 ## Requirements
 

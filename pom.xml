@@ -250,6 +250,22 @@ limitations under the License.]]></inlineHeader>
                     <artifactId>versions-maven-plugin</artifactId>
                     <version>${versions.plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${javadoc.plugin.version}</version>
+                    <executions>
+                        <!-- javadoc:aggregate from the command line: the published API docs site -->
+                        <execution>
+                            <id>default-cli</id>
+                            <configuration>
+                                <doctitle>Codec ${project.version} API</doctitle>
+                                <windowtitle>Codec ${project.version} API</windowtitle>
+                                <bottom><![CDATA[Copyright &#169; 2026 James Carman. Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.]]></bottom>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>

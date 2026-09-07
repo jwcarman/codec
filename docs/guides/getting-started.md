@@ -163,3 +163,5 @@ entry point (`ObjectMapper`, `Gson`, `Jsonb`), a caller-built `ThreadSafeFory`
 - [Spring Boot](spring-boot.md) — auto-configuration, backend precedence, and
   what the starter does not include
 - [Encryption](encryption.md) — envelope encryption and key management
+- [API reference](https://jwcarman.github.io/codec/api/latest/) — the Javadoc
+  for every module, one set per release

@@ -86,6 +86,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New guide, [Evolving Stored Formats](https://jwcarman.github.io/codec/guides/versioned/):
   how `codec-versioned` works, a worked upgrade, the fleet rollout order, and
   what belongs inside the versioned codec versus outside it
+- The aggregated Javadoc for every module is published with the site at
+  [jwcarman.github.io/codec/api](https://jwcarman.github.io/codec/api/), one set
+  per release, built from the release tag
 
 ## [0.7.0] - 2026-08-26
 

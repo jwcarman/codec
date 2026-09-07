@@ -24,6 +24,14 @@ import java.util.function.Function;
  * <p>Implementations must be symmetric: {@code decode(encode(value))} yields a value equal to the
  * original. Codecs are expected to be thread-safe.
  *
+ * <p><strong>Failures.</strong> Every failure {@code encode} or {@code decode} reports is a {@link
+ * CodecException}, and more precisely one of four families keyed to what the caller does next:
+ * {@link InvalidValueException} (fix the value), {@link InvalidPayloadException} (quarantine the
+ * payload), {@link UnsupportedFormatException} (hold it for a newer reader), {@link
+ * TransientCodecException} (retry). Implementations wrap their underlying library's exception as
+ * the cause rather than letting it escape. A {@code null} argument is a programmer error and throws
+ * {@link NullPointerException}; see {@link #nullSafe()} for the explicit pass-through.
+ *
  * @param <T> the type this codec converts
  */
 public interface Codec<T> {
@@ -33,6 +41,9 @@ public interface Codec<T> {
    *
    * @param value the value to encode
    * @return the encoded bytes
+   * @throws InvalidValueException if the value cannot be encoded by this codec
+   * @throws TransientCodecException if something the codec depends on failed
+   * @throws NullPointerException if {@code value} is null and this codec does not accept null
    */
   byte[] encode(T value);
 
@@ -41,6 +52,11 @@ public interface Codec<T> {
    *
    * @param bytes the bytes to decode
    * @return the decoded value
+   * @throws InvalidPayloadException if the bytes are malformed, corrupt, or forged
+   * @throws UnsupportedFormatException if the bytes are well-formed but in a format this codec
+   *     cannot read
+   * @throws TransientCodecException if something the codec depends on failed
+   * @throws NullPointerException if {@code bytes} is null and this codec does not accept null
    */
   T decode(byte[] bytes);
 

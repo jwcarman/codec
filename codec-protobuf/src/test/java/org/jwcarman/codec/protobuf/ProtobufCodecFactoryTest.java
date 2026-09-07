@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -27,6 +28,7 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.spi.TypeRef;
 
 class ProtobufCodecFactoryTest {
@@ -104,12 +106,13 @@ class ProtobufCodecFactoryTest {
   }
 
   @Test
-  void shouldThrowForInvalidBytes() {
+  void shouldReportInvalidBytesAsInvalidPayload() {
     Codec<TestMessages.Person> codec = factory.create(TestMessages.Person.class);
     byte[] garbage = {0x00, 0x7F, 0x00, 0x7F, 0x00};
     assertThatThrownBy(() -> codec.decode(garbage))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Failed to decode protobuf message");
+        .isInstanceOf(InvalidPayloadException.class)
+        .hasMessageContaining("Failed to decode protobuf message")
+        .hasCauseInstanceOf(InvalidProtocolBufferException.class);
   }
 
   @Test

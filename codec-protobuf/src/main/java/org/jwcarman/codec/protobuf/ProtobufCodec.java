@@ -19,6 +19,7 @@ import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 /**
  * Codec for a Protocol Buffers message type, encoding with the message's wire format and decoding
@@ -44,7 +45,7 @@ class ProtobufCodec<T extends GeneratedMessage> implements Codec<T> {
     try {
       return parser.parseFrom(bytes);
     } catch (InvalidProtocolBufferException e) {
-      throw new IllegalArgumentException("Failed to decode protobuf message", e);
+      throw new InvalidPayloadException("Failed to decode protobuf message", e);
     }
   }
 }

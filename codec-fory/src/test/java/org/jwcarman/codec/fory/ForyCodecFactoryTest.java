@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
-import static org.assertj.core.api.Assertions.assertThatRuntimeException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +38,8 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 import org.jwcarman.codec.spi.TypeRef;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -149,8 +151,8 @@ class ForyCodecFactoryTest {
 
     @Test
     void a_reader_whose_class_lost_a_field_still_decodes_correctly() {
-      // Both factories register exactly one class, so Fory assigns it the same id on each side;
-      // the field-level metadata compatible mode carries is what matches the values by name.
+      // Each factory registers a single class, so Fory gives both the same id; compatible mode's
+      // per-field metadata then matches the values by name.
       byte[] bytes =
           ForyCodecFactory.of(Evolved.class)
               .create(Evolved.class)
@@ -195,9 +197,11 @@ class ForyCodecFactoryTest {
               .create(Schema_evolution.Evolved.class)
               .encode(new Schema_evolution.Evolved("Alice", 30, true, "alice@example.com"));
       ForyCodecFactory reader = ForyCodecFactory.of();
+      Codec<Object> codec = reader.create(Object.class);
 
-      assertThatExceptionOfType(DeserializationException.class)
-          .isThrownBy(() -> reader.create(Object.class).decode(bytes));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withCauseInstanceOf(DeserializationException.class);
     }
 
     @Test
@@ -205,8 +209,10 @@ class ForyCodecFactoryTest {
       Codec<Node> codec = ForyCodecFactory.of(Node.class).create(Node.class);
       byte[] bytes = codec.encode(chain(60));
 
-      assertThatExceptionOfType(InsecureException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(bytes))
+          .withCauseInstanceOf(InsecureException.class)
+          .havingCause()
           .withMessageContaining("depth");
     }
 
@@ -214,7 +220,8 @@ class ForyCodecFactoryTest {
     void a_rejected_read_does_not_poison_the_instance() {
       Codec<Node> codec = ForyCodecFactory.of(Node.class).create(Node.class);
       byte[] tooDeep = codec.encode(chain(60));
-      assertThatExceptionOfType(InsecureException.class).isThrownBy(() -> codec.decode(tooDeep));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(tooDeep));
 
       Node shallow = chain(10);
 
@@ -293,21 +300,40 @@ class ForyCodecFactoryTest {
   class Failures {
 
     @Test
-    void decoding_a_value_of_the_wrong_type_is_a_class_cast_exception() {
+    void decoding_a_value_of_the_wrong_type_is_an_invalid_payload() {
       byte[] person = factory.create(Person.class).encode(new Person("Alice", 30, true));
       Codec<Order> orders = factory.create(Order.class);
 
-      assertThatExceptionOfType(ClassCastException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> orders.decode(person))
           .withMessageContaining("Person")
           .withMessageContaining("Order");
     }
 
     @Test
-    void corrupt_input_is_rejected() {
+    void corrupt_input_is_an_invalid_payload_whichever_way_fory_reports_it() {
       Codec<Person> codec = factory.create(Person.class);
+      byte[] valid = codec.encode(new Person("Alice", 30, true));
 
-      assertThatRuntimeException().isThrownBy(() -> codec.decode("not fory".getBytes(UTF_8)));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode("not fory".getBytes(UTF_8)))
+          .withCauseInstanceOf(IllegalArgumentException.class);
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(new byte[0]))
+          .withCauseInstanceOf(IndexOutOfBoundsException.class);
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(Arrays.copyOf(valid, valid.length / 2)))
+          .withCauseInstanceOf(DeserializationException.class);
+    }
+
+    @Test
+    void encoding_a_value_of_an_unregistered_class_is_an_invalid_value() {
+      Codec<Object> codec = factory.create(Object.class);
+
+      assertThatExceptionOfType(InvalidValueException.class)
+          .isThrownBy(() -> codec.encode(new Unregistered("x")))
+          .withMessage("Unable to serialize value")
+          .withCauseInstanceOf(InsecureException.class);
     }
 
     @Test

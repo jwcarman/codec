@@ -16,14 +16,19 @@
 package org.jwcarman.codec.fory;
 
 import org.apache.fory.ThreadSafeFory;
+import org.apache.fory.exception.ForyException;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 
 /**
  * A codec that serializes through a {@link ThreadSafeFory} instance. Fory's format is
  * self-describing — the class of every value is written alongside it — so decoding does not need
- * the static type beyond checking that what came back is what the codec was created for. Fory's own
- * runtime exceptions surface unchanged: an unregistered class, a corrupt payload, or a value of the
- * wrong type is reported by Fory, not translated here.
+ * the static type beyond checking that what came back is what the codec was created for. Fory's
+ * failures surface as this library's exception families: an unregistered class or other
+ * serialization failure is {@link InvalidValueException}, and a corrupt payload or a value of the
+ * wrong type is {@link InvalidPayloadException}, in each case with Fory's own exception as the
+ * cause.
  */
 class ForyCodec<T> implements Codec<T> {
 
@@ -37,14 +42,26 @@ class ForyCodec<T> implements Codec<T> {
 
   @Override
   public byte[] encode(T value) {
-    return fory.serialize(value);
+    try {
+      return fory.serialize(value);
+    } catch (ForyException e) {
+      throw new InvalidValueException("Unable to serialize value", e);
+    }
   }
 
   @Override
   public T decode(byte[] bytes) {
-    Object value = fory.deserialize(bytes);
+    Object value;
+    try {
+      value = fory.deserialize(bytes);
+    } catch (ForyException | IllegalArgumentException | IndexOutOfBoundsException e) {
+      // Fory reports malformed input three ways: its own exceptions for truncation and
+      // security-limit violations, IllegalArgumentException for a buffer it cannot parse at all,
+      // IndexOutOfBoundsException for an empty one. All three mean the same thing here.
+      throw new InvalidPayloadException("Unable to deserialize payload", e);
+    }
     if (value != null && !rawType.isInstance(value)) {
-      throw new ClassCastException(
+      throw new InvalidPayloadException(
           "Decoded a " + value.getClass().getName() + " but expected " + rawType.getName());
     }
     return (T) value;

@@ -16,8 +16,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
     - name: Checkout Code
       uses: actions/checkout@v7
@@ -34,8 +32,16 @@ jobs:
     - name: Build with Maven
       run: mvn -Pci -B verify
 
+    # Fork and Dependabot pull requests receive no secrets; skip the analysis rather than fail.
+    # The token is scoped to the two steps that need it, not the whole job.
+    - name: Check for the SonarCloud token
+      id: sonar
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: echo "available=${SONAR_TOKEN:+true}" >> "$GITHUB_OUTPUT"
+
     - name: Analyze with SonarCloud
-      if: env.SONAR_TOKEN != ''
+      if: steps.sonar.outputs.available == 'true'
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: mvn -Pci -B sonar:sonar

@@ -20,12 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import java.io.UncheckedIOException;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -85,7 +85,7 @@ class ZstdCodecTest {
     void rejects_non_zstandard_input() {
       byte[] notCompressed = "not compressed".getBytes(UTF_8);
 
-      assertThatExceptionOfType(UncheckedIOException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(notCompressed));
     }
   }
@@ -98,7 +98,7 @@ class ZstdCodecTest {
       byte[] bomb = codec.encode(new byte[10_000]);
       ZstdCodec capped = new ZstdCodec(3, 1_000);
 
-      assertThatExceptionOfType(IllegalStateException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> capped.decode(bomb))
           .withMessageContaining("exceeds the maximum");
     }

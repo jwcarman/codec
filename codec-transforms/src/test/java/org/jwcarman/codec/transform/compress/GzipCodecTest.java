@@ -18,13 +18,13 @@ package org.jwcarman.codec.transform.compress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class GzipCodecTest {
@@ -72,7 +72,8 @@ class GzipCodecTest {
     void rejects_non_gzip_input() {
       byte[] garbage = {1, 2, 3, 4};
 
-      assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(garbage));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(garbage));
     }
   }
 
@@ -84,7 +85,7 @@ class GzipCodecTest {
       byte[] bomb = codec.encode(new byte[100_000]);
       GzipCodec capped = new GzipCodec(16);
 
-      assertThatExceptionOfType(IllegalStateException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> capped.decode(bomb))
           .withMessageContaining("16");
     }

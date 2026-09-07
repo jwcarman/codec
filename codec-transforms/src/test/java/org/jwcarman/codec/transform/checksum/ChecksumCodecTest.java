@@ -17,8 +17,7 @@ package org.jwcarman.codec.transform.checksum;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.zip.Adler32;
@@ -29,6 +28,8 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.TransientCodecException;
 import org.jwcarman.codec.transform.encoding.HexCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -98,7 +99,7 @@ class ChecksumCodecTest {
       byte[] encoded = codec.encode(CHECK);
       encoded[3] ^= 0x01;
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(encoded))
           .withMessageContaining("corrupt");
     }
@@ -108,7 +109,8 @@ class ChecksumCodecTest {
       byte[] encoded = codec.encode(CHECK);
       encoded[encoded.length - 1] ^= (byte) 0x80;
 
-      assertThatIllegalArgumentException().isThrownBy(() -> codec.decode(encoded));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(encoded));
     }
 
     @Test
@@ -116,14 +118,15 @@ class ChecksumCodecTest {
       byte[] encoded = codec.encode(CHECK);
       byte[] truncated = java.util.Arrays.copyOf(encoded, encoded.length - 1);
 
-      assertThatIllegalArgumentException().isThrownBy(() -> codec.decode(truncated));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(truncated));
     }
 
     @Test
     void rejects_input_shorter_than_a_checksum() {
       byte[] tooShort = {1, 2, 3};
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(tooShort))
           .withMessageContaining("shorter");
     }
@@ -132,7 +135,7 @@ class ChecksumCodecTest {
     void a_different_checksum_does_not_verify_the_same_trailer() {
       byte[] encoded = codec.encode(CHECK);
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> new ChecksumCodec(CRC32::new).decode(encoded));
     }
   }
@@ -171,7 +174,7 @@ class ChecksumCodecTest {
             }
           };
 
-      assertThatIllegalStateException()
+      assertThatExceptionOfType(TransientCodecException.class)
           .isThrownBy(() -> new ChecksumCodec(() -> sixtyFourBit).encode(CHECK))
           .withMessageContaining("wider than 32 bits");
     }

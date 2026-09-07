@@ -22,6 +22,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 /**
  * A {@code Codec<String>} whose bytes are simply the text in a charset — no quoting, no framing.
@@ -34,7 +35,7 @@ import org.jwcarman.codec.spi.Codec;
  * }
  *
  * <p>Decoding is strict: bytes that are not valid in the charset are rejected with {@link
- * IllegalArgumentException} rather than silently replaced with U+FFFD, so corruption surfaces as an
+ * InvalidPayloadException} rather than silently replaced with U+FFFD, so corruption surfaces as an
  * error instead of a wrong answer. Encoding uses the JDK's default replacement for characters the
  * charset cannot represent (an unpaired surrogate in UTF-8, a non-Latin character in ISO-8859-1
  * becomes {@code ?}).
@@ -86,7 +87,7 @@ public final class StringCodec implements Codec<String> {
           .decode(ByteBuffer.wrap(bytes))
           .toString();
     } catch (CharacterCodingException e) {
-      throw new IllegalArgumentException("Input is not valid " + charset.name(), e);
+      throw new InvalidPayloadException("Input is not valid " + charset.name(), e);
     }
   }
 }

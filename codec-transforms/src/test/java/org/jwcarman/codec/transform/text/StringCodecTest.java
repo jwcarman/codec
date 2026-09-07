@@ -18,7 +18,7 @@ package org.jwcarman.codec.transform.text;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.UUID;
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.transform.encoding.Base64Codec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -86,16 +87,17 @@ class StringCodecTest {
     void rejects_malformed_utf8_instead_of_substituting() {
       byte[] truncatedSequence = {(byte) 'a', (byte) 0xC3};
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> StringCodec.utf8().decode(truncatedSequence))
-          .withMessageContaining("UTF-8");
+          .withMessageContaining("UTF-8")
+          .withCauseInstanceOf(java.nio.charset.CharacterCodingException.class);
     }
 
     @Test
     void rejects_bytes_unmappable_in_the_charset() {
       byte[] undefinedInAscii = {(byte) 0x80};
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(
               () ->
                   StringCodec.of(java.nio.charset.StandardCharsets.US_ASCII)

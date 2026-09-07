@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 /**
  * A byte-to-text-safe-byte transform using Base32 (RFC 4648 §6) or its "extended hex" variant (RFC
@@ -30,7 +31,7 @@ import org.jwcarman.codec.spi.Codec;
  *
  * <p>Output is upper-case with {@code =} padding, exactly as the RFC specifies. Decoding is strict
  * but case-insensitive: a character outside the alphabet, misplaced padding, or a length that is
- * not a multiple of eight is rejected with {@link IllegalArgumentException}.
+ * not a multiple of eight is rejected with {@link InvalidPayloadException}.
  *
  * <p>Like {@link Base64Codec}, put it <em>last</em> in a chain. Instances are immutable and
  * thread-safe.
@@ -104,7 +105,7 @@ public final class Base32Codec implements Codec<byte[]> {
   public byte[] decode(byte[] bytes) {
     Objects.requireNonNull(bytes, "bytes must not be null");
     if (bytes.length % CHARS_PER_GROUP != 0) {
-      throw new IllegalArgumentException(
+      throw new InvalidPayloadException(
           "Base32 input length must be a multiple of " + CHARS_PER_GROUP + ": " + bytes.length);
     }
     int end = bytes.length;
@@ -113,7 +114,7 @@ public final class Base32Codec implements Codec<byte[]> {
     }
     int padding = bytes.length - end;
     if (padding > 6 || padding == 5 || padding == 2) {
-      throw new IllegalArgumentException("Invalid Base32 padding");
+      throw new InvalidPayloadException("Invalid Base32 padding");
     }
     ByteArrayOutputStream out = new ByteArrayOutputStream(end * BITS_PER_CHAR / 8);
     int buffer = 0;
@@ -132,7 +133,7 @@ public final class Base32Codec implements Codec<byte[]> {
   private int value(byte c) {
     int v = c >= 0 ? lookup[c] : -1;
     if (v < 0) {
-      throw new IllegalArgumentException("Invalid Base32 character: '" + (char) c + "'");
+      throw new InvalidPayloadException("Invalid Base32 character: '" + (char) c + "'");
     }
     return v;
   }

@@ -18,6 +18,7 @@ package org.jwcarman.codec.transform.encoding;
 import java.util.Base64;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 /**
  * A byte-to-text-safe-byte transform: encodes any bytes as Base64 (RFC 4648) and decodes them back.
@@ -35,7 +36,7 @@ import org.jwcarman.codec.spi.Codec;
  * }</pre>
  *
  * <p>Decoding is strict: input containing characters outside the variant's alphabet is rejected
- * with {@link IllegalArgumentException} rather than decoded to garbage.
+ * with {@link InvalidPayloadException} rather than decoded to garbage.
  *
  * <p>Instances are immutable and thread-safe.
  */
@@ -96,6 +97,10 @@ public final class Base64Codec implements Codec<byte[]> {
   @Override
   public byte[] decode(byte[] bytes) {
     Objects.requireNonNull(bytes, "bytes must not be null");
-    return decoder.decode(bytes);
+    try {
+      return decoder.decode(bytes);
+    } catch (IllegalArgumentException e) {
+      throw new InvalidPayloadException("Input is not valid Base64", e);
+    }
   }
 }

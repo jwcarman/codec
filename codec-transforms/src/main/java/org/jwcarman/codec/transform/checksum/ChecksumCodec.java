@@ -21,10 +21,12 @@ import java.util.function.Supplier;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.TransientCodecException;
 
 /**
  * A {@code Codec<byte[]>} transform that appends a 32-bit checksum (big-endian) on encode and
- * verifies it on decode, rejecting a mismatch with {@link IllegalArgumentException}. It detects
+ * verifies it on decode, rejecting a mismatch with {@link InvalidPayloadException}. It detects
  * accidental corruption — bit rot, a truncated write, a partially overwritten cache entry — so that
  * damaged bytes fail here instead of confusing a parser downstream or decoding to a plausible but
  * wrong value.
@@ -85,7 +87,7 @@ public final class ChecksumCodec implements Codec<byte[]> {
   public byte[] decode(byte[] bytes) {
     Objects.requireNonNull(bytes, "bytes must not be null");
     if (bytes.length < CHECKSUM_LENGTH) {
-      throw new IllegalArgumentException("Input is shorter than a checksum: " + bytes.length);
+      throw new InvalidPayloadException("Input is shorter than a checksum: " + bytes.length);
     }
     int payloadLength = bytes.length - CHECKSUM_LENGTH;
     int expected =
@@ -95,7 +97,7 @@ public final class ChecksumCodec implements Codec<byte[]> {
             | (bytes[payloadLength + 3] & 0xFF);
     int actual = checksumOf(bytes, payloadLength);
     if (actual != expected) {
-      throw new IllegalArgumentException("Checksum mismatch: payload is corrupt");
+      throw new InvalidPayloadException("Checksum mismatch: payload is corrupt");
     }
     return Arrays.copyOf(bytes, payloadLength);
   }
@@ -105,7 +107,7 @@ public final class ChecksumCodec implements Codec<byte[]> {
     checksum.update(bytes, 0, length);
     long value = checksum.getValue();
     if ((value >>> Integer.SIZE) != 0) {
-      throw new IllegalStateException(
+      throw new TransientCodecException(
           checksum.getClass().getName() + " produced a value wider than 32 bits");
     }
     return (int) value;

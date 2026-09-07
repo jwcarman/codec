@@ -18,7 +18,7 @@ package org.jwcarman.codec.transform.encoding;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -87,14 +88,20 @@ class HexCodecTest {
     void rejects_odd_length_input() {
       byte[] odd = "abc".getBytes(US_ASCII);
 
-      assertThatIllegalArgumentException().isThrownBy(() -> HexCodec.lowerCase().decode(odd));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> HexCodec.lowerCase().decode(odd))
+          .withMessage("Input is not valid hex")
+          .withCauseInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void rejects_non_hex_characters() {
       byte[] bad = "zz".getBytes(US_ASCII);
 
-      assertThatIllegalArgumentException().isThrownBy(() -> HexCodec.lowerCase().decode(bad));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> HexCodec.lowerCase().decode(bad))
+          .withMessage("Input is not valid hex")
+          .withCauseInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

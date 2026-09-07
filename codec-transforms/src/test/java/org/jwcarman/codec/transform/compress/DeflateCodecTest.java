@@ -18,13 +18,13 @@ package org.jwcarman.codec.transform.compress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.Deflater;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class DeflateCodecTest {
@@ -81,7 +81,8 @@ class DeflateCodecTest {
     void rejects_non_deflate_input() {
       byte[] garbage = {1, 2, 3, 4};
 
-      assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(garbage));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(garbage));
     }
   }
 
@@ -93,7 +94,7 @@ class DeflateCodecTest {
       byte[] bomb = codec.encode(new byte[100_000]);
       DeflateCodec capped = new DeflateCodec(16);
 
-      assertThatExceptionOfType(IllegalStateException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> capped.decode(bomb))
           .withMessageContaining("16");
     }

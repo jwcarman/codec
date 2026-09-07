@@ -20,9 +20,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.TransientCodecException;
 
 /**
  * Base class for stream-based compression transforms, intended for use with {@link
@@ -53,8 +54,8 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
    *
    * @param maxDecodedSize maximum decoded size in bytes; must be positive. The decoded payload is
    *     returned in a single array, so a value above {@code Integer.MAX_VALUE - 8} is clamped to
-   *     that ceiling: past it the codec throws the documented {@link IllegalStateException} rather
-   *     than an {@link OutOfMemoryError}
+   *     that ceiling: past it the codec throws the documented {@link InvalidPayloadException}
+   *     rather than an {@link OutOfMemoryError}
    * @throws IllegalArgumentException if {@code maxDecodedSize} is not positive
    */
   protected CompressionStreamCodec(long maxDecodedSize) {
@@ -89,7 +90,8 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
     try (OutputStream compress = compressing(out)) {
       compress.write(value);
     } catch (IOException e) {
-      throw new UncheckedIOException("Unable to compress data", e);
+      // A compressor failing on valid input is the dependency's fault, not the value's.
+      throw new TransientCodecException("Unable to compress data", e);
     }
     return out.toByteArray();
   }
@@ -105,14 +107,15 @@ public abstract class CompressionStreamCodec implements Codec<byte[]> {
       while ((read = decompress.read(buffer)) != -1) {
         total += read;
         if (total > maxDecodedSize) {
-          throw new IllegalStateException(
+          // A payload that expands past the cap is hostile input, not a resource problem.
+          throw new InvalidPayloadException(
               "Decoded size exceeds the maximum of " + maxDecodedSize + " bytes");
         }
         out.write(buffer, 0, read);
       }
       return out.toByteArray();
     } catch (IOException e) {
-      throw new UncheckedIOException("Unable to decompress data", e);
+      throw new InvalidPayloadException("Unable to decompress data", e);
     }
   }
 }

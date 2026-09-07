@@ -18,7 +18,7 @@ package org.jwcarman.codec.transform.encoding;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -121,7 +122,7 @@ class Base32CodecTest {
     void rejects_a_length_that_is_not_a_multiple_of_eight(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> Base32Codec.standard().decode(bytes))
           .withMessageContaining("multiple of 8");
     }
@@ -131,7 +132,7 @@ class Base32CodecTest {
     void rejects_padding_lengths_the_rfc_never_produces(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> Base32Codec.standard().decode(bytes))
           .withMessageContaining("padding");
     }
@@ -141,7 +142,7 @@ class Base32CodecTest {
     void rejects_characters_outside_the_alphabet(String bad) {
       byte[] bytes = bad.getBytes(US_ASCII);
 
-      assertThatIllegalArgumentException()
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> Base32Codec.standard().decode(bytes))
           .withMessageContaining("character");
     }
@@ -150,14 +151,16 @@ class Base32CodecTest {
     void rejects_non_ascii_bytes() {
       byte[] bytes = {(byte) 0xC3, (byte) 0xA9, 'A', 'A', 'A', 'A', 'A', 'A'};
 
-      assertThatIllegalArgumentException().isThrownBy(() -> Base32Codec.standard().decode(bytes));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> Base32Codec.standard().decode(bytes));
     }
 
     @Test
     void the_hex_alphabet_rejects_standard_only_letters() {
       byte[] bytes = "MZXW6YTB".getBytes(US_ASCII);
 
-      assertThatIllegalArgumentException().isThrownBy(() -> Base32Codec.hex().decode(bytes));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> Base32Codec.hex().decode(bytes));
     }
 
     @Test

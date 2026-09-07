@@ -20,12 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import java.io.UncheckedIOException;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -95,7 +95,7 @@ class Lz4CodecTest {
     void rejects_non_lz4_input() {
       byte[] notCompressed = "not compressed".getBytes(UTF_8);
 
-      assertThatExceptionOfType(UncheckedIOException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> codec.decode(notCompressed));
     }
 
@@ -104,7 +104,8 @@ class Lz4CodecTest {
       byte[] encoded = codec.encode("the quick brown fox jumps".repeat(20).getBytes(UTF_8));
       encoded[encoded.length - 6] ^= 0x55;
 
-      assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(encoded));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(encoded));
     }
   }
 
@@ -116,7 +117,7 @@ class Lz4CodecTest {
       byte[] bomb = codec.encode(new byte[10_000]);
       Lz4Codec capped = new Lz4Codec(1_000);
 
-      assertThatExceptionOfType(IllegalStateException.class)
+      assertThatExceptionOfType(InvalidPayloadException.class)
           .isThrownBy(() -> capped.decode(bomb))
           .withMessageContaining("exceeds the maximum");
     }

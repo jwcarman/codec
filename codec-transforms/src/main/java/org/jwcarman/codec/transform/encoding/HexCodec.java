@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
 
 /**
  * A byte-to-text-safe-byte transform using hexadecimal (RFC 4648 base16): two ASCII digits per
@@ -28,7 +29,7 @@ import org.jwcarman.codec.spi.Codec;
  *
  * <p>Like {@link Base64Codec}, put it <em>last</em> in a chain. Decoding is strict and
  * case-insensitive: odd-length input or a non-hex character is rejected with {@link
- * IllegalArgumentException}.
+ * InvalidPayloadException}.
  *
  * <p>Instances are immutable and thread-safe.
  */
@@ -67,6 +68,10 @@ public final class HexCodec implements Codec<byte[]> {
   @Override
   public byte[] decode(byte[] bytes) {
     Objects.requireNonNull(bytes, "bytes must not be null");
-    return format.parseHex(new String(bytes, StandardCharsets.US_ASCII));
+    try {
+      return format.parseHex(new String(bytes, StandardCharsets.US_ASCII));
+    } catch (IllegalArgumentException e) {
+      throw new InvalidPayloadException("Input is not valid hex", e);
+    }
   }
 }

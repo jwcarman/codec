@@ -30,7 +30,9 @@ import org.jwcarman.codec.spi.TypeRef;
 public class ProtobufCodecFactory implements CodecFactory {
 
   /** Creates the factory. */
-  public ProtobufCodecFactory() {}
+  public ProtobufCodecFactory() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   @Override
   public <T> Codec<T> create(TypeRef<T> typeRef) {

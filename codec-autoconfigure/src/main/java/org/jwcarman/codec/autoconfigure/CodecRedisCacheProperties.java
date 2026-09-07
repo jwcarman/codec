@@ -31,7 +31,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class CodecRedisCacheProperties {
 
   /** Creates the properties with their defaults. */
-  public CodecRedisCacheProperties() {}
+  public CodecRedisCacheProperties() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /** Whether to configure Redis cache value serialization through codec. */
   private boolean enabled = true;

@@ -33,7 +33,9 @@ import tools.jackson.databind.ObjectMapper;
 public class JacksonCodecAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public JacksonCodecAutoConfiguration() {}
+  public JacksonCodecAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Creates the factory, reusing the application's {@link ObjectMapper} bean when one exists.

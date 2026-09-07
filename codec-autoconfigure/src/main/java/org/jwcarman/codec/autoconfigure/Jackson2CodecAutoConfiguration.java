@@ -33,7 +33,9 @@ import org.springframework.context.annotation.Bean;
 public class Jackson2CodecAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public Jackson2CodecAutoConfiguration() {}
+  public Jackson2CodecAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Creates the factory, reusing the application's Jackson 2.x {@link ObjectMapper} bean when one

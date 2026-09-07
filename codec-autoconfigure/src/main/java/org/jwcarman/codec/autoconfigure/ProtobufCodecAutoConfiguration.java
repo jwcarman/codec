@@ -38,7 +38,9 @@ import org.springframework.context.annotation.Bean;
 public class ProtobufCodecAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public ProtobufCodecAutoConfiguration() {}
+  public ProtobufCodecAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Creates the factory.

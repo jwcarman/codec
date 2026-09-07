@@ -59,7 +59,9 @@ import org.springframework.util.ClassUtils;
 public class CodecRedisCacheAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public CodecRedisCacheAutoConfiguration() {}
+  public CodecRedisCacheAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Customizes the Redis cache manager so cache values are serialized through the codec factory.

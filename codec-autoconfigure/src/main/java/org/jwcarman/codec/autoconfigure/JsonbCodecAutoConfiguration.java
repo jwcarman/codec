@@ -42,7 +42,9 @@ import org.springframework.context.annotation.Bean;
 public class JsonbCodecAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public JsonbCodecAutoConfiguration() {}
+  public JsonbCodecAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Creates the factory, reusing the application's {@link Jsonb} bean when one exists.

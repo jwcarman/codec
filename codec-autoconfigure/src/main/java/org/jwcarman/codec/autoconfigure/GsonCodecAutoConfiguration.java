@@ -34,7 +34,9 @@ import org.springframework.context.annotation.Bean;
 public class GsonCodecAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public GsonCodecAutoConfiguration() {}
+  public GsonCodecAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Creates the factory, reusing the application's {@link Gson} bean when one exists.

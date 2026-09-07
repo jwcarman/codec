@@ -44,7 +44,9 @@ import org.springframework.context.annotation.Bean;
 public class ForyCodecAutoConfiguration {
 
   /** Creates the auto-configuration. */
-  public ForyCodecAutoConfiguration() {}
+  public ForyCodecAutoConfiguration() {
+    // Nothing to initialise: the class has no state of its own.
+  }
 
   /**
    * Creates the factory around the application's {@link ThreadSafeFory} bean.

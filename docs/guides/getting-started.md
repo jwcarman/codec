@@ -116,6 +116,36 @@ Codec<Map<String, Integer>> mapCodec =
 `TypeRef` implements `equals` and `hashCode` on the captured type, so it is safe
 to use as a cache key.
 
+An anonymous subclass only works where the type is spelled out. Inside generic
+code, where the element type is the caller's, build the reference from the
+reference you were given:
+
+```java
+<O> Codec<List<O>> batchCodec(TypeRef<O> element) {
+    return codecFactory.create(TypeRef.listOf(element));
+}
+```
+
+`listOf`, `setOf`, `optionalOf` and `mapOf` cover the JDK collections and nest
+to any depth. For a generic class of your own, `parameterized` takes the class
+and one reference per type parameter; the compiler checks that the class you
+name is the one in the declared type, and the argument count is checked when
+the reference is built:
+
+```java
+record Envelope<O>(String id, O payload) {}
+
+<O> Codec<Envelope<O>> envelopeCodec(TypeRef<O> element) {
+    return codecFactory.create(TypeRef.parameterized(Envelope.class, element));
+}
+```
+
+A built reference equals the same type captured by an anonymous subclass, so a
+factory cache sees one type, not two. The one thing the compiler cannot check is
+a declared type more specific than the class you name (`TypeRef<LinkedList<O>>`
+from `List.class`); that fails on the first decode, so round-trip a
+`parameterized` reference once in a test.
+
 ## Without Spring
 
 Skip the starter and add a backend module directly — no `codec-spring-boot-starter`,

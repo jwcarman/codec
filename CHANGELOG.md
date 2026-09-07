@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TypeRef.listOf`, `setOf`, `optionalOf`, `mapOf` and `parameterized` build a
+  parameterized type reference from the references of its arguments, so generic
+  code can create a `Codec<List<O>>` or `Codec<Envelope<O>>` from a caller's
+  `TypeRef<O>`. A built reference equals the same type captured by an anonymous
+  subclass. `parameterized` takes the class as `Class<? super T>`, so the
+  compiler rejects a class that is not the declared type's; the argument count
+  is checked at construction and primitive arguments are rejected
+
 ## [0.8.0] - 2026-09-07
 
 ### Breaking changes

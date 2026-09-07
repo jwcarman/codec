@@ -154,6 +154,14 @@ class GsonCodecFactoryTest {
   }
 
   @Test
+  void shouldRoundTripAListBuiltFromAnElementTypeRef() {
+    Codec<List<Person>> codec = factory.create(TypeRef.listOf(TypeRef.of(Person.class)));
+    List<Person> people = List.of(new Person("Alice", 30, true), new Person("Bob", 25, false));
+
+    assertThat(codec.decode(codec.encode(people))).isEqualTo(people);
+  }
+
+  @Test
   void shouldRoundTripAParameterizedTypeThroughItsType() {
     Codec<Map<String, List<Integer>>> codec =
         factory.create(new TypeRef<Map<String, List<Integer>>>() {});

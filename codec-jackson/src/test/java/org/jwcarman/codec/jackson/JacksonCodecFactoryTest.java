@@ -101,6 +101,32 @@ class JacksonCodecFactoryTest {
     assertThat(decoded).isEqualTo(original);
   }
 
+  record Envelope<O>(String id, O payload) {}
+
+  @Test
+  void shouldRoundTripAUserGenericTypeBuiltFromAnElementTypeRef() {
+    TypeRef<Person> element = TypeRef.of(Person.class);
+    Codec<Envelope<Person>> codec = factory.create(TypeRef.parameterized(Envelope.class, element));
+    Envelope<Person> original = new Envelope<>("e-1", new Person("Alice", 30, true));
+
+    Envelope<Person> decoded = codec.decode(codec.encode(original));
+
+    assertThat(decoded).isEqualTo(original);
+    assertThat(decoded.payload()).isInstanceOf(Person.class);
+  }
+
+  @Test
+  void shouldRoundTripAListBuiltFromAnElementTypeRef() {
+    TypeRef<Person> element = TypeRef.of(Person.class); // as a caller would receive it
+    Codec<List<Person>> codec = factory.create(TypeRef.listOf(element));
+    List<Person> original = List.of(new Person("Alice", 30, true), new Person("Bob", 25, false));
+
+    List<Person> decoded = codec.decode(codec.encode(original));
+
+    assertThat(decoded).isEqualTo(original);
+    assertThat(decoded.get(0)).isInstanceOf(Person.class);
+  }
+
   @Test
   void shouldHandleEmptyCollections() {
     Codec<List<String>> codec = factory.create(new TypeRef<List<String>>() {});

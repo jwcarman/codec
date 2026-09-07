@@ -88,6 +88,14 @@ class ForyCodecFactoryTest {
     }
 
     @Test
+    void round_trips_a_list_built_from_an_element_type_ref() {
+      Codec<List<Person>> codec = factory.create(TypeRef.listOf(TypeRef.of(Person.class)));
+      List<Person> people = List.of(new Person("Alice", 30, true), new Person("Bob", 41, false));
+
+      assertThat(codec.decode(codec.encode(people))).containsExactlyElementsOf(people);
+    }
+
+    @Test
     void round_trips_a_generic_map_through_type_ref() {
       Codec<Map<String, Person>> codec = factory.create(new TypeRef<Map<String, Person>>() {});
       Map<String, Person> people = Map.of("alice", new Person("Alice", 30, true));

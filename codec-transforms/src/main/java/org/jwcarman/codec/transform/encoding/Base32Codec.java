@@ -64,6 +64,7 @@ public final class Base32Codec implements Codec<byte[]> {
   private static final int GROUP_SYMBOLS = 8;
   private static final int NO_PAD = -1;
   private static final int ASCII_LIMIT = 128;
+  private static final int ASCII_MASK = ASCII_LIMIT - 1;
   private static final byte NOT_A_SYMBOL = -1;
 
   private final byte[] alphabet;
@@ -175,14 +176,17 @@ public final class Base32Codec implements Codec<byte[]> {
     Arrays.fill(lookup, NOT_A_SYMBOL);
     for (int i = 0; i < size; i++) {
       char c = alphabet.charAt(i);
-      if (c >= lookup.length) {
+      if (c >= ASCII_LIMIT) {
         throw new IllegalArgumentException("alphabet symbol must be ASCII: " + describe(c));
       }
-      if (lookup[c] != NOT_A_SYMBOL) {
+      // The guard above already rejects anything outside the table; the mask restates the bound
+      // in a form static analysers can see without reasoning about char ranges.
+      int slot = c & ASCII_MASK;
+      if (lookup[slot] != NOT_A_SYMBOL) {
         throw new IllegalArgumentException("alphabet symbol appears twice: " + describe(c));
       }
       symbols[i] = (byte) c;
-      lookup[c] = (byte) i;
+      lookup[slot] = (byte) i;
     }
     if (pad != NO_PAD && lookup[pad] != NOT_A_SYMBOL) {
       throw new IllegalArgumentException("pad symbol is in the alphabet: " + describe(pad));

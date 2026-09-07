@@ -83,6 +83,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compression claims corrected against the benchmarks: the JDK codecs are
   fastest on payloads under a few hundred bytes, zstd's default level is not
   smaller than gzip on prose, and LZ4-HC is a decode-side optimisation
+- New guide, [Evolving Stored Formats](https://jwcarman.github.io/codec/guides/versioned/):
+  how `codec-versioned` works, a worked upgrade, the fleet rollout order, and
+  what belongs inside the versioned codec versus outside it
 
 ## [0.7.0] - 2026-08-26
 

@@ -87,7 +87,7 @@ both cases `decode` refused the bytes — but they demand opposite responses.
 During a rolling upgrade, instances that have already been upgraded write
 payloads the old instances cannot read. If those were reported as *invalid*, a
 dead-letter policy would discard every one of them. They are not invalid; they
-are ahead of you. That is why [`codec-versioned`](composition.md#versioning-the-format)
+are ahead of you. That is why [`codec-versioned`](versioned.md)
 reports an unregistered version as `UnsupportedFormatException`, why
 [`codec-crypto`](encryption.md#error-taxonomy) reports an unknown format
 version or algorithm id the same way, and why the two families share no parent

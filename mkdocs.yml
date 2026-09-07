@@ -85,6 +85,7 @@ nav:
       - Getting Started: guides/getting-started.md
       - Spring Boot: guides/spring-boot.md
       - Codec Composition: guides/composition.md
+      - Evolving Stored Formats: guides/versioned.md
       - Handling Failures: guides/error-handling.md
       - Jackson Dataformats: guides/dataformats.md
       - Apache Fory: guides/fory.md

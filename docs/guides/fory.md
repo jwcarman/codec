@@ -71,7 +71,7 @@ symmetric — a compatible-mode reader reads both, but a schema-consistent reade
 cannot read compatible-mode bytes — and a future Fory release could change the
 default. If either matters to you, build your own `ThreadSafeFory` with
 the mode named explicitly and hand it to the constructor below; and put a
-[`VersionedCodec`](composition.md#versioning-the-format) in front of it before
+[`VersionedCodec`](versioned.md) in front of it before
 you ever need to change your mind.
 
 ## Bring your own Fory

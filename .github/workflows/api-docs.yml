@@ -149,4 +149,4 @@ jobs:
       - name: Redeploy the docs site
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run docs.yml --ref main
+        run: gh workflow run docs.yml --repo "$GITHUB_REPOSITORY" --ref main

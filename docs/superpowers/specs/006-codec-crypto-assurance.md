@@ -37,8 +37,8 @@ without a flag day. See "Future suites" below.
 
 ### 1.2 Wrap-scheme tag in JceDataKeyProvider
 
-- The wrapped blob becomes `[scheme:1][payload]`; scheme `0x01` = AES-KW
-  (RFC 3394) over the 32-byte DEK, payload 40 bytes, blob 41 bytes.
+- The wrapped blob becomes `[scheme:1][wrapped key]`; scheme `0x01` = AES-KW
+  (RFC 3394) over the 32-byte DEK, AES-KW output 40 bytes, blob 41 bytes.
 - `unwrap` rejects a blob shorter than 2 bytes or with an unknown scheme via
   `DecryptionException.cryptographic` (uniform message).
 - Invisible to `EnvelopeCodec` (the blob stays opaque). Unreleased, so no

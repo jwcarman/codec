@@ -154,8 +154,8 @@ after `SecretKeySpec` copies it, so key material does not linger in a byte
 array beyond its useful lifetime.
 
 **Wrap-scheme tag:** the blob returned as `DataKey.wrapped()` is
-`[scheme:1][wrapped key]` — a one-byte wrap-scheme tag followed by the wrap
-payload. Scheme `0x01` = AES-KW (RFC 3394) over the 32-byte DEK: payload 40
+`[scheme:1][wrapped key]` — a one-byte wrap-scheme tag followed by the wrapped
+key. Scheme `0x01` = AES-KW (RFC 3394) over the 32-byte DEK: AES-KW output 40
 bytes, blob 41 bytes. `unwrap` rejects a blob shorter than 2 bytes or tagged
 with an unrecognized scheme via `DecryptionException.cryptographic` (the
 uniform message) — indistinguishable from any other cryptographic rejection.

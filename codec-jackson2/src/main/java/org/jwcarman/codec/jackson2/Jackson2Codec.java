@@ -19,12 +19,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 
 /**
- * JSON codec backed by a Jackson 2.x {@link ObjectMapper}, wrapping Jackson's checked exceptions in
- * {@link UncheckedIOException}.
+ * JSON codec backed by a Jackson 2.x {@link ObjectMapper}.
  *
  * @param <T> the type this codec converts
  */
@@ -43,7 +43,7 @@ class Jackson2Codec<T> implements Codec<T> {
     try {
       return objectMapper.writeValueAsBytes(value);
     } catch (JsonProcessingException e) {
-      throw new UncheckedIOException("Unable to encode value as JSON", e);
+      throw new InvalidValueException("Unable to encode value as JSON", e);
     }
   }
 
@@ -52,7 +52,7 @@ class Jackson2Codec<T> implements Codec<T> {
     try {
       return objectMapper.readValue(bytes, javaType);
     } catch (IOException e) {
-      throw new UncheckedIOException("Unable to decode JSON", e);
+      throw new InvalidPayloadException("Unable to decode JSON", e);
     }
   }
 }

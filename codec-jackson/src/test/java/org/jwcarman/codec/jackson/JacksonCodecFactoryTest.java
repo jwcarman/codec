@@ -15,7 +15,9 @@
  */
 package org.jwcarman.codec.jackson;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
@@ -27,7 +29,10 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 import org.jwcarman.codec.spi.TypeRef;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 class JacksonCodecFactoryTest {
@@ -150,5 +155,36 @@ class JacksonCodecFactoryTest {
   @Test
   void shouldRejectNullTypeRef() {
     assertThatNullPointerException().isThrownBy(() -> factory.create((TypeRef<Person>) null));
+  }
+
+  /** A bean that refers to itself: Jackson 3 refuses to serialize the cycle. */
+  static final class SelfReferencing {
+    private SelfReferencing next;
+
+    public SelfReferencing getNext() {
+      return next;
+    }
+  }
+
+  @Test
+  void shouldReportAnUnencodableValueAsInvalidValue() {
+    SelfReferencing cycle = new SelfReferencing();
+    cycle.next = cycle;
+    Codec<SelfReferencing> codec = factory.create(SelfReferencing.class);
+
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> codec.encode(cycle))
+        .withMessage("Unable to encode value as JSON")
+        .withCauseInstanceOf(JacksonException.class);
+  }
+
+  @Test
+  void shouldReportMalformedJsonAsInvalidPayload() {
+    Codec<Person> codec = factory.create(Person.class);
+
+    assertThatExceptionOfType(InvalidPayloadException.class)
+        .isThrownBy(() -> codec.decode("not json".getBytes(UTF_8)))
+        .withMessage("Unable to decode JSON")
+        .withCauseInstanceOf(JacksonException.class);
   }
 }

@@ -16,6 +16,9 @@
 package org.jwcarman.codec.jackson;
 
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
 
@@ -36,11 +39,19 @@ class JacksonCodec<T> implements Codec<T> {
 
   @Override
   public byte[] encode(T value) {
-    return objectMapper.writeValueAsBytes(value);
+    try {
+      return objectMapper.writeValueAsBytes(value);
+    } catch (JacksonException e) {
+      throw new InvalidValueException("Unable to encode value as JSON", e);
+    }
   }
 
   @Override
   public T decode(byte[] bytes) {
-    return objectMapper.readValue(bytes, javaType);
+    try {
+      return objectMapper.readValue(bytes, javaType);
+    } catch (JacksonException e) {
+      throw new InvalidPayloadException("Unable to decode JSON", e);
+    }
   }
 }

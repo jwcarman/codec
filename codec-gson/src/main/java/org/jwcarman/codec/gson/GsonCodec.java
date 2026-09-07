@@ -16,9 +16,12 @@
 package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import java.nio.charset.StandardCharsets;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 
 /**
  * JSON codec backed by {@link Gson}, exchanging UTF-8 bytes.
@@ -37,11 +40,19 @@ class GsonCodec<T> implements Codec<T> {
 
   @Override
   public byte[] encode(T value) {
-    return gson.toJson(value).getBytes(StandardCharsets.UTF_8);
+    try {
+      return gson.toJson(value).getBytes(StandardCharsets.UTF_8);
+    } catch (JsonParseException e) {
+      throw new InvalidValueException("Unable to encode value as JSON", e);
+    }
   }
 
   @Override
   public T decode(byte[] bytes) {
-    return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), typeToken);
+    try {
+      return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), typeToken);
+    } catch (JsonParseException e) {
+      throw new InvalidPayloadException("Unable to decode JSON", e);
+    }
   }
 }

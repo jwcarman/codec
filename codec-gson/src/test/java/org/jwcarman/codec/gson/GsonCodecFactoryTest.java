@@ -15,10 +15,19 @@
  */
 package org.jwcarman.codec.gson;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -28,6 +37,8 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 import org.jwcarman.codec.spi.TypeRef;
 
 class GsonCodecFactoryTest {
@@ -150,5 +161,38 @@ class GsonCodecFactoryTest {
   @Test
   void shouldRejectNullTypeRef() {
     assertThatNullPointerException().isThrownBy(() -> factory.create((TypeRef<Person>) null));
+  }
+
+  @Test
+  void shouldReportAFailingAdapterAsInvalidValue() {
+    TypeAdapter<Person> failing =
+        new TypeAdapter<>() {
+          @Override
+          public void write(JsonWriter out, Person value) throws IOException {
+            throw new IOException("adapter refused");
+          }
+
+          @Override
+          public Person read(JsonReader in) {
+            return null;
+          }
+        };
+    Gson gson = new GsonBuilder().registerTypeAdapter(Person.class, failing).create();
+    Codec<Person> codec = new GsonCodecFactory(gson).create(Person.class);
+
+    assertThatExceptionOfType(InvalidValueException.class)
+        .isThrownBy(() -> codec.encode(new Person("Alice", 30, true)))
+        .withMessage("Unable to encode value as JSON")
+        .withCauseInstanceOf(JsonIOException.class);
+  }
+
+  @Test
+  void shouldReportMalformedJsonAsInvalidPayload() {
+    Codec<Person> codec = factory.create(Person.class);
+
+    assertThatExceptionOfType(InvalidPayloadException.class)
+        .isThrownBy(() -> codec.decode("not json".getBytes(UTF_8)))
+        .withMessage("Unable to decode JSON")
+        .withCauseInstanceOf(JsonSyntaxException.class);
   }
 }

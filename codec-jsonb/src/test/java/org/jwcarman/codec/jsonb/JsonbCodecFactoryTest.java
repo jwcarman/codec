@@ -34,6 +34,8 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 import org.jwcarman.codec.spi.TypeRef;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -130,12 +132,32 @@ class JsonbCodecFactoryTest {
   @Nested
   class Failures {
 
+    /** A getter that throws: Yasson reports it as a JsonbException. */
+    public static class ThrowingGetter {
+      public String getBoom() {
+        throw new IllegalStateException("boom");
+      }
+    }
+
     @Test
-    void invalid_json_surfaces_as_a_json_b_exception() {
+    void malformed_json_is_an_invalid_payload() {
       Codec<Person> codec = factory.create(Person.class);
       byte[] notJson = "not json".getBytes(UTF_8);
 
-      assertThatExceptionOfType(JsonbException.class).isThrownBy(() -> codec.decode(notJson));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(notJson))
+          .withMessage("Unable to decode JSON")
+          .withCauseInstanceOf(JsonbException.class);
+    }
+
+    @Test
+    void a_value_the_binding_cannot_serialize_is_an_invalid_value() {
+      Codec<ThrowingGetter> codec = factory.create(ThrowingGetter.class);
+
+      assertThatExceptionOfType(InvalidValueException.class)
+          .isThrownBy(() -> codec.encode(new ThrowingGetter()))
+          .withMessage("Unable to encode value as JSON")
+          .withCauseInstanceOf(JsonbException.class);
     }
 
     @Test

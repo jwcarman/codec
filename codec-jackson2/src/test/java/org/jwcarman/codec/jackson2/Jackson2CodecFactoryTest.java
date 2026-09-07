@@ -19,8 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.UncheckedIOException;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,8 @@ import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 import org.jwcarman.codec.spi.TypeRef;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -91,12 +94,14 @@ class Jackson2CodecFactoryTest {
   class Encoding_unsupported_values {
 
     @Test
-    void wraps_jackson_failures_in_unchecked_io_exception() {
+    void reports_an_unencodable_value_as_invalid_value() {
       Codec<Object> codec = factory.create(Object.class);
       Object unserializable = new Object();
 
-      assertThatExceptionOfType(UncheckedIOException.class)
-          .isThrownBy(() -> codec.encode(unserializable));
+      assertThatExceptionOfType(InvalidValueException.class)
+          .isThrownBy(() -> codec.encode(unserializable))
+          .withMessage("Unable to encode value as JSON")
+          .withCauseInstanceOf(JsonProcessingException.class);
     }
   }
 
@@ -104,11 +109,14 @@ class Jackson2CodecFactoryTest {
   class Decoding_invalid_input {
 
     @Test
-    void wraps_jackson_failures_in_unchecked_io_exception() {
+    void reports_malformed_json_as_invalid_payload() {
       Codec<Person> codec = factory.create(Person.class);
       byte[] garbage = "not json".getBytes(StandardCharsets.UTF_8);
 
-      assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> codec.decode(garbage));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(garbage))
+          .withMessage("Unable to decode JSON")
+          .withCauseInstanceOf(IOException.class);
     }
   }
 

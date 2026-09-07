@@ -15,16 +15,19 @@
  */
 package org.jwcarman.codec.jsonb;
 
+import jakarta.json.JsonException;
 import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Type;
 import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.spi.InvalidValueException;
 
 /**
  * A codec that serializes a single runtime type through a {@link Jsonb} instance. Encoding writes
- * UTF-8 JSON bytes; decoding reads them back as the codec's type. Failures surface as JSON-B's own
- * {@link jakarta.json.bind.JsonbException}.
+ * UTF-8 JSON bytes; decoding reads them back as the codec's type.
  */
 class JsonbCodec<T> implements Codec<T> {
 
@@ -39,12 +42,21 @@ class JsonbCodec<T> implements Codec<T> {
   @Override
   public byte[] encode(T value) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    jsonb.toJson(value, type, out);
+    try {
+      jsonb.toJson(value, type, out);
+    } catch (JsonbException e) {
+      throw new InvalidValueException("Unable to encode value as JSON", e);
+    }
     return out.toByteArray();
   }
 
   @Override
   public T decode(byte[] bytes) {
-    return jsonb.fromJson(new ByteArrayInputStream(bytes), type);
+    try {
+      return jsonb.fromJson(new ByteArrayInputStream(bytes), type);
+    } catch (JsonbException | JsonException e) {
+      // Yasson wraps JSON-P's parse failure in JsonbException; Johnzon lets it through as-is.
+      throw new InvalidPayloadException("Unable to decode JSON", e);
+    }
   }
 }

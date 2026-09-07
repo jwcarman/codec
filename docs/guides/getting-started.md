@@ -48,7 +48,7 @@ CBOR, Smile, YAML, and XML — see [Jackson Dataformats](dataformats.md).
 Codec is tested against [Eclipse Yasson](https://github.com/eclipse-ee4j/yasson),
 the reference implementation; Apache Johnzon also works. Either way, malformed
 input surfaces as `InvalidPayloadException` with the provider's own exception
-as the cause — see [Handling failures](error-handling.md).
+as the cause — see [Handling Failures](error-handling.md).
 
 ## Use it
 

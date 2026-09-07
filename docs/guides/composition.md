@@ -102,7 +102,7 @@ new DeflateCodec(Deflater.BEST_COMPRESSION, maxDecodedSize);
 
 All four transforms refuse to decode payloads that expand beyond a cap — 64 MiB
 by default — throwing `InvalidPayloadException` (see
-[Handling failures](error-handling.md)) instead of exhausting memory on
+[Handling Failures](error-handling.md)) instead of exhausting memory on
 hostile input. Pass a byte limit to the constructor to tune it:
 
 ```java
@@ -157,7 +157,7 @@ lengths, padding, or characters.
 
 `ChecksumCodec` appends a 32-bit checksum on encode and verifies it on decode,
 rejecting a mismatch with `InvalidPayloadException` (see
-[Handling failures](error-handling.md)). It catches accidental
+[Handling Failures](error-handling.md)). It catches accidental
 damage — bit rot, a truncated write, a partially overwritten cache entry — so
 corrupt bytes fail here rather than confusing a parser or decoding to a
 plausible but wrong value:
@@ -256,7 +256,7 @@ raises `UnknownVersionException` — an `UnsupportedFormatException` carrying th
 offending version — which during a rollout means "written by a newer deploy":
 hold or route it, never quarantine it. A buffer that is not versioned at all
 raises `VersionedFormatException`, an `InvalidPayloadException`. The two share
-no parent below `CodecException`; see [Handling failures](error-handling.md).
+no parent below `CodecException`; see [Handling Failures](error-handling.md).
 
 Because the builder is generic over `Codec<T>`, versioning a *transform* is the
 `T = byte[]` case:

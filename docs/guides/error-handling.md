@@ -16,8 +16,9 @@ Person decodeOrNull(byte[] bytes) {
         return null;
     } catch (UnsupportedFormatException e) {
         // The bytes are fine; this reader is too old for them. Hold the record,
-        // route it to a newer reader, or upgrade. Never quarantine.
-        return null;
+        // route it to a newer reader, or upgrade. Never quarantine: let it
+        // propagate so the caller can park the record instead of dropping it.
+        throw e;
     } catch (TransientCodecException e) {
         // Something the codec depends on failed — a key service, a JCE provider.
         // The input is not at fault. Retry with backoff, or alert on infrastructure.
@@ -123,25 +124,35 @@ consumer.subscribe(List.of("orders"));
 
 while (running) {
     ConsumerRecords<String, byte[]> records = consumer.poll(Duration.ofSeconds(1));
+    Map<TopicPartition, OffsetAndMetadata> processed = new HashMap<>();
     for (ConsumerRecord<String, byte[]> record : records) {
+        TopicPartition partition = new TopicPartition(record.topic(), record.partition());
         try {
             Order order = codec.decode(record.value());
             process(order);
         } catch (InvalidPayloadException e) {
-            // Corrupt or forged — quarantine it and move on.
-            dlqProducer.send(new ProducerRecord<>("orders-dlq", record.value()));
+            // Corrupt or forged — quarantine it (keep the key for partition
+            // affinity) and count it processed; move on to the next record.
+            dlqProducer.send(new ProducerRecord<>("orders-dlq", record.key(), record.value()));
         } catch (UnsupportedFormatException e) {
-            // A newer writer is ahead of this consumer; park it and alert,
-            // do not skip it.
-            consumer.pause(consumer.assignment());
+            // poll() already advanced our position past this whole batch, so an
+            // unqualified commitSync() would skip whatever we seek back to here.
+            // Rewind to this record, park the partition, and stop the batch: a
+            // newer writer is ahead of us, so nothing after this is safe either.
+            consumer.seek(partition, record.offset());
+            consumer.pause(List.of(partition));
             alert("consumer behind on format version", e);
+            break;
         } catch (TransientCodecException e) {
-            // The codec's dependency failed, not this record. Back off and
-            // retry the same record on the next poll.
+            // Same reason: rewind before the commit, stop the batch, and retry
+            // this record (and everything after it) on the next poll.
+            consumer.seek(partition, record.offset());
             backOff();
+            break;
         }
+        processed.put(partition, new OffsetAndMetadata(record.offset() + 1));
     }
-    consumer.commitSync();
+    consumer.commitSync(processed);
 }
 ```
 

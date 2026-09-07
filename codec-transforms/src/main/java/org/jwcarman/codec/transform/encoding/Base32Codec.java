@@ -17,6 +17,7 @@ package org.jwcarman.codec.transform.encoding;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.spi.InvalidPayloadException;
@@ -38,7 +39,9 @@ import org.jwcarman.codec.spi.InvalidPayloadException;
  * a pad symbol before the end, or non-zero trailing bits in the final symbol is rejected with
  * {@link InvalidPayloadException}. Canonical decoding gives every value exactly one encoded form,
  * so encoded strings can be compared, deduplicated and signed (RFC 4648 §12). Lower-case input is
- * an opt-in: {@code Base32Codec.standard().caseInsensitive()}.
+ * an opt-in: {@link #caseInsensitive()}. {@link #aliasing(Map)} accepts extra characters as named
+ * symbols; {@link #crockford()} uses both, and {@link #zBase32()} and {@link #geohash()} are
+ * further strict presets.
  *
  * <p>Like {@link Base64Codec}, put it <em>last</em> in a chain. Instances are immutable and
  * thread-safe.
@@ -48,6 +51,11 @@ public final class Base32Codec implements Codec<byte[]> {
   private static final String STANDARD_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   private static final String HEX_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
   private static final char RFC_PAD = '=';
+  private static final String CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  private static final Map<Character, Character> CROCKFORD_ALIASES =
+      Map.of('I', '1', 'i', '1', 'L', '1', 'l', '1', 'O', '0', 'o', '0');
+  private static final String Z_BASE_32_ALPHABET = "ybndrfg8ejkmcpqxot1uwisza345h769";
+  private static final String GEOHASH_ALPHABET = "0123456789bcdefghjkmnpqrstuvwxyz";
 
   private static final int ALPHABET_SIZE = 32;
   private static final int MASK = 0x1F;
@@ -87,6 +95,40 @@ public final class Base32Codec implements Codec<byte[]> {
    */
   public static Base32Codec hex() {
     return of(HEX_ALPHABET, RFC_PAD);
+  }
+
+  /**
+   * Crockford's alphabet ({@code 0-9A-Z} without {@code I}, {@code L}, {@code O}, {@code U}), the
+   * encoding of ULIDs: no padding, and decoding that folds case and reads {@code I} and {@code L}
+   * as {@code 1} and {@code O} as {@code 0}. Crockford's optional check symbol and hyphens are not
+   * accepted.
+   *
+   * @return a codec for Crockford Base32
+   */
+  public static Base32Codec crockford() {
+    return of(CROCKFORD_ALPHABET).caseInsensitive().aliasing(CROCKFORD_ALIASES);
+  }
+
+  /**
+   * z-base-32 ({@code ybndrfg8ejkmcpqxot1uwisza345h769}), the alphabet chosen for ease of
+   * handwriting and reading aloud, as used by Tahoe-LAFS and Phil Zimmermann's ZRTP: lower case, no
+   * padding, strict decoding.
+   *
+   * @return a codec for z-base-32
+   */
+  public static Base32Codec zBase32() {
+    return of(Z_BASE_32_ALPHABET);
+  }
+
+  /**
+   * The geohash alphabet ({@code 0-9b-z} without {@code a}, {@code i}, {@code l}, {@code o}): lower
+   * case, no padding, strict decoding. Use {@link #caseInsensitive()} to accept upper-case
+   * geohashes.
+   *
+   * @return a codec for the geohash alphabet
+   */
+  public static Base32Codec geohash() {
+    return of(GEOHASH_ALPHABET);
   }
 
   /**
@@ -154,6 +196,76 @@ public final class Base32Codec implements Codec<byte[]> {
    */
   public String alphabet() {
     return new String(alphabet, StandardCharsets.US_ASCII);
+  }
+
+  /**
+   * The same alphabet and padding, decoding without regard to letter case: {@code a} and {@code A}
+   * both read as whichever of them is in the alphabet. Encoding is unchanged and still emits the
+   * alphabet's symbols exactly. The original codec is unaffected.
+   *
+   * @return a codec that folds case on decode
+   * @throws IllegalArgumentException if two alphabet symbols differ only by case, or the pad symbol
+   *     differs from an alphabet symbol only by case, so folding would be ambiguous
+   */
+  public Base32Codec caseInsensitive() {
+    byte[] folded = lookup.clone();
+    for (int i = 0; i < alphabet.length; i++) {
+      char symbol = (char) alphabet[i];
+      char other =
+          Character.isUpperCase(symbol)
+              ? Character.toLowerCase(symbol)
+              : Character.toUpperCase(symbol);
+      if (other == symbol) {
+        continue;
+      }
+      if (other == pad) {
+        throw new IllegalArgumentException(
+            "pad symbol " + describe(other) + " differs from a symbol only by case");
+      }
+      if (folded[other] != NOT_A_SYMBOL && folded[other] != i) {
+        throw new IllegalArgumentException(
+            "case folding would make " + describe(other) + " ambiguous");
+      }
+      folded[other] = (byte) i;
+    }
+    return new Base32Codec(alphabet, folded, pad);
+  }
+
+  /**
+   * The same codec, additionally reading each key of {@code aliases} as the alphabet symbol it
+   * names — Crockford's {@code I}, {@code L} → {@code 1} and {@code O} → {@code 0}, for example.
+   * Aliases are exact characters: to accept both cases of an alias, list both. Encoding is
+   * unchanged. The original codec is unaffected.
+   *
+   * @param aliases characters to accept on decode, each mapped to the alphabet symbol it stands for
+   * @return a codec that also accepts the aliases
+   * @throws NullPointerException if {@code aliases} is null
+   * @throws IllegalArgumentException if an alias is not ASCII, is the pad symbol, or is already
+   *     accepted (an alphabet symbol, a folded case, or an earlier alias); or if a target is not an
+   *     alphabet symbol
+   */
+  public Base32Codec aliasing(Map<Character, Character> aliases) {
+    Objects.requireNonNull(aliases, "aliases must not be null");
+    byte[] aliased = lookup.clone();
+    for (Map.Entry<Character, Character> alias : aliases.entrySet()) {
+      char from = alias.getKey();
+      char to = alias.getValue();
+      if (from >= ASCII_LIMIT) {
+        throw new IllegalArgumentException("alias must be ASCII: " + describe(from));
+      }
+      if (from == pad) {
+        throw new IllegalArgumentException("alias is the pad symbol: " + describe(from));
+      }
+      if (aliased[from] != NOT_A_SYMBOL) {
+        throw new IllegalArgumentException("alias is already a symbol: " + describe(from));
+      }
+      if (to >= ASCII_LIMIT || lookup[to] == NOT_A_SYMBOL || alphabet[lookup[to]] != to) {
+        throw new IllegalArgumentException(
+            "alias target is not an alphabet symbol: " + describe(to));
+      }
+      aliased[from] = lookup[to];
+    }
+    return new Base32Codec(alphabet, aliased, pad);
   }
 
   @Override

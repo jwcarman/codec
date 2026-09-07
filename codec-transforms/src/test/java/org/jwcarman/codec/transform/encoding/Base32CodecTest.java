@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import java.util.Map;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -417,6 +418,228 @@ class Base32CodecTest {
 
       assertThat(new String(encoded, US_ASCII)).matches("[A-Z2-7]+=*");
       assertThat(chain.decode(encoded)).isEqualTo(input);
+    }
+  }
+
+  @Nested
+  class Leniency {
+
+    final Base32Codec strict = Base32Codec.standard();
+
+    @Test
+    void case_insensitive_decoding_accepts_either_case_and_encodes_unchanged() {
+      Base32Codec lenient = strict.caseInsensitive();
+
+      assertThat(lenient.decode(ascii("mzxw6ytboi======"))).isEqualTo("foobar".getBytes(UTF_8));
+      assertThat(lenient.decode(ascii("MZXW6YTBOI======"))).isEqualTo("foobar".getBytes(UTF_8));
+      assertThat(lenient.encode("foobar".getBytes(UTF_8))).isEqualTo(ascii("MZXW6YTBOI======"));
+    }
+
+    @Test
+    void case_insensitive_folds_a_lower_case_alphabet_upwards() {
+      Base32Codec lenient = Base32Codec.of("abcdefghijklmnopqrstuvwxyz234567").caseInsensitive();
+
+      assertThat(lenient.decode(ascii("MZXW6YTB"))).isEqualTo("fooba".getBytes(UTF_8));
+    }
+
+    @Test
+    void case_insensitive_leaves_the_original_codec_strict() {
+      strict.caseInsensitive();
+      byte[] bytes = ascii("mzxw6ytboi======");
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> strict.decode(bytes));
+    }
+
+    @Test
+    void case_insensitive_rejects_an_alphabet_with_both_cases_of_a_letter() {
+      Base32Codec mixed = Base32Codec.of("aAbcdefghijklmnopqrstuvwxyz23456");
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(mixed::caseInsensitive)
+          .withMessageContaining("ambiguous")
+          .withMessageContaining("'A'");
+    }
+
+    @Test
+    void case_insensitive_rejects_a_pad_that_is_the_other_case_of_a_symbol() {
+      Base32Codec codec = Base32Codec.of("abcdefghijklmnopqrstuvwxyz234567", 'A');
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(codec::caseInsensitive)
+          .withMessageContaining("pad")
+          .withMessageContaining("'A'");
+    }
+
+    @Test
+    void aliases_map_extra_characters_onto_alphabet_symbols() {
+      Base32Codec lenient = strict.aliasing(Map.of('0', 'O', '1', 'I'));
+
+      assertThat(lenient.decode(ascii("0AAAAAAA"))).isEqualTo(strict.decode(ascii("OAAAAAAA")));
+      assertThat(lenient.decode(ascii("1AAAAAAA"))).isEqualTo(strict.decode(ascii("IAAAAAAA")));
+      assertThat(lenient.encode(strict.decode(ascii("OAAAAAAA")))).isEqualTo(ascii("OAAAAAAA"));
+    }
+
+    @Test
+    void aliases_leave_the_original_codec_strict() {
+      strict.aliasing(Map.of('0', 'O'));
+      byte[] bytes = ascii("0AAAAAAA");
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> strict.decode(bytes));
+    }
+
+    @Test
+    void aliasing_rejects_a_null_map() {
+      assertThatNullPointerException().isThrownBy(() -> strict.aliasing(null));
+    }
+
+    @Test
+    void aliasing_rejects_a_non_ascii_alias() {
+      Map<Character, Character> aliases = Map.of('é', 'E');
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> strict.aliasing(aliases))
+          .withMessageContaining("ASCII")
+          .withMessageContaining("U+00E9");
+    }
+
+    @Test
+    void aliasing_rejects_an_alias_that_is_already_accepted() {
+      Map<Character, Character> inAlphabet = Map.of('A', 'B');
+      Map<Character, Character> alreadyFolded = Map.of('a', 'B');
+      Base32Codec folded = strict.caseInsensitive();
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> strict.aliasing(inAlphabet))
+          .withMessageContaining("already")
+          .withMessageContaining("'A'");
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> folded.aliasing(alreadyFolded))
+          .withMessageContaining("already")
+          .withMessageContaining("'a'");
+    }
+
+    @Test
+    void aliasing_rejects_the_pad_symbol_as_an_alias() {
+      Map<Character, Character> aliases = Map.of('=', 'A');
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> strict.aliasing(aliases))
+          .withMessageContaining("pad")
+          .withMessageContaining("'='");
+    }
+
+    @Test
+    void aliasing_rejects_a_target_that_is_not_an_alphabet_symbol() {
+      Map<Character, Character> notASymbol = Map.of('0', '!');
+      Map<Character, Character> nonAscii = Map.of('0', 'é');
+      Map<Character, Character> foldedNotCanonical = Map.of('0', 'a');
+      Base32Codec folded = strict.caseInsensitive();
+
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> strict.aliasing(notASymbol))
+          .withMessageContaining("target")
+          .withMessageContaining("'!'");
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> strict.aliasing(nonAscii))
+          .withMessageContaining("target");
+      assertThatIllegalArgumentException()
+          .isThrownBy(() -> folded.aliasing(foldedNotCanonical))
+          .withMessageContaining("target")
+          .withMessageContaining("'a'");
+    }
+  }
+
+  @Nested
+  class Crockford {
+
+    final Base32Codec codec = Base32Codec.crockford();
+
+    @Test
+    void uses_the_crockford_alphabet_without_padding() {
+      assertThat(codec.alphabet()).isEqualTo("0123456789ABCDEFGHJKMNPQRSTVWXYZ");
+      assertThat(new String(codec.encode("foobar".getBytes(UTF_8)), US_ASCII))
+          .isEqualTo("CSQPYRK1E8");
+      assertThat(new String(codec.encode("f".getBytes(UTF_8)), US_ASCII)).isEqualTo("CR");
+    }
+
+    @Test
+    void decodes_case_insensitively() {
+      assertThat(codec.decode(ascii("csqpyrk1e8"))).isEqualTo("foobar".getBytes(UTF_8));
+    }
+
+    @ParameterizedTest(name = "reads {0} as {1}")
+    @CsvSource({"I, 1", "i, 1", "L, 1", "l, 1", "O, 0", "o, 0"})
+    void reads_the_confusable_letters_as_the_digits_they_resemble(String alias, String digit) {
+      byte[] viaAlias = codec.decode(ascii(alias + "0"));
+      byte[] viaDigit = codec.decode(ascii(digit + "0"));
+
+      assertThat(viaAlias).isEqualTo(viaDigit);
+    }
+
+    @ParameterizedTest(name = "rejects \"{0}\"")
+    @ValueSource(strings = {"U0", "u0", "*0", "~0", "$0", "=0"})
+    void rejects_u_and_the_check_symbols(String bad) {
+      byte[] bytes = ascii(bad);
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("character");
+    }
+
+    @Test
+    void rejects_hyphens() {
+      byte[] bytes = ascii("CSQPYRK1E8-A");
+
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(bytes))
+          .withMessageContaining("'-'");
+    }
+
+    @Test
+    void round_trips_every_length_up_to_a_group_boundary() {
+      for (int length = 0; length <= 41; length++) {
+        byte[] input = new byte[length];
+        for (int i = 0; i < length; i++) {
+          input[i] = (byte) (i * 91 + length);
+        }
+
+        assertThat(codec.decode(codec.encode(input))).isEqualTo(input);
+      }
+    }
+  }
+
+  @Nested
+  class Other_presets {
+
+    @Test
+    void z_base_32_is_unpadded_and_strict() {
+      Base32Codec codec = Base32Codec.zBase32();
+      byte[] upper = ascii("C1ZS6MN1E8");
+
+      assertThat(codec.alphabet()).isEqualTo("ybndrfg8ejkmcpqxot1uwisza345h769");
+      assertThat(new String(codec.encode("foobar".getBytes(UTF_8)), US_ASCII))
+          .isEqualTo("c3zs6aubqe");
+      assertThat(codec.decode(ascii("c3zs6aubqe"))).isEqualTo("foobar".getBytes(UTF_8));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(upper))
+          .withMessageContaining("character");
+    }
+
+    @Test
+    void geohash_is_unpadded_and_strict() {
+      Base32Codec codec = Base32Codec.geohash();
+      byte[] upper = ascii("DTRQYSM1F8");
+
+      assertThat(codec.alphabet()).isEqualTo("0123456789bcdefghjkmnpqrstuvwxyz");
+      assertThat(new String(codec.encode("foobar".getBytes(UTF_8)), US_ASCII))
+          .isEqualTo("dtrqysm1f8");
+      assertThat(codec.decode(ascii("dtrqysm1f8"))).isEqualTo("foobar".getBytes(UTF_8));
+      assertThatExceptionOfType(InvalidPayloadException.class)
+          .isThrownBy(() -> codec.decode(upper))
+          .withMessageContaining("character");
+      assertThat(codec.caseInsensitive().decode(upper)).isEqualTo("foobar".getBytes(UTF_8));
     }
   }
 }

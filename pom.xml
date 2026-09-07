@@ -87,7 +87,7 @@
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
         <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
         <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
-        <versions.plugin.version>2.18.0</versions.plugin.version>
+        <versions.plugin.version>2.21.0</versions.plugin.version>
         <versions.plugin.version>2.18.0</versions.plugin.version>
 
         <!-- License Header Configuration -->

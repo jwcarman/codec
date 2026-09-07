@@ -175,7 +175,7 @@ public final class Base32Codec implements Codec<byte[]> {
     Arrays.fill(lookup, NOT_A_SYMBOL);
     for (int i = 0; i < size; i++) {
       char c = alphabet.charAt(i);
-      if (c >= ASCII_LIMIT) {
+      if (c >= lookup.length) {
         throw new IllegalArgumentException("alphabet symbol must be ASCII: " + describe(c));
       }
       if (lookup[c] != NOT_A_SYMBOL) {

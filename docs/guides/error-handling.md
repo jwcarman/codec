@@ -107,64 +107,39 @@ anything; that is yours.
 
 The adapters propagate too. [`codec-kafka`](kafka.md)'s deserializer and
 [`codec-spring-data-redis`](redis.md)'s serializer let `CodecException` through
-unchanged; Kafka itself wraps any deserializer failure in
-`RecordDeserializationException`, and Spring's cache layer handles
-`RuntimeException`. See [In practice](#in-practice) below for both.
+unchanged, families and all — see [In practice](#in-practice) below for both.
 
 ## In practice
 
-A Kafka consumer decoding manually (value type `byte[]`, decoded in the loop
-rather than in the deserializer) can route each family to the response it
-implies without ever inspecting a message body:
+A Kafka consumer decoding records manually shows where each catch sits around
+the codec call:
 
 ```java
-Consumer<String, byte[]> consumer =
-    new KafkaConsumer<>(config, new StringDeserializer(), new ByteArrayDeserializer());
-consumer.subscribe(List.of("orders"));
-
-while (running) {
-    ConsumerRecords<String, byte[]> records = consumer.poll(Duration.ofSeconds(1));
-    Map<TopicPartition, OffsetAndMetadata> processed = new HashMap<>();
-    for (ConsumerRecord<String, byte[]> record : records) {
-        TopicPartition partition = new TopicPartition(record.topic(), record.partition());
-        try {
-            Order order = codec.decode(record.value());
-            process(order);
-        } catch (InvalidPayloadException e) {
-            // Corrupt or forged — quarantine it (keep the key for partition
-            // affinity) and count it processed; move on to the next record.
-            dlqProducer.send(new ProducerRecord<>("orders-dlq", record.key(), record.value()));
-        } catch (UnsupportedFormatException e) {
-            // poll() already advanced our position past this whole batch, so an
-            // unqualified commitSync() would skip whatever we seek back to here.
-            // Rewind to this record, park the partition, and stop the batch: a
-            // newer writer is ahead of us, so nothing after this is safe either.
-            consumer.seek(partition, record.offset());
-            consumer.pause(List.of(partition));
-            alert("consumer behind on format version", e);
-            break;
-        } catch (TransientCodecException e) {
-            // Same reason: rewind before the commit, stop the batch, and retry
-            // this record (and everything after it) on the next poll.
-            consumer.seek(partition, record.offset());
-            backOff();
-            break;
-        }
-        processed.put(partition, new OffsetAndMetadata(record.offset() + 1));
+for (ConsumerRecord<String, byte[]> record : records) {
+    try {
+        Order order = codec.decode(record.value());
+        process(order);
+    } catch (InvalidPayloadException e) {
+        // Poison record: send it to a dead-letter topic and move on.
+    } catch (UnsupportedFormatException e) {
+        // A newer writer is ahead of this consumer: park the record, alert,
+        // do not skip it.
+    } catch (TransientCodecException e) {
+        // Retry the same record with backoff.
     }
-    consumer.commitSync(processed);
 }
 ```
 
-The cache case works the same way in spirit but the codec adapter itself takes
-no position: `codec-spring-data-redis`'s `CodecRedisSerializer` lets any
-`CodecException` through unchanged, so it is the `RedisCache`'s
-`CacheErrorHandler` that decides what happens next. Treating
-`InvalidPayloadException` as a miss — log it, return nothing, let the caller
-recompute the value — is reasonable, since a corrupted entry is not the
-caller's fault; but a `TransientCodecException` should be left to propagate as
-an error rather than swallowed as a miss, or a KMS outage will look like an
-empty cache instead of a failure worth alerting on.
+Dead-lettering a record, parking a partition, and retrying without losing an
+offset are Kafka's concerns, not the codec's; see [Apache Kafka](kafka.md) for
+how `codec-kafka`'s `Deserializer` plugs a codec into a consumer.
+
+The cache case is the same shape: `codec-spring-data-redis`'s
+`CodecRedisSerializer` lets any `CodecException` through unchanged, so a
+`CacheErrorHandler` decides what happens next. Treating `InvalidPayloadException`
+as a miss is reasonable — a corrupted entry is not the caller's fault — but a
+`TransientCodecException` should propagate as an error, or a KMS outage looks
+like an empty cache.
 
 ## What each module throws
 

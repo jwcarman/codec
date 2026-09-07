@@ -18,14 +18,13 @@ name: Docs
 
 on:
   push:
-    branches: [main, api-docs]
+    branches: [main]
     paths:
       - 'docs/**'
       - '!docs/superpowers/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
-      # The API docs workflow pushes each release's Javadoc to the api-docs branch.
-      - 'api/**'
+  # The API docs workflow dispatches this workflow after it updates the api-docs branch.
   workflow_dispatch:
 
 concurrency:

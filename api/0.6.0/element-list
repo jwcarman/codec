@@ -1,0 +1,11 @@
+org.jwcarman.codec.autoconfigure
+org.jwcarman.codec.crypto
+org.jwcarman.codec.fory
+org.jwcarman.codec.gson
+org.jwcarman.codec.jackson
+org.jwcarman.codec.jackson2
+org.jwcarman.codec.jsonb
+org.jwcarman.codec.protobuf
+org.jwcarman.codec.spi
+org.jwcarman.codec.transform
+org.jwcarman.codec.zstd

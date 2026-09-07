@@ -46,6 +46,8 @@ package org.jwcarman.codec.spi;
  */
 public class CodecException extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates a codec failure with the given message; for subclasses.
    *

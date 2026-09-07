@@ -118,13 +118,16 @@ class JsonbCodecFactoryTest {
 
     @Test
     void honors_the_supplied_configuration() throws Exception {
-      try (Jsonb formatted = JsonbBuilder.create(new JsonbConfig().withFormatting(true))) {
+      Jsonb formatted = JsonbBuilder.create(new JsonbConfig().withFormatting(true));
+      try {
         byte[] encoded =
             new JsonbCodecFactory(formatted)
                 .create(Person.class)
                 .encode(new Person("Alice", 30, true));
 
         assertThat(new String(encoded, UTF_8)).contains("\n");
+      } finally {
+        formatted.close();
       }
     }
   }

@@ -106,7 +106,9 @@ class ProtobufCodecFactoryTest {
         .hasMessageContaining("do not support parameterized types");
   }
 
-  abstract static class BrokenMessage extends GeneratedMessage {}
+  abstract static class BrokenMessage extends GeneratedMessage {
+    private static final long serialVersionUID = 1L;
+  }
 
   @Test
   void shouldThrowWhenParserReflectionFails() {

@@ -29,6 +29,8 @@ import org.jwcarman.codec.spi.InvalidPayloadException;
  */
 public class VersionedFormatException extends InvalidPayloadException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates an exception with the given message.
    *

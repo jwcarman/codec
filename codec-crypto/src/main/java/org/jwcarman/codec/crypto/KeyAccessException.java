@@ -31,6 +31,8 @@ import org.jwcarman.codec.spi.TransientCodecException;
  */
 public class KeyAccessException extends TransientCodecException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates a key-infrastructure availability failure.
    *

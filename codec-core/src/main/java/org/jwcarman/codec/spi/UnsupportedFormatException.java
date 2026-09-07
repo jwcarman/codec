@@ -28,6 +28,8 @@ package org.jwcarman.codec.spi;
  */
 public class UnsupportedFormatException extends CodecException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates the exception.
    *

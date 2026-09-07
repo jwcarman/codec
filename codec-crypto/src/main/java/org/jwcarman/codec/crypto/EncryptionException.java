@@ -27,6 +27,8 @@ import org.jwcarman.codec.spi.TransientCodecException;
  */
 public class EncryptionException extends TransientCodecException {
 
+  private static final long serialVersionUID = 1L;
+
   /**
    * Creates an encode-side failure.
    *

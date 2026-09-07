@@ -29,6 +29,8 @@ import org.jwcarman.codec.spi.UnsupportedFormatException;
  */
 public class UnknownVersionException extends UnsupportedFormatException {
 
+  private static final long serialVersionUID = 1L;
+
   private final int version;
 
   /**

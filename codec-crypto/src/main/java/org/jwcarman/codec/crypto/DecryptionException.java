@@ -39,6 +39,8 @@ import org.jwcarman.codec.spi.InvalidPayloadException;
  */
 public class DecryptionException extends InvalidPayloadException {
 
+  private static final long serialVersionUID = 1L;
+
   private static final String CRYPTOGRAPHIC_FAILURE = "Unable to decrypt data";
 
   /**

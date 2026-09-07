@@ -149,6 +149,21 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${compiler.plugin.version}</version>
+                    <configuration>
+                        <showWarnings>true</showWarnings>
+                        <compilerArgs>
+                            <!-- Every lint category javac has, as errors, except:
+                                 - processing: "no processor claimed these annotations" from the JMH
+                                   annotation processor in codec-benchmarks; no defect semantics.
+                                 - unchecked: deliberately off. The one unchecked cast in the codebase
+                                   is TypeRef.rawClass(), the type-token bridge the type system cannot
+                                   express, and Java cannot write an unchecked cast without a warning.
+                                   Every other cast is a checked Class.cast or none. See spec 009 and
+                                   CLAUDE.md. -->
+                            <arg>-Xlint:all,-processing,-unchecked</arg>
+                            <arg>-Werror</arg>
+                        </compilerArgs>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

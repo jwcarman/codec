@@ -18,6 +18,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `org.jwcarman.codec.spi` to `org.jwcarman.codec`. No type, member or
   behaviour changed, and the Automatic-Module-Name is unchanged
 
+### Fixed
+- **`TypeRef` captured the wrong type argument through an indirect subclass.**
+  The constructor read the immediate superclass's first type argument, which is
+  only `TypeRef`'s `T` when the subclass extends `TypeRef` directly. An
+  abstraction of your own over `TypeRef` — `abstract class EnvelopeCodec<E>
+  extends TypeRef<Envelope<E>>` — therefore built a codec for the wrong type,
+  and the failure surfaced far away as a `ClassCastException` or a decode into
+  the wrong shape. `class Mid<A, B> extends TypeRef<B>` captured `A`;
+  `class Wrapping<X> extends TypeRef<List<X>>` captured `X`. `T` is now
+  resolved through the whole hierarchy, following a binding that leads to
+  another binding (`class Nested<X> extends Mid<X, List<X>>`) and substituting
+  into parameterized types, generic arrays and wildcard bounds alike, since a
+  half-substituted type claims to be concrete while a variable is still in it
+- `new Concrete() {}`, where `class Concrete extends TypeRef<String>`, threw a
+  raw `ClassCastException` from the constructor. It now captures `String`.
+  Extending `TypeRef` raw binds nothing to `T`, which leaves `T` standing for
+  itself and is rejected by the same `IllegalArgumentException` that already
+  caught a captured type variable
+
+### Documentation
+- `rawClass()` no longer claims its unchecked cast is "sound by construction"
+  unconditionally. That holds for a reference whose `T` the compiler
+  established — captured, or built by `listOf` and the other typed combinators
+  — and not for one from `parameterized`, whose `T` the caller asserts
+- `parameterized` documents one shape it cannot build: an inner class of a
+  *generic* outer class. A class literal has already discarded the outer's
+  arguments, so the built type is not equal to the captured one and will not
+  find it as a cache key. The class-level cache-key guarantee names this
+  exception
+
 ## [0.9.0] - 2026-09-07
 
 ### Added

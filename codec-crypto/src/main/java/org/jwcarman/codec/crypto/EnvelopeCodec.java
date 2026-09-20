@@ -26,8 +26,8 @@ import java.util.function.Predicate;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.UnsupportedFormatException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.UnsupportedFormatException;
 
 /**
  * Envelope-encryption {@link Codec} for {@code byte[]}: encrypts with AES-256-GCM under a

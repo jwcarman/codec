@@ -19,9 +19,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.InvalidValueException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.InvalidValueException;
 
 /**
  * JSON codec backed by {@link Gson}, exchanging UTF-8 bytes.

@@ -32,8 +32,8 @@ Inject the auto-configured `CodecFactory` the same way regardless of which
 backend activated it:
 
 ```java
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
 
 @Service
 public class PersonStore {

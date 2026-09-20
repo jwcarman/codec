@@ -19,7 +19,7 @@ import java.util.Objects;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 /**
  * A Kafka {@link Serde} pairing a {@link CodecSerializer} and {@link CodecDeserializer} over one

@@ -30,10 +30,10 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.InvalidValueException;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.InvalidValueException;
+import org.jwcarman.codec.TypeRef;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class Jackson2CodecFactoryTest {

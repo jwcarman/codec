@@ -24,9 +24,9 @@ import java.util.Objects;
 import org.apache.fory.Fory;
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.config.Language;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 
 /**
  * A {@link CodecFactory} backed by <a href="https://fory.apache.org">Apache Fory</a>: fast binary

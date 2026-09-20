@@ -16,9 +16,9 @@
 package org.jwcarman.codec.crypto;
 
 import com.code_intelligence.jazzer.junit.FuzzTest;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.TransientCodecException;
-import org.jwcarman.codec.spi.UnsupportedFormatException;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.TransientCodecException;
+import org.jwcarman.codec.UnsupportedFormatException;
 
 /**
  * Fuzz target for the decode path. In the normal test run Jazzer replays the committed seed corpus

@@ -16,7 +16,7 @@
 package org.jwcarman.codec.benchmarks;
 
 import java.util.concurrent.TimeUnit;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 import org.jwcarman.codec.transform.checksum.ChecksumCodec;
 import org.jwcarman.codec.transform.encoding.Base32Codec;
 import org.jwcarman.codec.transform.encoding.Base64Codec;

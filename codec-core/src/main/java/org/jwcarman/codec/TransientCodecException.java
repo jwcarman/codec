@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * Something the codec depends on failed, and the input is not at fault: a key-management service

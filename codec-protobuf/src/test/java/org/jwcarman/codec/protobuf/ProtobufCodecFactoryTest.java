@@ -27,9 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.TypeRef;
 
 class ProtobufCodecFactoryTest {
 

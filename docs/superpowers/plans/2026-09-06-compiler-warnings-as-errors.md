@@ -30,8 +30,8 @@
 ### Task 1: `TypeRef.rawClass()` — the one unchecked cast
 
 **Files:**
-- Modify: `codec-core/src/main/java/org/jwcarman/codec/spi/TypeRef.java`
-- Test: `codec-core/src/test/java/org/jwcarman/codec/spi/TypeRefTest.java`
+- Modify: `codec-core/src/main/java/org/jwcarman/codec/TypeRef.java`
+- Test: `codec-core/src/test/java/org/jwcarman/codec/TypeRefTest.java`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -441,7 +441,7 @@ Re-run the Step 2 command after each batch until it prints nothing.
 
 - [ ] **Step 5: Prove the gate bites (throwaway)**
 
-Create `codec-core/src/main/java/org/jwcarman/codec/spi/Probe.java` containing a class that violates an enabled category — simplest is `public class Probe extends RuntimeException {}` with no `serialVersionUID`. Run `./mvnw -B -pl codec-core clean compile`; expected: **COMPILATION FAILURE** with a `[serial]` error naming `Probe.java`. Delete the file. Record the failing output in the report. If the build passed, the flags are not in effect — STOP and find out why before continuing (the usual cause: the configuration landed under `<plugins>` in a profile rather than `<pluginManagement>`, or a module overrides the plugin).
+Create `codec-core/src/main/java/org/jwcarman/codec/Probe.java` containing a class that violates an enabled category — simplest is `public class Probe extends RuntimeException {}` with no `serialVersionUID`. Run `./mvnw -B -pl codec-core clean compile`; expected: **COMPILATION FAILURE** with a `[serial]` error naming `Probe.java`. Delete the file. Record the failing output in the report. If the build passed, the flags are not in effect — STOP and find out why before continuing (the usual cause: the configuration landed under `<plugins>` in a profile rather than `<pluginManagement>`, or a module overrides the plugin).
 
 - [ ] **Step 6: Full verification, format, commit**
 

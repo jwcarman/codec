@@ -17,9 +17,9 @@ package org.jwcarman.codec.gson;
 
 import com.google.gson.Gson;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 
 /** Produces JSON codecs backed by a shared {@link Gson} instance. */
 public class GsonCodecFactory implements CodecFactory {

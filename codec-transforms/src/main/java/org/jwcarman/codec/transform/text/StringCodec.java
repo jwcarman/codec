@@ -21,8 +21,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
 
 /**
  * A {@code Codec<String>} whose bytes are simply the text in a charset — no quoting, no framing.

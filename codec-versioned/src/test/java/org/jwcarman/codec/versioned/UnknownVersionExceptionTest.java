@@ -21,8 +21,8 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.UnsupportedFormatException;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.UnsupportedFormatException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class UnknownVersionExceptionTest {

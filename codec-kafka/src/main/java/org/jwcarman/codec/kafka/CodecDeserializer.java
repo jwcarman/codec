@@ -17,7 +17,7 @@ package org.jwcarman.codec.kafka;
 
 import java.util.Objects;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 /**
  * Adapts a {@link Codec} to Kafka's {@link Deserializer}. The topic is ignored, and {@code null} —

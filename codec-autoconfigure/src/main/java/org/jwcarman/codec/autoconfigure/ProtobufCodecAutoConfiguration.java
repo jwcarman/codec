@@ -16,8 +16,8 @@
 package org.jwcarman.codec.autoconfigure;
 
 import com.google.protobuf.GeneratedMessage;
+import org.jwcarman.codec.CodecFactory;
 import org.jwcarman.codec.protobuf.ProtobufCodecFactory;
-import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

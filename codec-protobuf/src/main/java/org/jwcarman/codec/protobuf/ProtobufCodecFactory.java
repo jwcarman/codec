@@ -19,9 +19,9 @@ import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.Parser;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 
 /**
  * Produces codecs for Protocol Buffers messages ({@link GeneratedMessage} subclasses), using each

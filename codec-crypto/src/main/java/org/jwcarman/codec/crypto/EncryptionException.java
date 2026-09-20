@@ -15,7 +15,7 @@
  */
 package org.jwcarman.codec.crypto;
 
-import org.jwcarman.codec.spi.TransientCodecException;
+import org.jwcarman.codec.TransientCodecException;
 
 /**
  * Exception indicating a failure during the encryption operation.

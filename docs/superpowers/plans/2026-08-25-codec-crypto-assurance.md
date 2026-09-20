@@ -14,7 +14,7 @@
 
 - codec-crypto compile surface stays exactly `codec-core`. Test-scope additions are allowed but must pass the ci profile's `dependency:analyze-only` (failOnWarning) and enforcer gates — never edit their allowlists.
 - Verification for every task: `./mvnw -Pci -B clean verify` (plain verify skips the gates). Docs tasks additionally: `python3 -m mkdocs build --strict` exit 0.
-- No `@SuppressWarnings`, no SpotBugs exclusion filters, no star imports. Apache 2.0 license header on every new `.java` file — as the FIRST lines of the file, before `package`, copied from `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java`.
+- No `@SuppressWarnings`, no SpotBugs exclusion filters, no star imports. Apache 2.0 license header on every new `.java` file — as the FIRST lines of the file, before `package`, copied from `codec-core/src/main/java/org/jwcarman/codec/Codec.java`.
 - Tests: `@Nested` capitalized phrases, `snake_case` sentence names. Never modify an existing assertion to make something pass.
 - Format before committing: `./mvnw -q spotless:apply`. Commit trailer: `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`. Never push.
 - Uniform cryptographic-failure message is exactly `"Unable to decrypt data"`.

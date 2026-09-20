@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 /**
- * The Codec SPI — the entire contract of {@code codec-core}: {@link org.jwcarman.codec.spi.Codec}
- * encodes and decodes one type, {@link org.jwcarman.codec.spi.CodecFactory} produces codecs for any
- * type, and {@link org.jwcarman.codec.spi.TypeRef} captures parameterized types so generics survive
- * erasure. Backends implement {@code CodecFactory}; transforms are {@code Codec<byte[]>} composed
- * through {@code Codec.andThen}.
+ * The Codec API — the entire contract of {@code codec-core}: {@link org.jwcarman.codec.Codec}
+ * encodes and decodes one type, {@link org.jwcarman.codec.CodecFactory} produces codecs for any
+ * type, and {@link org.jwcarman.codec.TypeRef} captures parameterized types so generics survive
+ * erasure. {@code CodecFactory} is the one provider interface — backends implement it; everything
+ * else here is what callers use. Transforms are {@code Codec<byte[]>} composed through {@code
+ * Codec.andThen}.
  */
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;

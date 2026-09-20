@@ -16,8 +16,8 @@
 package org.jwcarman.codec.autoconfigure;
 
 import com.google.gson.Gson;
+import org.jwcarman.codec.CodecFactory;
 import org.jwcarman.codec.gson.GsonCodecFactory;
-import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

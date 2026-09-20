@@ -16,8 +16,8 @@
 package org.jwcarman.codec.benchmarks;
 
 import java.util.concurrent.TimeUnit;
+import org.jwcarman.codec.Codec;
 import org.jwcarman.codec.lz4.Lz4Codec;
-import org.jwcarman.codec.spi.Codec;
 import org.jwcarman.codec.transform.compress.DeflateCodec;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 import org.jwcarman.codec.zstd.ZstdCodec;

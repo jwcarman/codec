@@ -18,8 +18,8 @@ package org.jwcarman.codec.protobuf;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
 
 /**
  * Codec for a Protocol Buffers message type, encoding with the message's wire format and decoding

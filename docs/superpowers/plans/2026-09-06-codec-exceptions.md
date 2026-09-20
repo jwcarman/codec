@@ -4,7 +4,7 @@
 
 **Goal:** Give `Codec.encode` and `Codec.decode` one failure contract — four unchecked families under a `CodecException` root, keyed to what the caller does next — and bring every module's throw sites, tests, and docs onto it, per spec 008.
 
-**Architecture:** Five classes land in `codec-core`'s `org.jwcarman.codec.spi` (Task 1). Every other module then rewrites its `encode`/`decode` throw sites to the family the spec's mapping table names, wrapping the underlying library exception as the cause, and rewrites the tests that asserted the old types (Tasks 2–7). `codec-crypto`'s and `codec-versioned`'s existing exception classes keep their names and change superclass. Docs, specs and CHANGELOG close it out (Task 8).
+**Architecture:** Five classes land in `codec-core`'s `org.jwcarman.codec` (Task 1). Every other module then rewrites its `encode`/`decode` throw sites to the family the spec's mapping table names, wrapping the underlying library exception as the cause, and rewrites the tests that asserted the old types (Tasks 2–7). `codec-crypto`'s and `codec-versioned`'s existing exception classes keep their names and change superclass. Docs, specs and CHANGELOG close it out (Task 8).
 
 **Tech Stack:** Java 25, JUnit 5 + AssertJ (NO Mockito — not on the classpath). Maven reactor; `./mvnw -Pci -B clean verify` is the gate (enforcer, dependency analysis, SpotBugs+findsecbugs and PIT on `codec-crypto`, license headers, spotless).
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Verification command for every task: `./mvnw -Pci -B clean verify` (plain `verify` skips the gates and is NOT sufficient). While iterating on one module: `./mvnw -B -pl <module> -am test`.
-- No `@SuppressWarnings`, no suppression of any kind. No star imports, regular or static. Apache 2.0 license header on every new `.java` file — copy the block verbatim from `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java`.
+- No `@SuppressWarnings`, no suppression of any kind. No star imports, regular or static. Apache 2.0 license header on every new `.java` file — copy the block verbatim from `codec-core/src/main/java/org/jwcarman/codec/Codec.java`.
 - Javadoc on every public type, constructor, method, `@param`, `@return` and `@throws` — doclint runs in the release profile.
 - Test house style: `@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)`, `@Nested` classes as capitalized underscore phrases, snake_case sentence method names — **except** in files that already use camelCase `should*` names (`JacksonCodecFactoryTest`, `GsonCodecFactoryTest`, `ProtobufCodecFactoryTest`, `TypeRefTest`): match the file you are in.
 - Format before committing: `./mvnw -q spotless:apply`; apply headers with `./mvnw -q -Plicense license:format`.
@@ -26,20 +26,20 @@
 - Each module catches its **library's root exception type only** — never `RuntimeException` — so a genuine bug in the codec still surfaces as itself. The one documented deviation is `ForyCodec.decode` (Task 4), where malformed input has been verified to surface as `ForyException`, `IllegalArgumentException` *or* `IndexOutOfBoundsException`.
 - **Messages do not change.** Every existing message string stays exactly as it is; only the exception type changes. New wrapper messages are given verbatim in the task that introduces them.
 - Construction-time exceptions (`IllegalArgumentException`, `IllegalStateException`, `NullPointerException` from builders, constructors, `CodecFactory.create`, `encode(null)`, `decode(null)`) do **not** change. If a test asserts one of those, leave it alone.
-- Exact family names, all in `org.jwcarman.codec.spi`: `CodecException` (root, protected constructors), `InvalidValueException`, `InvalidPayloadException`, `UnsupportedFormatException`, `TransientCodecException`.
+- Exact family names, all in `org.jwcarman.codec`: `CodecException` (root, protected constructors), `InvalidValueException`, `InvalidPayloadException`, `UnsupportedFormatException`, `TransientCodecException`.
 
 ---
 
 ### Task 1: The five classes in `codec-core`, and the `Codec` contract
 
 **Files:**
-- Create: `codec-core/src/main/java/org/jwcarman/codec/spi/CodecException.java`
-- Create: `codec-core/src/main/java/org/jwcarman/codec/spi/InvalidValueException.java`
-- Create: `codec-core/src/main/java/org/jwcarman/codec/spi/InvalidPayloadException.java`
-- Create: `codec-core/src/main/java/org/jwcarman/codec/spi/UnsupportedFormatException.java`
-- Create: `codec-core/src/main/java/org/jwcarman/codec/spi/TransientCodecException.java`
-- Modify: `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java` (interface Javadoc and the `encode`/`decode` Javadoc, lines 21–45)
-- Test: `codec-core/src/test/java/org/jwcarman/codec/spi/CodecExceptionsTest.java`
+- Create: `codec-core/src/main/java/org/jwcarman/codec/CodecException.java`
+- Create: `codec-core/src/main/java/org/jwcarman/codec/InvalidValueException.java`
+- Create: `codec-core/src/main/java/org/jwcarman/codec/InvalidPayloadException.java`
+- Create: `codec-core/src/main/java/org/jwcarman/codec/UnsupportedFormatException.java`
+- Create: `codec-core/src/main/java/org/jwcarman/codec/TransientCodecException.java`
+- Modify: `codec-core/src/main/java/org/jwcarman/codec/Codec.java` (interface Javadoc and the `encode`/`decode` Javadoc, lines 21–45)
+- Test: `codec-core/src/test/java/org/jwcarman/codec/CodecExceptionsTest.java`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -49,10 +49,10 @@
 
 - [ ] **Step 1: Write the failing test**
 
-Create `codec-core/src/test/java/org/jwcarman/codec/spi/CodecExceptionsTest.java` (license header first):
+Create `codec-core/src/test/java/org/jwcarman/codec/CodecExceptionsTest.java` (license header first):
 
 ```java
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -144,7 +144,7 @@ Expected: COMPILATION FAILURE — none of the five classes exist.
 `CodecException.java` (license header first):
 
 ```java
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * The root of every failure a {@link Codec} reports from {@link Codec#encode} or {@link
@@ -201,7 +201,7 @@ public class CodecException extends RuntimeException {
 `InvalidValueException.java`:
 
 ```java
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * The value handed to {@link Codec#encode} cannot be encoded: a type the backend has no serializer
@@ -236,7 +236,7 @@ public class InvalidValueException extends CodecException {
 `InvalidPayloadException.java`:
 
 ```java
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * The payload handed to {@link Codec#decode} is malformed, corrupt, or forged: bad framing,
@@ -274,7 +274,7 @@ public class InvalidPayloadException extends CodecException {
 `UnsupportedFormatException.java`:
 
 ```java
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * The payload handed to {@link Codec#decode} is well-formed, but names a format this reader cannot
@@ -313,7 +313,7 @@ public class UnsupportedFormatException extends CodecException {
 `TransientCodecException.java`:
 
 ```java
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * Something the codec depends on failed, and the input is not at fault: a key-management service
@@ -356,7 +356,7 @@ Expected: PASS, 3 new tests.
 
 - [ ] **Step 5: Document the contract on `Codec`**
 
-In `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java`, replace the interface Javadoc and the two abstract-method Javadocs. The current text is:
+In `codec-core/src/main/java/org/jwcarman/codec/Codec.java`, replace the interface Javadoc and the two abstract-method Javadocs. The current text is:
 
 ```java
 /**
@@ -474,7 +474,7 @@ methods throw. Spec 008."
 
 - [ ] **Step 1: Rewrite the test assertions to the new families**
 
-Make every change below, then run the module tests and confirm they FAIL (the production code still throws the old types). Add `import org.jwcarman.codec.spi.InvalidPayloadException;` (and `TransientCodecException` where used) to each file; remove `assertThatIllegalArgumentException`/`UncheckedIOException`/`IllegalStateException` imports that become unused. Keep every `withMessageContaining(...)` exactly as it is.
+Make every change below, then run the module tests and confirm they FAIL (the production code still throws the old types). Add `import org.jwcarman.codec.InvalidPayloadException;` (and `TransientCodecException` where used) to each file; remove `assertThatIllegalArgumentException`/`UncheckedIOException`/`IllegalStateException` imports that become unused. Keep every `withMessageContaining(...)` exactly as it is.
 
 `CompressionStreamCodecTest` — replace the two wrapping tests:
 
@@ -593,7 +593,7 @@ and `decode` becomes:
   }
 ```
 
-Replace `import java.io.UncheckedIOException;` with `import org.jwcarman.codec.spi.InvalidPayloadException;` and `import org.jwcarman.codec.spi.TransientCodecException;`. Update the class Javadoc wherever it names `IllegalStateException` or `UncheckedIOException` for these two outcomes (the decompression-bomb paragraph says "throwing `IllegalStateException`"; make it `InvalidPayloadException`).
+Replace `import java.io.UncheckedIOException;` with `import org.jwcarman.codec.InvalidPayloadException;` and `import org.jwcarman.codec.TransientCodecException;`. Update the class Javadoc wherever it names `IllegalStateException` or `UncheckedIOException` for these two outcomes (the decompression-bomb paragraph says "throwing `IllegalStateException`"; make it `InvalidPayloadException`).
 
 `ChecksumCodec.java` — in `decode`, both `new IllegalArgumentException(` become `new InvalidPayloadException(` (messages unchanged); in `checksumOf`, `new IllegalStateException(` becomes `new TransientCodecException(` (message unchanged). Add the two imports.
 
@@ -710,7 +710,7 @@ Verified library behaviour this task relies on (probed against the versions in t
   }
 ```
 
-Imports to add: `import static java.nio.charset.StandardCharsets.UTF_8;`, `import static org.assertj.core.api.Assertions.assertThatExceptionOfType;`, `import org.jwcarman.codec.spi.InvalidPayloadException;`, `import org.jwcarman.codec.spi.InvalidValueException;`, `import tools.jackson.core.JacksonException;`.
+Imports to add: `import static java.nio.charset.StandardCharsets.UTF_8;`, `import static org.assertj.core.api.Assertions.assertThatExceptionOfType;`, `import org.jwcarman.codec.InvalidPayloadException;`, `import org.jwcarman.codec.InvalidValueException;`, `import tools.jackson.core.JacksonException;`.
 
 `Jackson2CodecFactoryTest` — replace the two nested classes `Encoding_unsupported_values` and `Decoding_invalid_input` (lines 90–113) with:
 
@@ -746,7 +746,7 @@ Imports to add: `import static java.nio.charset.StandardCharsets.UTF_8;`, `impor
   }
 ```
 
-Imports: add `com.fasterxml.jackson.core.JsonProcessingException`, `java.io.IOException`, `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.spi.InvalidValueException`; remove `java.io.UncheckedIOException`.
+Imports: add `com.fasterxml.jackson.core.JsonProcessingException`, `java.io.IOException`, `org.jwcarman.codec.InvalidPayloadException`, `org.jwcarman.codec.InvalidValueException`; remove `java.io.UncheckedIOException`.
 
 `GsonCodecFactoryTest` — camelCase, no nesting. Add after `shouldRejectNullTypeRef`:
 
@@ -785,7 +785,7 @@ Imports: add `com.fasterxml.jackson.core.JsonProcessingException`, `java.io.IOEx
   }
 ```
 
-Imports: `static java.nio.charset.StandardCharsets.UTF_8`, `static org.assertj.core.api.Assertions.assertThatExceptionOfType`, `com.google.gson.GsonBuilder`, `com.google.gson.JsonIOException`, `com.google.gson.JsonSyntaxException`, `com.google.gson.TypeAdapter`, `com.google.gson.stream.JsonReader`, `com.google.gson.stream.JsonWriter`, `java.io.IOException`, `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.spi.InvalidValueException`.
+Imports: `static java.nio.charset.StandardCharsets.UTF_8`, `static org.assertj.core.api.Assertions.assertThatExceptionOfType`, `com.google.gson.GsonBuilder`, `com.google.gson.JsonIOException`, `com.google.gson.JsonSyntaxException`, `com.google.gson.TypeAdapter`, `com.google.gson.stream.JsonReader`, `com.google.gson.stream.JsonWriter`, `java.io.IOException`, `org.jwcarman.codec.InvalidPayloadException`, `org.jwcarman.codec.InvalidValueException`.
 
 `JsonbCodecFactoryTest` — replace the `Failures` nested class (from line 130) with:
 
@@ -822,7 +822,7 @@ Imports: `static java.nio.charset.StandardCharsets.UTF_8`, `static org.assertj.c
     }
 ```
 
-(Keep whatever other tests the original `Failures` class held after `invalid_json_surfaces_as_a_json_b_exception` — only that one test is replaced by the two above.) Imports: `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.spi.InvalidValueException`.
+(Keep whatever other tests the original `Failures` class held after `invalid_json_surfaces_as_a_json_b_exception` — only that one test is replaced by the two above.) Imports: `org.jwcarman.codec.InvalidPayloadException`, `org.jwcarman.codec.InvalidValueException`.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -836,9 +836,9 @@ Expected: FAIL in all four modules.
 ```java
 package org.jwcarman.codec.jackson;
 
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.InvalidValueException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.InvalidValueException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
@@ -895,7 +895,7 @@ class JacksonCodec<T> implements Codec<T> {
   }
 ```
 
-Replace `import java.io.UncheckedIOException;` with the two `org.jwcarman.codec.spi` imports.
+Replace `import java.io.UncheckedIOException;` with the two `org.jwcarman.codec` imports.
 
 `GsonCodec.java`:
 
@@ -1010,7 +1010,7 @@ Verified Fory behaviour (probed against 1.7.1): an unregistered class on `serial
   }
 ```
 
-Imports: `com.google.protobuf.InvalidProtocolBufferException`, `org.jwcarman.codec.spi.InvalidPayloadException`.
+Imports: `com.google.protobuf.InvalidProtocolBufferException`, `org.jwcarman.codec.InvalidPayloadException`.
 
 `ForyCodecFactoryTest` — in `Security_boundary`, the three assertions change type but keep their causes visible:
 
@@ -1094,7 +1094,7 @@ In `Failures`, replace the first two tests and add a third:
     }
 ```
 
-Imports to add: `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.spi.InvalidValueException`; `assertThatRuntimeException` becomes unused — remove its import. `assertThatExceptionOfType(ClassCastException.class)` no longer appears.
+Imports to add: `org.jwcarman.codec.InvalidPayloadException`, `org.jwcarman.codec.InvalidValueException`; `assertThatRuntimeException` becomes unused — remove its import. `assertThatExceptionOfType(ClassCastException.class)` no longer appears.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -1112,9 +1112,9 @@ package org.jwcarman.codec.fory;
 
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.exception.ForyException;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.InvalidValueException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.InvalidValueException;
 
 class ForyCodec<T> implements Codec<T> {
 
@@ -1217,7 +1217,7 @@ InvalidValueException. Spec 008."
     }
 ```
 
-Imports: `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.spi.UnsupportedFormatException`.
+Imports: `org.jwcarman.codec.InvalidPayloadException`, `org.jwcarman.codec.UnsupportedFormatException`.
 
 `VersionedCodecTest` — in `A_version_with_no_registered_codec.is_rejected_naming_the_version`, add `.isNotInstanceOf(VersionedFormatException.class)` after the existing `.satisfies(...)`, so the decode path — not just the constructor — is pinned to the new shape.
 
@@ -1238,8 +1238,8 @@ Expected: FAIL — `UnknownVersionException` is still a `VersionedFormatExceptio
  * <p>This is the "these bytes were never ours" failure — a codec pointed at data some other codec
  * wrote — and so an {@link InvalidPayloadException}: quarantine it. Contrast {@link
  * UnknownVersionException}, which means the framing is ours but the version is one this codec does
- * not know; that is an {@link org.jwcarman.codec.spi.UnsupportedFormatException}, and the two
- * deliberately share no parent below {@link org.jwcarman.codec.spi.CodecException}.
+ * not know; that is an {@link org.jwcarman.codec.UnsupportedFormatException}, and the two
+ * deliberately share no parent below {@link org.jwcarman.codec.CodecException}.
  */
 ```
 
@@ -1262,11 +1262,11 @@ Expected: FAIL — `UnknownVersionException` is still a `VersionedFormatExceptio
 
 ```java
  * <p><strong>Failures.</strong> {@code decode} throws {@link VersionedFormatException} (an {@link
- * org.jwcarman.codec.spi.InvalidPayloadException}) when the buffer is shorter than the three-byte
+ * org.jwcarman.codec.InvalidPayloadException}) when the buffer is shorter than the three-byte
  * header or the magic does not match — bytes some other codec wrote — and {@link
- * UnknownVersionException} (an {@link org.jwcarman.codec.spi.UnsupportedFormatException},
+ * UnknownVersionException} (an {@link org.jwcarman.codec.UnsupportedFormatException},
  * carrying the version) when the framing is valid but names a version this codec has no
- * registration for. The two share no parent below {@link org.jwcarman.codec.spi.CodecException},
+ * registration for. The two share no parent below {@link org.jwcarman.codec.CodecException},
  * so a policy that quarantines invalid payloads cannot accidentally discard a newer writer's
  * output. Exceptions thrown by a delegate codec propagate unchanged. {@code encode} throws {@link
  * NullPointerException} on a {@code null} value; wrap the built codec with {@link Codec#nullSafe()}
@@ -1369,7 +1369,7 @@ class ExceptionTaxonomyTest {
 }
 ```
 
-Imports: `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.spi.TransientCodecException`, `org.jwcarman.codec.spi.UnsupportedFormatException`.
+Imports: `org.jwcarman.codec.InvalidPayloadException`, `org.jwcarman.codec.TransientCodecException`, `org.jwcarman.codec.UnsupportedFormatException`.
 
 `EnvelopeCodecDecodeTest` — add a nested class (the file's `provider()` helper builds a `JceDataKeyProvider` over a 32-byte KEK of `7`s):
 
@@ -1415,7 +1415,7 @@ Imports: `org.jwcarman.codec.spi.InvalidPayloadException`, `org.jwcarman.codec.s
   }
 ```
 
-Import `org.jwcarman.codec.spi.UnsupportedFormatException`.
+Import `org.jwcarman.codec.UnsupportedFormatException`.
 
 Fuzz tests — in `EnvelopeCodecDecodeFuzzTest` replace `} catch (DecryptionException _) {` with `} catch (InvalidPayloadException | UnsupportedFormatException | TransientCodecException _) {` and update the method's comment to "documented outcomes: spec 006 §2.2 as amended by spec 008"; same catch clause in `EnvelopeCodecMutationFuzzTest`. Add the three `spi` imports to each; `DecryptionException` may become unused there — remove the import if so.
 
@@ -1444,7 +1444,7 @@ Expected: FAIL — taxonomy assertions and the two unsupported-format tests (whi
     }
 ```
 
-Add `import org.jwcarman.codec.spi.UnsupportedFormatException;`. In `EnvelopeCodec`'s class Javadoc, wherever the decode failure list names `DecryptionException` for "unknown version/algorithm", say `UnsupportedFormatException` instead.
+Add `import org.jwcarman.codec.UnsupportedFormatException;`. In `EnvelopeCodec`'s class Javadoc, wherever the decode failure list names `DecryptionException` for "unknown version/algorithm", say `UnsupportedFormatException` instead.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
@@ -1554,7 +1554,7 @@ The existing `codec_exceptions_pass_through_unchanged` tests exercise an `Illega
     }
 ```
 
-Imports in both: `static org.assertj.core.api.Assertions.assertThatExceptionOfType`, `org.jwcarman.codec.spi.InvalidPayloadException`.
+Imports in both: `static org.assertj.core.api.Assertions.assertThatExceptionOfType`, `org.jwcarman.codec.InvalidPayloadException`.
 
 - [ ] **Step 2: Run them**
 

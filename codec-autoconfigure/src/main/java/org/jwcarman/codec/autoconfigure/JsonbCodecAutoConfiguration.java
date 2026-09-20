@@ -17,8 +17,8 @@ package org.jwcarman.codec.autoconfigure;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import org.jwcarman.codec.CodecFactory;
 import org.jwcarman.codec.jsonb.JsonbCodecFactory;
-import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

@@ -30,7 +30,7 @@ Start with just `codec-core`; later specs will add their modules.
 
 ### SPI interfaces
 
-Package: `org.jwcarman.codec.spi`
+Package: `org.jwcarman.codec`
 
 **Codec<T>** — type-safe encoder/decoder:
 
@@ -53,7 +53,7 @@ public interface CodecFactory {
 
 **TypeRef<T>** — generic type capture via anonymous subclass pattern:
 
-Package: `org.jwcarman.codec.spi`
+Package: `org.jwcarman.codec`
 
 ```java
 public abstract class TypeRef<T> {

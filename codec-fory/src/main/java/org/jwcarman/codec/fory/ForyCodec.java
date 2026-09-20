@@ -18,9 +18,9 @@ package org.jwcarman.codec.fory;
 import java.util.Objects;
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.exception.ForyException;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.InvalidValueException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.InvalidValueException;
 
 /**
  * A codec that serializes through a {@link ThreadSafeFory} instance. Fory's format is

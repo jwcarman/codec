@@ -27,9 +27,9 @@ Person decodeOrNull(byte[] bytes) {
 }
 ```
 
-All four classes live in `org.jwcarman.codec.spi`, in `codec-core` — the same
+All four classes live in `org.jwcarman.codec`, in `codec-core` — the same
 artifact that gives you `Codec` and `CodecFactory`, so
-`import org.jwcarman.codec.spi.InvalidPayloadException;` (and its three
+`import org.jwcarman.codec.InvalidPayloadException;` (and its three
 siblings) is all a consumer needs; no extra dependency is required just to
 catch a codec failure.
 

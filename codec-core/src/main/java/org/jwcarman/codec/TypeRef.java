@@ -15,10 +15,14 @@
  */
 package org.jwcarman.codec;
 
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,7 +48,8 @@ import java.util.StringJoiner;
  *
  * <p>Equality and hashing are based on the captured {@link Type}, so instances are safe to use as
  * cache keys; a type built with {@link #listOf} and the same type captured by an anonymous subclass
- * are equal.
+ * are equal. The one exception is {@link #parameterized} applied to an inner class of a
+ * <em>generic</em> outer class, which cannot carry the outer's type arguments — see that method.
  *
  * @param <T> the captured type
  */
@@ -52,15 +57,26 @@ public abstract class TypeRef<T> {
   private final Type type;
 
   /**
-   * Captures the type argument supplied by the anonymous subclass.
+   * Captures the type argument supplied by the subclass.
    *
-   * @throws IllegalArgumentException if the type argument is a type variable — {@code new
+   * <p>The subclass need not extend {@code TypeRef} directly. {@code T} is resolved through the
+   * whole hierarchy, so an abstraction of your own — {@code abstract class EnvelopeCodec<E> extends
+   * TypeRef<Envelope<E>>} — captures what it declares, and a subclass that rebinds a parameter on
+   * the way up is followed to the end of the chain.
+   *
+   * @throws IllegalArgumentException if nothing is bound to {@code T}, which happens when {@code
+   *     TypeRef} is extended raw; or if the captured argument is a type variable — {@code new
    *     TypeRef<T>() {}} inside a generic method captures nothing a backend can use, and would
    *     otherwise be silently mapped to {@code Object}
    */
   protected TypeRef() {
-    Type superclass = getClass().getGenericSuperclass();
-    Type captured = ((ParameterizedType) superclass).getActualTypeArguments()[0];
+    Map<TypeVariable<?>, Type> bindings = bindings(getClass());
+    Type captured =
+        substitute(bindings.get(TypeRef.class.getTypeParameters()[0]), bindings, new HashSet<>());
+    if (captured == null) {
+      throw new IllegalArgumentException(
+          "TypeRef must be created as a parameterized subclass: nothing is bound to T");
+    }
     if (captured instanceof TypeVariable<?>) {
       throw new IllegalArgumentException(
           "TypeRef cannot capture the type variable "
@@ -68,6 +84,126 @@ public abstract class TypeRef<T> {
               + ": the type argument must be concrete where the anonymous subclass is created");
     }
     this.type = captured;
+  }
+
+  /**
+   * Collects what each type variable is bound to, from {@code subclass} up to {@code TypeRef}.
+   *
+   * <p>A level binds its superclass's parameters to the arguments it passes: {@code class Mid<A, B>
+   * extends TypeRef<B>} binds {@code TypeRef.T} to {@code Mid.B}, and {@code new Mid<Integer,
+   * String>() {}} binds {@code Mid.B} to {@code String}. Reading only the immediate superclass's
+   * first argument — which is what this used to do — sees {@code Integer}.
+   */
+  private static Map<TypeVariable<?>, Type> bindings(Class<?> subclass) {
+    Map<TypeVariable<?>, Type> bindings = new HashMap<>();
+    for (Class<?> current = subclass;
+        current != null && current != TypeRef.class;
+        current = current.getSuperclass()) {
+      // A level that names its superclass raw, or without arguments, contributes nothing.
+      if (current.getGenericSuperclass() instanceof ParameterizedType parameterized) {
+        TypeVariable<?>[] parameters = ((Class<?>) parameterized.getRawType()).getTypeParameters();
+        Type[] arguments = parameterized.getActualTypeArguments();
+        for (int i = 0; i < parameters.length; i++) {
+          bindings.put(parameters[i], arguments[i]);
+        }
+      }
+    }
+    return bindings;
+  }
+
+  /**
+   * Replaces every bound type variable in {@code type}, throughout its structure.
+   *
+   * <p>A partial substitution is worse than none: it yields a type that claims to be concrete while
+   * a variable is still sitting in it, and the failure surfaces far from here. So every shape that
+   * can contain a variable is descended into and rebuilt, and a variable with no binding is left
+   * exactly as it was rather than dropped.
+   *
+   * @param expanding the variables currently being expanded. Only a binding can lead back to a
+   *     variable already in flight, so this catches a cycle exactly; descending into the structure
+   *     of a type cannot loop, however deeply it nests.
+   */
+  private static Type substitute(
+      Type type, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
+    return switch (type) {
+      case TypeVariable<?> variable -> substituteVariable(variable, bindings, expanding);
+      case ParameterizedType parameterized ->
+          substituteParameterized(parameterized, bindings, expanding);
+      case GenericArrayType array -> substituteArray(array, bindings, expanding);
+      case WildcardType wildcard -> substituteWildcard(wildcard, bindings, expanding);
+      case null, default -> type;
+    };
+  }
+
+  private static Type substituteVariable(
+      TypeVariable<?> variable,
+      Map<TypeVariable<?>, Type> bindings,
+      Set<TypeVariable<?>> expanding) {
+    Type bound = bindings.get(variable);
+    // An unbound variable stays as it is: the constructor rejects it by name.
+    if (bound == null || bound.equals(variable)) {
+      return variable;
+    }
+    if (!expanding.add(variable)) {
+      throw new IllegalArgumentException(
+          "the type variable " + variable.getName() + " is bound through a cycle");
+    }
+    try {
+      // The binding may name another bound variable: class Nested<X> extends Mid<X, List<X>>.
+      return substitute(bound, bindings, expanding);
+    } finally {
+      expanding.remove(variable);
+    }
+  }
+
+  private static Type substituteParameterized(
+      ParameterizedType parameterized,
+      Map<TypeVariable<?>, Type> bindings,
+      Set<TypeVariable<?>> expanding) {
+    Type[] arguments = parameterized.getActualTypeArguments();
+    Type[] substituted = new Type[arguments.length];
+    boolean changed = false;
+    for (int i = 0; i < arguments.length; i++) {
+      substituted[i] = substitute(arguments[i], bindings, expanding);
+      changed |= substituted[i] != arguments[i];
+    }
+    Type owner = substitute(parameterized.getOwnerType(), bindings, expanding);
+    // Nothing moved: keep the type the JDK reflected rather than a copy of it.
+    if (!changed && owner == parameterized.getOwnerType()) {
+      return parameterized;
+    }
+    return new Parameterized(owner, (Class<?>) parameterized.getRawType(), substituted);
+  }
+
+  private static Type substituteArray(
+      GenericArrayType array, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
+    Type component = substitute(array.getGenericComponentType(), bindings, expanding);
+    if (component == array.getGenericComponentType()) {
+      return array;
+    }
+    // The JDK models an array of a non-generic type as a Class, so match that or a substituted
+    // array would not equal the same array captured directly.
+    return component instanceof Class<?> clazz ? clazz.arrayType() : new GenericArray(component);
+  }
+
+  private static Type substituteWildcard(
+      WildcardType wildcard, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
+    Type[] upper = substituteBounds(wildcard.getUpperBounds(), bindings, expanding);
+    Type[] lower = substituteBounds(wildcard.getLowerBounds(), bindings, expanding);
+    if (Arrays.equals(upper, wildcard.getUpperBounds())
+        && Arrays.equals(lower, wildcard.getLowerBounds())) {
+      return wildcard;
+    }
+    return new Wildcard(upper, lower);
+  }
+
+  private static Type[] substituteBounds(
+      Type[] bounds, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
+    Type[] substituted = new Type[bounds.length];
+    for (int i = 0; i < bounds.length; i++) {
+      substituted[i] = substitute(bounds[i], bindings, expanding);
+    }
+    return substituted;
   }
 
   private TypeRef(Type type) {
@@ -159,10 +295,16 @@ public abstract class TypeRef<T> {
    * arity of {@code arguments} is checked at construction, and a class with no type parameters is
    * rejected. What remains unchecked is the identity and order of {@code arguments} against {@code
    * T}'s own type arguments, and {@code T} naming a subtype of {@code raw} ({@code
-   * TypeRef<LinkedList<O>>} from {@code List.class}). Such a mismatch does not fail in the codec:
-   * decode succeeds with a value of the built type, and the caller sees a {@code
-   * ClassCastException} where the decoded value is first used. Round-trip a reference built here
-   * once in a test.
+   * TypeRef<LinkedList<O>>} from {@code List.class}).
+   *
+   * <p>One shape cannot be built here at all: an inner class of a <em>generic</em> outer class. A
+   * class literal has already discarded the outer's arguments, so {@code
+   * parameterized(Outer.Inner.class, of(Integer.class))} produces {@code Outer.Inner<Integer>},
+   * which is not equal to the {@code Outer<String>.Inner<Integer>} an anonymous subclass captures
+   * and will not find it as a cache key. Capture that shape with an anonymous subclass instead.
+   * Such a mismatch does not fail in the codec: decode succeeds with a value of the built type, and
+   * the caller sees a {@code ClassCastException} where the decoded value is first used. Round-trip
+   * a reference built here once in a test.
    *
    * @param raw the generic class, such as {@code Envelope.class}
    * @param arguments one type reference per type parameter of {@code raw}, in declaration order;
@@ -218,14 +360,20 @@ public abstract class TypeRef<T> {
    * Returns the erased class of the captured type: {@code List.class} for {@code List<String>}, the
    * class itself for a non-generic type.
    *
-   * <p>This method contains the one unchecked cast in the codebase. It is sound by construction: a
-   * {@code TypeRef<T>} captures {@code T} and nothing else, so the erasure of the captured type is
-   * the erasure of {@code T}. Backends use the result with {@link Class#cast} — a checked cast —
-   * instead of an unchecked {@code (T)} cast of their own; every other cast in the reactor is a
-   * checked {@code Class.cast} or none at all, and no new unchecked cast is permitted anywhere
-   * else. The build compiles with {@code -Xlint:all,-processing,-unchecked -Werror}: the {@code
-   * unchecked} category is off precisely and only because of this method, since Java cannot express
-   * the type-token bridge without it and cannot write an unchecked cast without a warning.
+   * <p>This method contains the one unchecked cast in the codebase. It is sound for every reference
+   * whose {@code T} the compiler established — one captured by a subclass, or built by {@link
+   * #listOf} and the other typed combinators — because such a reference captures {@code T} and
+   * nothing else, so the erasure of the captured type is the erasure of {@code T}. It is
+   * <em>not</em> sound for a reference from {@link #parameterized}, whose {@code T} is asserted by
+   * the caller rather than proven: {@code parameterized(List.class, of(String.class))} assigned to
+   * a {@code TypeRef<ArrayList<String>>} returns {@code List.class} here, and the caller sees a
+   * {@code ClassCastException} where the value is first used. Backends use the result with {@link
+   * Class#cast} — a checked cast — instead of an unchecked {@code (T)} cast of their own; every
+   * other cast in the reactor is a checked {@code Class.cast} or none at all, and no new unchecked
+   * cast is permitted anywhere else. The build compiles with {@code
+   * -Xlint:all,-processing,-unchecked -Werror}: the {@code unchecked} category is off precisely and
+   * only because of this method, since Java cannot express the type-token bridge without it and
+   * cannot write an unchecked cast without a warning.
    *
    * @return the erased class of {@code T}
    * @throws IllegalArgumentException if the captured type has no single erased class (a wildcard or
@@ -271,10 +419,20 @@ public abstract class TypeRef<T> {
    * JDK's own implementation so that a built type and a captured one are the same cache key.
    */
   private static final class Parameterized implements ParameterizedType {
+    private final Type ownerType;
     private final Class<?> raw;
     private final Type[] arguments;
 
     Parameterized(Class<?> raw, Type[] arguments) {
+      this(raw.getDeclaringClass(), raw, arguments);
+    }
+
+    /**
+     * @param ownerType the enclosing type, which substitution may have rewritten — {@code
+     *     Outer<String>} rather than the raw {@code Outer} the declaring class would give
+     */
+    Parameterized(Type ownerType, Class<?> raw, Type[] arguments) {
+      this.ownerType = ownerType;
       this.raw = raw;
       this.arguments = arguments;
     }
@@ -291,7 +449,7 @@ public abstract class TypeRef<T> {
 
     @Override
     public Type getOwnerType() {
-      return raw.getDeclaringClass();
+      return ownerType;
     }
 
     @Override
@@ -317,6 +475,97 @@ public abstract class TypeRef<T> {
       Type owner = getOwnerType();
       String name = owner == null ? raw.getName() : owner.getTypeName() + "$" + raw.getSimpleName();
       return name + args;
+    }
+
+    @Override
+    public String toString() {
+      return getTypeName();
+    }
+  }
+
+  /**
+   * A {@link GenericArrayType} built by substitution. Equality and hashing follow the JDK's own
+   * implementation, so a substituted array and the same array captured directly are
+   * interchangeable.
+   */
+  private static final class GenericArray implements GenericArrayType {
+    private final Type componentType;
+
+    GenericArray(Type componentType) {
+      this.componentType = componentType;
+    }
+
+    @Override
+    public Type getGenericComponentType() {
+      return componentType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o instanceof GenericArrayType other
+          && componentType.equals(other.getGenericComponentType());
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(componentType);
+    }
+
+    @Override
+    public String getTypeName() {
+      return componentType.getTypeName() + "[]";
+    }
+
+    @Override
+    public String toString() {
+      return getTypeName();
+    }
+  }
+
+  /**
+   * A {@link WildcardType} built by substitution. Equality and hashing follow the JDK's own
+   * implementation, which reads the bounds arrays directly.
+   */
+  private static final class Wildcard implements WildcardType {
+    private final Type[] upperBounds;
+    private final Type[] lowerBounds;
+
+    Wildcard(Type[] upperBounds, Type[] lowerBounds) {
+      this.upperBounds = upperBounds;
+      this.lowerBounds = lowerBounds;
+    }
+
+    @Override
+    public Type[] getUpperBounds() {
+      return upperBounds.clone();
+    }
+
+    @Override
+    public Type[] getLowerBounds() {
+      return lowerBounds.clone();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o instanceof WildcardType other
+          && Arrays.equals(upperBounds, other.getUpperBounds())
+          && Arrays.equals(lowerBounds, other.getLowerBounds());
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(upperBounds) ^ Arrays.hashCode(lowerBounds);
+    }
+
+    @Override
+    public String getTypeName() {
+      if (lowerBounds.length > 0) {
+        return "? super " + lowerBounds[0].getTypeName();
+      }
+      if (upperBounds.length == 0 || Object.class.equals(upperBounds[0])) {
+        return "?";
+      }
+      return "? extends " + upperBounds[0].getTypeName();
     }
 
     @Override

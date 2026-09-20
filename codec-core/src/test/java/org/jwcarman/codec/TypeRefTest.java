@@ -439,4 +439,114 @@ class TypeRefTest {
       assertThat(((ParameterizedType) list).getActualTypeArguments()).containsExactly(Person.class);
     }
   }
+
+  // --- documented limits ---
+
+  static class Outer<A> {
+    class Inner<B> {}
+  }
+
+  /**
+   * Pins the limit {@code parameterized}'s javadoc records: a class literal has already discarded a
+   * generic outer's arguments, so the built type cannot equal the captured one.
+   */
+  @Test
+  void parameterizedCannotCarryAGenericOutersArguments() {
+    TypeRef<Outer<String>.Inner<Integer>> captured = new TypeRef<>() {};
+    TypeRef<Outer<String>.Inner<Integer>> built =
+        TypeRef.parameterized(Outer.Inner.class, TypeRef.of(Integer.class));
+
+    assertThat(built).isNotEqualTo(captured);
+    assertThat(built.getType().getTypeName()).doesNotContain("String");
+  }
+
+  /** The same shape captured by an anonymous subclass keeps the outer's argument, as documented. */
+  @Test
+  void capturingAnInnerClassOfAGenericOuterKeepsTheOutersArgument() {
+    TypeRef<Outer<String>.Inner<Integer>> captured = new TypeRef<>() {};
+
+    assertThat(captured.getType().getTypeName()).contains("String").contains("Integer");
+  }
+
+  // --- capture through a subclass hierarchy ---
+
+  /** A subclass that passes one of its own parameters through to {@code TypeRef}. */
+  static class Mid<A, B> extends TypeRef<B> {}
+
+  /** A subclass that rebinds its parameter into a parameterized type. */
+  static class Wrapping<X> extends TypeRef<List<X>> {}
+
+  /**
+   * Two levels, the second rebinding the first's parameter: the binding chain has to be followed.
+   */
+  static class Nested2<X> extends Mid<X, List<X>> {}
+
+  /** A subclass that names the type itself, leaving nothing for an anonymous subclass to supply. */
+  static class Concrete extends TypeRef<String> {}
+
+  @Test
+  void shouldCaptureTheArgumentBoundToTWhenTheSubclassIsIndirect() {
+    TypeRef<String> ref = new Mid<Integer, String>() {};
+
+    assertThat(ref.getType()).isEqualTo(String.class);
+  }
+
+  @Test
+  void shouldCaptureTheRebuiltTypeWhenASubclassRebindsItsParameter() {
+    TypeRef<List<String>> ref = new Wrapping<>() {};
+
+    assertThat(ref.getType()).isEqualTo(new TypeRef<List<String>>() {}.getType());
+  }
+
+  @Test
+  void shouldFollowABindingChainThroughTwoLevelsOfSubclass() {
+    TypeRef<List<String>> ref = new Nested2<>() {};
+
+    assertThat(ref.getType()).isEqualTo(new TypeRef<List<String>>() {}.getType());
+  }
+
+  @Test
+  void shouldCaptureFromASubclassThatAlreadyNamesTheType() {
+    assertThat(new Concrete() {}.getType()).isEqualTo(String.class);
+    assertThat(new Concrete().getType()).isEqualTo(String.class);
+  }
+
+  @Test
+  void aReferenceCapturedIndirectlyShouldEqualTheSameTypeCapturedDirectly() {
+    assertThat(new Wrapping<String>() {}).isEqualTo(new TypeRef<List<String>>() {});
+    assertThat(new Wrapping<String>() {}).hasSameHashCodeAs(new TypeRef<List<String>>() {});
+  }
+
+  /** A subclass that rebinds its parameter inside a generic array. */
+  static class ArrayOf<X> extends TypeRef<List<X>[]> {}
+
+  /** A subclass that rebinds its parameter inside a wildcard bound. */
+  static class UpperBoundedBy<X> extends TypeRef<List<? extends X>> {}
+
+  @Test
+  void shouldSubstituteIntoAGenericArrayComponent() {
+    TypeRef<List<String>[]> ref = new ArrayOf<>() {};
+
+    assertThat(ref.getType()).isEqualTo(new TypeRef<List<String>[]>() {}.getType());
+  }
+
+  @Test
+  void shouldSubstituteIntoAWildcardBound() {
+    TypeRef<List<? extends String>> ref = new UpperBoundedBy<>() {};
+
+    assertThat(ref.getType()).isEqualTo(new TypeRef<List<? extends String>>() {}.getType());
+    assertThat(ref).hasSameHashCodeAs(new TypeRef<List<? extends String>>() {});
+  }
+
+  @Test
+  void shouldRejectATypeVariableLeftUnresolvedByAnIndirectSubclass() {
+    assertThatThrownBy(TypeRefTest::<String>captureUnresolvedIndirectly)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("type variable");
+  }
+
+  /** {@code T} is erased here, so the argument bound through {@code Mid} is still a variable. */
+  private static <T> TypeRef<T> captureUnresolvedIndirectly() {
+    return new Mid<Integer, T>() {};
+  }
 }

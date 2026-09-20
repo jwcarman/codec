@@ -15,7 +15,7 @@
  */
 package org.jwcarman.codec.versioned;
 
-import org.jwcarman.codec.spi.UnsupportedFormatException;
+import org.jwcarman.codec.UnsupportedFormatException;
 
 /**
  * Signals that a payload carries valid versioned framing but names a version this codec has no

@@ -18,9 +18,9 @@ package org.jwcarman.codec.jackson2;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 
 /** Produces JSON codecs backed by a shared Jackson 2.x {@link ObjectMapper}. */
 public class Jackson2CodecFactory implements CodecFactory {

@@ -14,8 +14,8 @@
 
 - `codec-crypto` depends on `codec-core` only; zero external compile dependencies. The ci profile's `dependency:analyze-only` (failOnWarning) and enforcer gates enforce this — never edit their allowlists.
 - Verification command for every task: `./mvnw -Pci -B clean verify` (plain `verify` skips the gates and is NOT sufficient).
-- No `@SuppressWarnings`. No star imports. Apache 2.0 license header on every new `.java` and `pom.xml` (copy the exact block from a neighbor file, e.g. `codec-gson/pom.xml` / `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java`).
-- Tests: `@Nested` classes as capitalized phrases, `snake_case` sentence method names (house style: `codec-core/src/test/java/org/jwcarman/codec/spi/CodecTest.java`).
+- No `@SuppressWarnings`. No star imports. Apache 2.0 license header on every new `.java` and `pom.xml` (copy the exact block from a neighbor file, e.g. `codec-gson/pom.xml` / `codec-core/src/main/java/org/jwcarman/codec/Codec.java`).
+- Tests: `@Nested` classes as capitalized phrases, `snake_case` sentence method names (house style: `codec-core/src/test/java/org/jwcarman/codec/CodecTest.java`).
 - Format before committing: `./mvnw -q spotless:apply`. Commit trailer: `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`. Never push.
 - Package for all main code: `org.jwcarman.codec.crypto`. Test package identical.
 - Wire constants (spec-normative, used across tasks): magic `0x4A,0x43`; version `0x01`; algorithm id `0x01` = AES-256-GCM; nonce 12 bytes; tag 128 bits (16 bytes); length fields unsigned uint16 big-endian, each ≥ 1; header = bytes `0 .. 19+k+w` inclusive; minimum total message length 38.
@@ -1003,7 +1003,7 @@ Note: `DecryptionException.cryptographic(null)` requires the Task 2 factory to a
 - Test: `codec-crypto/src/test/java/org/jwcarman/codec/crypto/EnvelopeCodecEncodeTest.java`
 
 **Interfaces:**
-- Consumes: everything above; `org.jwcarman.codec.spi.Codec`.
+- Consumes: everything above; `org.jwcarman.codec.Codec`.
 - Produces: `public final class EnvelopeCodec implements Codec<byte[]>`; `public static Builder builder(DataKeyProvider provider)`; `Builder` methods `strategy(DataKeyStrategy)`, `aad(byte[])`, `allowedKeyIds(Predicate<String>)`, `secureRandom(SecureRandom)`, `build()`. Wire layout exactly per Global Constraints. `decode` lands in Task 8 — in this task it exists but is implemented completely per Task 8's code (both tasks touch one class; Task 7 may leave `decode` throwing `new UnsupportedOperationException("implemented in the decode task")` ONLY if Task 8 immediately follows in the same plan run — it does).
 
 - [ ] **Step 1: Write the failing test**
@@ -1119,7 +1119,7 @@ import java.util.function.Predicate;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 public final class EnvelopeCodec implements Codec<byte[]> {
 
@@ -1649,7 +1649,7 @@ class EnvelopeCodecAdversarialTest {
   class Composition {
     @Test
     void compress_then_encrypt_round_trips_through_and_then() {
-      org.jwcarman.codec.spi.Codec<byte[]> chain =
+      org.jwcarman.codec.Codec<byte[]> chain =
           new GzipCodec().andThen(EnvelopeCodec.builder(provider()).build());
       byte[] plaintext = "the quick brown fox ".repeat(100).getBytes(UTF_8);
       assertThat(chain.decode(chain.encode(plaintext))).isEqualTo(plaintext);

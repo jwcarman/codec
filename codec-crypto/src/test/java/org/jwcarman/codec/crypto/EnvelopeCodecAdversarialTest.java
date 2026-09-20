@@ -29,7 +29,7 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.jwcarman.codec.spi.UnsupportedFormatException;
+import org.jwcarman.codec.UnsupportedFormatException;
 import org.jwcarman.codec.transform.compress.GzipCodec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
@@ -173,7 +173,7 @@ class EnvelopeCodecAdversarialTest {
   class Composition {
     @Test
     void compress_then_encrypt_round_trips_through_and_then() {
-      org.jwcarman.codec.spi.Codec<byte[]> chain =
+      org.jwcarman.codec.Codec<byte[]> chain =
           new GzipCodec().andThen(EnvelopeCodec.builder(provider()).build());
       byte[] plaintext = "the quick brown fox ".repeat(100).getBytes(UTF_8);
       assertThat(chain.decode(chain.encode(plaintext))).isEqualTo(plaintext);

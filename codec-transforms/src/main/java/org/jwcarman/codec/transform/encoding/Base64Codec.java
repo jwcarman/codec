@@ -17,8 +17,8 @@ package org.jwcarman.codec.transform.encoding;
 
 import java.util.Base64;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
 
 /**
  * A byte-to-text-safe-byte transform: encodes any bytes as Base64 (RFC 4648) and decodes them back.

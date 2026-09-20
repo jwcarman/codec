@@ -9,7 +9,7 @@
 
 ## What this project is
 
-Codec is a type-safe serialization abstraction for Java. It provides a clean SPI —
+Codec is a type-safe serialization abstraction for Java. It provides a clean API —
 `Codec<T>` and `CodecFactory` — that decouples application code from specific
 serialization libraries (Jackson, Gson, Protobuf, etc.).
 
@@ -21,7 +21,7 @@ choose their serialization backend by dropping a module on the classpath.
 
 ## Goals
 
-- Clean SPI: `Codec<T>` (encode/decode) and `CodecFactory` (produce codecs for any type)
+- Clean API: `Codec<T>` (encode/decode) and `CodecFactory` (produce codecs for any type)
 - `TypeRef<T>` for full generic type support (avoids type erasure)
 - Mix-and-match backends — Jackson, Gson, Protobuf, etc.
 - Spring Boot auto-configuration — via `codec-spring-boot-starter`; backend
@@ -53,7 +53,7 @@ choose their serialization backend by dropping a module on the classpath.
 
 ---
 
-## SPI
+## API
 
 ### Codec<T> — type-safe encoder/decoder
 
@@ -116,10 +116,9 @@ Codec<List<String>> codec = factory.create(new TypeRef<List<String>>() {});
 codec/
 ├── codec-bom/                    # BOM for version alignment
 ├── codec-core/                   # SPI, TypeRef, compression transforms
-│   ├── spi/
-│   │   ├── Codec.java
-│   │   ├── CodecFactory.java
-│   │   └── TypeRef.java
+│   ├── Codec.java
+│   ├── CodecFactory.java
+│   └── TypeRef.java
 │   └── autoconfigure/
 │       └── CodecAutoConfiguration.java
 │

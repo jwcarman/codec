@@ -16,7 +16,7 @@
 package org.jwcarman.codec.benchmarks;
 
 import java.util.List;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 /**
  * Prints the compressed size and ratio of every compression transform at every payload size as a

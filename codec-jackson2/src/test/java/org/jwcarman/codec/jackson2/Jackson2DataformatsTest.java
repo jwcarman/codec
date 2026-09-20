@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.TypeRef;
 
 /**
  * {@link Jackson2CodecFactory} takes any Jackson 2.x {@link ObjectMapper}, so every Jackson 2

@@ -16,9 +16,9 @@
 package org.jwcarman.codec.jackson;
 
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ObjectMapper;
 

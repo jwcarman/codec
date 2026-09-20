@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jwcarman.codec.spi;
+package org.jwcarman.codec;
 
 /**
  * The value handed to {@link Codec#encode} cannot be encoded: a type the backend has no serializer

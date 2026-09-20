@@ -108,8 +108,8 @@ directly (e.g. `new JacksonCodecFactory(objectMapper)`). Backend choices:
 Inject a `CodecFactory` and create codecs for your types:
 
 ```java
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
 
 @Service
 public class MyService {
@@ -166,7 +166,7 @@ Codec<Person> codec = VersionedCodec.<Person>builder()
 
 | Module | What it is | Artifact |
 |--------|------------|----------|
-| Core | SPI interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
+| Core | Core interfaces (`Codec`, `CodecFactory`, `TypeRef`) | `codec-core` |
 | Transforms | Byte transforms with no dependencies beyond `codec-core`: gzip, deflate, Base64, Base32, hex, checksum, text | `codec-transforms` |
 | Versioned | Format versioning: a version header that lets the storage strategy change | `codec-versioned` |
 | Jackson | Jackson 3.x JSON (`tools.jackson`) | `codec-jackson` |
@@ -185,7 +185,7 @@ Codec<Person> codec = VersionedCodec.<Person>builder()
 
 Speed and ratio claims are backed by [benchmarks](https://jwcarman.github.io/codec/benchmarks/).
 
-## Core SPI
+## Core API
 
 The core module provides three types:
 

@@ -18,8 +18,8 @@ package org.jwcarman.codec.transform.encoding;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
 
 /**
  * A byte-to-text-safe-byte transform using hexadecimal (RFC 4648 base16): two ASCII digits per

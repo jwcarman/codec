@@ -14,7 +14,7 @@
 
 - `codec-versioned` depends on `codec-core` only; zero external compile dependencies. The ci profile's `dependency:analyze-only` (failOnWarning) and enforcer gates enforce this — never edit their allowlists.
 - Verification command for every task: `./mvnw -Pci -B clean verify` (plain `verify` skips the gates and is NOT sufficient). To run one module's tests quickly while iterating: `./mvnw -B -pl codec-versioned -am test`.
-- No `@SuppressWarnings`, and no suppression of any kind. No star imports (regular or static). Apache 2.0 license header on every new `.java` and `pom.xml` — copy the exact block from a neighbor file (`codec-transforms/pom.xml`, `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java`).
+- No `@SuppressWarnings`, and no suppression of any kind. No star imports (regular or static). Apache 2.0 license header on every new `.java` and `pom.xml` — copy the exact block from a neighbor file (`codec-transforms/pom.xml`, `codec-core/src/main/java/org/jwcarman/codec/Codec.java`).
 - Tests: `@Nested` classes named as capitalized phrases with underscores, `snake_case` sentence method names, `@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)` on the outer class. House style reference: `codec-transforms/src/test/java/org/jwcarman/codec/transform/encoding/HexCodecTest.java`.
 - Format before committing: `./mvnw -q spotless:apply`. Apply license headers on new files with `./mvnw -q -Plicense license:format`.
 - Commit trailers on every commit:
@@ -25,7 +25,7 @@
   Never push.
 - Package for all main and test code: `org.jwcarman.codec.versioned`.
 - Wire constants (spec-normative, used across tasks): magic bytes `0xC0`, `0xDC` in that order; header length 3; version is the third byte read as unsigned (`bytes[2] & 0xFF`); valid version range `1..255`; `0` is reserved and never registrable.
-- Javadoc is required on every public type, constructor, method, and parameter — the build's doclint runs in the release profile and missing tags will fail it later. Follow the density of `codec-core/src/main/java/org/jwcarman/codec/spi/Codec.java`.
+- Javadoc is required on every public type, constructor, method, and parameter — the build's doclint runs in the release profile and missing tags will fail it later. Follow the density of `codec-core/src/main/java/org/jwcarman/codec/Codec.java`.
 
 ---
 
@@ -277,7 +277,7 @@ git commit -m "codec-versioned: decode failure exception types"
 - Test: `codec-versioned/src/test/java/org/jwcarman/codec/versioned/VersionedCodecTest.java`
 
 **Interfaces:**
-- Consumes: `VersionedFormatException(String)` and `UnknownVersionException(int)` from Task 2; `org.jwcarman.codec.spi.Codec<T>` from `codec-core`.
+- Consumes: `VersionedFormatException(String)` and `UnknownVersionException(int)` from Task 2; `org.jwcarman.codec.Codec<T>` from `codec-core`.
 - Produces:
   - `public final class VersionedCodec` — not instantiable; holds `public static <T> Builder<T> builder()`.
   - `public static final class VersionedCodec.Builder<T>` with `Builder<T> version(int version, Codec<T> codec)`, `Builder<T> writing(int version)`, and `Codec<T> build()`.
@@ -307,7 +307,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class VersionedCodecTest {
@@ -473,7 +473,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 /**
  * Prefixes every payload with a small self-describing header naming the codec that produced it, and

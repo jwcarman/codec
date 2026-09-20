@@ -39,7 +39,7 @@ two names for one event.
 
 ## The hierarchy
 
-All in `org.jwcarman.codec.spi`, in `codec-core`. All unchecked. Every one
+All in `org.jwcarman.codec`, in `codec-core`. All unchecked. Every one
 carries a message and an optional cause; the wrapped library's exception is
 always preserved as the cause.
 

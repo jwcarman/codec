@@ -25,8 +25,8 @@ import java.io.OutputStream;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.TransientCodecException;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.TransientCodecException;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class CompressionStreamCodecTest {

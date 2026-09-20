@@ -20,9 +20,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.InvalidPayloadException;
-import org.jwcarman.codec.spi.TransientCodecException;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.InvalidPayloadException;
+import org.jwcarman.codec.TransientCodecException;
 
 /**
  * A {@code Codec<byte[]>} transform that appends a 32-bit checksum (big-endian) on encode and

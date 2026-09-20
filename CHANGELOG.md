@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+- `codec-core` moved from `org.jwcarman.codec.spi` to `org.jwcarman.codec`.
+  `Codec`, `CodecFactory`, `TypeRef` and the five exception types now live in
+  the package their module is named for, matching every other module
+  (`org.jwcarman.codec.crypto`, `.versioned`, `.transform.compress` and the
+  rest), none of which carries a role suffix. The `spi` name described only
+  `CodecFactory`, the one interface a backend implements; the other seven types
+  are what callers use. Migration is one find-and-replace:
+  `org.jwcarman.codec.spi` to `org.jwcarman.codec`. No type, member or
+  behaviour changed, and the Automatic-Module-Name is unchanged
+
 ## [0.9.0] - 2026-09-07
 
 ### Added

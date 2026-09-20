@@ -80,8 +80,8 @@ exception as the cause — see [Handling Failures](error-handling.md).
 Inject the auto-configured `CodecFactory` and create codecs for your types:
 
 ```java
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
 
 @Service
 public class PersonStore {

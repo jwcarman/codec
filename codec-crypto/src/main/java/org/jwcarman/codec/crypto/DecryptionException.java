@@ -15,7 +15,7 @@
  */
 package org.jwcarman.codec.crypto;
 
-import org.jwcarman.codec.spi.InvalidPayloadException;
+import org.jwcarman.codec.InvalidPayloadException;
 
 /**
  * Exception indicating that the data provided for decryption is invalid or corrupted.

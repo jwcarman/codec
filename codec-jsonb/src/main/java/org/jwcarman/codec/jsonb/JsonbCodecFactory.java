@@ -17,9 +17,9 @@ package org.jwcarman.codec.jsonb;
 
 import jakarta.json.bind.Jsonb;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
+import org.jwcarman.codec.Codec;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 
 /**
  * A {@link CodecFactory} backed by Jakarta JSON Binding (JSON-B). Bring any {@link Jsonb} instance

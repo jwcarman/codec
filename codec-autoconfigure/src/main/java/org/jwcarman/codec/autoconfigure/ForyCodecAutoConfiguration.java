@@ -16,8 +16,8 @@
 package org.jwcarman.codec.autoconfigure;
 
 import org.apache.fory.ThreadSafeFory;
+import org.jwcarman.codec.CodecFactory;
 import org.jwcarman.codec.fory.ForyCodecFactory;
-import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

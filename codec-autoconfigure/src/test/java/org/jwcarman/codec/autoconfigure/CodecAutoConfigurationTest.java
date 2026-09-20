@@ -23,14 +23,14 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.codec.CodecFactory;
+import org.jwcarman.codec.TypeRef;
 import org.jwcarman.codec.fory.ForyCodecFactory;
 import org.jwcarman.codec.gson.GsonCodecFactory;
 import org.jwcarman.codec.jackson.JacksonCodecFactory;
 import org.jwcarman.codec.jackson2.Jackson2CodecFactory;
 import org.jwcarman.codec.jsonb.JsonbCodecFactory;
 import org.jwcarman.codec.protobuf.ProtobufCodecFactory;
-import org.jwcarman.codec.spi.CodecFactory;
-import org.jwcarman.codec.spi.TypeRef;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -225,7 +225,7 @@ class CodecAutoConfigurationTest {
     CodecFactory customCodecFactory() {
       return new CodecFactory() {
         @Override
-        public <T> org.jwcarman.codec.spi.Codec<T> create(TypeRef<T> typeRef) {
+        public <T> org.jwcarman.codec.Codec<T> create(TypeRef<T> typeRef) {
           throw new UnsupportedOperationException();
         }
       };

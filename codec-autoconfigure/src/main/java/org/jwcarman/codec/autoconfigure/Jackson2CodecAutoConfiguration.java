@@ -16,8 +16,8 @@
 package org.jwcarman.codec.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jwcarman.codec.CodecFactory;
 import org.jwcarman.codec.jackson2.Jackson2CodecFactory;
-import org.jwcarman.codec.spi.CodecFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

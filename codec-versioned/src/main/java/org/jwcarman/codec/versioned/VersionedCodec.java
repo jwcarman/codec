@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jwcarman.codec.spi.Codec;
+import org.jwcarman.codec.Codec;
 
 /**
  * Prefixes every payload with a small self-describing header naming the codec that produced it, and
@@ -68,15 +68,15 @@ import org.jwcarman.codec.spi.Codec;
  * Codec} contract already requires. Builders are not thread-safe.
  *
  * <p><strong>Failures.</strong> {@code decode} throws {@link VersionedFormatException} (an {@link
- * org.jwcarman.codec.spi.InvalidPayloadException}) when the buffer is shorter than the three-byte
+ * org.jwcarman.codec.InvalidPayloadException}) when the buffer is shorter than the three-byte
  * header or the magic does not match — bytes some other codec wrote — and {@link
- * UnknownVersionException} (an {@link org.jwcarman.codec.spi.UnsupportedFormatException}, carrying
- * the version) when the framing is valid but names a version this codec has no registration for.
- * The two share no parent below {@link org.jwcarman.codec.spi.CodecException}, so a policy that
- * quarantines invalid payloads cannot accidentally discard a newer writer's output. Exceptions
- * thrown by a delegate codec propagate unchanged. {@code encode} throws {@link
- * NullPointerException} on a {@code null} value; wrap the built codec with {@link Codec#nullSafe()}
- * to opt into passing {@code null} straight through instead.
+ * UnknownVersionException} (an {@link org.jwcarman.codec.UnsupportedFormatException}, carrying the
+ * version) when the framing is valid but names a version this codec has no registration for. The
+ * two share no parent below {@link org.jwcarman.codec.CodecException}, so a policy that quarantines
+ * invalid payloads cannot accidentally discard a newer writer's output. Exceptions thrown by a
+ * delegate codec propagate unchanged. {@code encode} throws {@link NullPointerException} on a
+ * {@code null} value; wrap the built codec with {@link Codec#nullSafe()} to opt into passing {@code
+ * null} straight through instead.
  */
 public final class VersionedCodec {
 

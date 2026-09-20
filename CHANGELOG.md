@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-20
+
 ### Breaking changes
 - `codec-core` moved from `org.jwcarman.codec.spi` to `org.jwcarman.codec`.
   `Codec`, `CodecFactory`, `TypeRef` and the five exception types now live in
@@ -351,6 +353,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maven Central publishing workflow
 - Dependabot for automated dependency updates
 
+[0.10.0]: https://github.com/jwcarman/codec/releases/tag/0.10.0
 [0.9.0]: https://github.com/jwcarman/codec/releases/tag/0.9.0
 [0.8.0]: https://github.com/jwcarman/codec/releases/tag/0.8.0
 [0.7.0]: https://github.com/jwcarman/codec/releases/tag/0.7.0

@@ -33,8 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   half-substituted type claims to be concrete while a variable is still in it
 - `new Concrete() {}`, where `class Concrete extends TypeRef<String>`, threw a
   raw `ClassCastException` from the constructor. It now captures `String`.
-  Extending `TypeRef` raw, which binds nothing to `T`, throws
-  `IllegalArgumentException` naming the problem instead
+  Extending `TypeRef` raw binds nothing to `T`, which leaves `T` standing for
+  itself and is rejected by the same `IllegalArgumentException` that already
+  caught a captured type variable
 
 ### Documentation
 - `rawClass()` no longer claims its unchecked cast is "sound by construction"

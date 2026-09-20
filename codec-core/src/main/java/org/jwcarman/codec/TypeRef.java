@@ -22,7 +22,6 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -64,19 +63,17 @@ public abstract class TypeRef<T> {
    * TypeRef<Envelope<E>>} — captures what it declares, and a subclass that rebinds a parameter on
    * the way up is followed to the end of the chain.
    *
-   * @throws IllegalArgumentException if nothing is bound to {@code T}, which happens when {@code
-   *     TypeRef} is extended raw; or if the captured argument is a type variable — {@code new
+   * @throws IllegalArgumentException if the captured argument is a type variable — {@code new
    *     TypeRef<T>() {}} inside a generic method captures nothing a backend can use, and would
-   *     otherwise be silently mapped to {@code Object}
+   *     otherwise be silently mapped to {@code Object}. Extending {@code TypeRef} raw binds nothing
+   *     to {@code T} and is rejected the same way
    */
   protected TypeRef() {
     Map<TypeVariable<?>, Type> bindings = bindings(getClass());
-    Type captured =
-        substitute(bindings.get(TypeRef.class.getTypeParameters()[0]), bindings, new HashSet<>());
-    if (captured == null) {
-      throw new IllegalArgumentException(
-          "TypeRef must be created as a parameterized subclass: nothing is bound to T");
-    }
+    TypeVariable<?> t = TypeRef.class.getTypeParameters()[0];
+    // Extending TypeRef raw binds nothing to T, which leaves T standing for itself — the same
+    // shape as capturing an erased variable, and rejected by the same guard.
+    Type captured = substitute(bindings.getOrDefault(t, t), bindings);
     if (captured instanceof TypeVariable<?>) {
       throw new IllegalArgumentException(
           "TypeRef cannot capture the type variable "
@@ -96,9 +93,8 @@ public abstract class TypeRef<T> {
    */
   private static Map<TypeVariable<?>, Type> bindings(Class<?> subclass) {
     Map<TypeVariable<?>, Type> bindings = new HashMap<>();
-    for (Class<?> current = subclass;
-        current != null && current != TypeRef.class;
-        current = current.getSuperclass()) {
+    // getClass() extends TypeRef, so the walk always terminates there.
+    for (Class<?> current = subclass; current != TypeRef.class; current = current.getSuperclass()) {
       // A level that names its superclass raw, or without arguments, contributes nothing.
       if (current.getGenericSuperclass() instanceof ParameterizedType parameterized) {
         TypeVariable<?>[] parameters = ((Class<?>) parameterized.getRawType()).getTypeParameters();
@@ -118,56 +114,41 @@ public abstract class TypeRef<T> {
    * a variable is still sitting in it, and the failure surfaces far from here. So every shape that
    * can contain a variable is descended into and rebuilt, and a variable with no binding is left
    * exactly as it was rather than dropped.
-   *
-   * @param expanding the variables currently being expanded. Only a binding can lead back to a
-   *     variable already in flight, so this catches a cycle exactly; descending into the structure
-   *     of a type cannot loop, however deeply it nests.
    */
-  private static Type substitute(
-      Type type, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
+  private static Type substitute(Type type, Map<TypeVariable<?>, Type> bindings) {
     return switch (type) {
-      case TypeVariable<?> variable -> substituteVariable(variable, bindings, expanding);
-      case ParameterizedType parameterized ->
-          substituteParameterized(parameterized, bindings, expanding);
-      case GenericArrayType array -> substituteArray(array, bindings, expanding);
-      case WildcardType wildcard -> substituteWildcard(wildcard, bindings, expanding);
+      case TypeVariable<?> variable -> substituteVariable(variable, bindings);
+      case ParameterizedType parameterized -> substituteParameterized(parameterized, bindings);
+      case GenericArrayType array -> substituteArray(array, bindings);
+      case WildcardType wildcard -> substituteWildcard(wildcard, bindings);
       case null, default -> type;
     };
   }
 
   private static Type substituteVariable(
-      TypeVariable<?> variable,
-      Map<TypeVariable<?>, Type> bindings,
-      Set<TypeVariable<?>> expanding) {
+      TypeVariable<?> variable, Map<TypeVariable<?>, Type> bindings) {
     Type bound = bindings.get(variable);
     // An unbound variable stays as it is: the constructor rejects it by name.
-    if (bound == null || bound.equals(variable)) {
+    if (bound == null) {
       return variable;
     }
-    if (!expanding.add(variable)) {
-      throw new IllegalArgumentException(
-          "the type variable " + variable.getName() + " is bound through a cycle");
-    }
-    try {
-      // The binding may name another bound variable: class Nested<X> extends Mid<X, List<X>>.
-      return substitute(bound, bindings, expanding);
-    } finally {
-      expanding.remove(variable);
-    }
+    // The binding may name another bound variable: class Nested<X> extends Mid<X, List<X>>.
+    // No cycle guard is needed. Each binding maps a variable declared in one class to a type
+    // written in terms of its subclass's variables, so following one always moves down a
+    // hierarchy the JLS forbids to be circular, and the hierarchy is finite.
+    return substitute(bound, bindings);
   }
 
   private static Type substituteParameterized(
-      ParameterizedType parameterized,
-      Map<TypeVariable<?>, Type> bindings,
-      Set<TypeVariable<?>> expanding) {
+      ParameterizedType parameterized, Map<TypeVariable<?>, Type> bindings) {
     Type[] arguments = parameterized.getActualTypeArguments();
     Type[] substituted = new Type[arguments.length];
     boolean changed = false;
     for (int i = 0; i < arguments.length; i++) {
-      substituted[i] = substitute(arguments[i], bindings, expanding);
+      substituted[i] = substitute(arguments[i], bindings);
       changed |= substituted[i] != arguments[i];
     }
-    Type owner = substitute(parameterized.getOwnerType(), bindings, expanding);
+    Type owner = substitute(parameterized.getOwnerType(), bindings);
     // Nothing moved: keep the type the JDK reflected rather than a copy of it.
     if (!changed && owner == parameterized.getOwnerType()) {
       return parameterized;
@@ -175,9 +156,8 @@ public abstract class TypeRef<T> {
     return new Parameterized(owner, (Class<?>) parameterized.getRawType(), substituted);
   }
 
-  private static Type substituteArray(
-      GenericArrayType array, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
-    Type component = substitute(array.getGenericComponentType(), bindings, expanding);
+  private static Type substituteArray(GenericArrayType array, Map<TypeVariable<?>, Type> bindings) {
+    Type component = substitute(array.getGenericComponentType(), bindings);
     if (component == array.getGenericComponentType()) {
       return array;
     }
@@ -187,9 +167,9 @@ public abstract class TypeRef<T> {
   }
 
   private static Type substituteWildcard(
-      WildcardType wildcard, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
-    Type[] upper = substituteBounds(wildcard.getUpperBounds(), bindings, expanding);
-    Type[] lower = substituteBounds(wildcard.getLowerBounds(), bindings, expanding);
+      WildcardType wildcard, Map<TypeVariable<?>, Type> bindings) {
+    Type[] upper = substituteBounds(wildcard.getUpperBounds(), bindings);
+    Type[] lower = substituteBounds(wildcard.getLowerBounds(), bindings);
     if (Arrays.equals(upper, wildcard.getUpperBounds())
         && Arrays.equals(lower, wildcard.getLowerBounds())) {
       return wildcard;
@@ -197,11 +177,10 @@ public abstract class TypeRef<T> {
     return new Wildcard(upper, lower);
   }
 
-  private static Type[] substituteBounds(
-      Type[] bounds, Map<TypeVariable<?>, Type> bindings, Set<TypeVariable<?>> expanding) {
+  private static Type[] substituteBounds(Type[] bounds, Map<TypeVariable<?>, Type> bindings) {
     Type[] substituted = new Type[bounds.length];
     for (int i = 0; i < bounds.length; i++) {
-      substituted[i] = substitute(bounds[i], bindings, expanding);
+      substituted[i] = substitute(bounds[i], bindings);
     }
     return substituted;
   }
@@ -562,7 +541,8 @@ public abstract class TypeRef<T> {
       if (lowerBounds.length > 0) {
         return "? super " + lowerBounds[0].getTypeName();
       }
-      if (upperBounds.length == 0 || Object.class.equals(upperBounds[0])) {
+      // WildcardType reports at least Object as an upper bound, so there is always one to read.
+      if (Object.class.equals(upperBounds[0])) {
         return "?";
       }
       return "? extends " + upperBounds[0].getTypeName();

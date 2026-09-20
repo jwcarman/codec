@@ -18,8 +18,10 @@ package org.jwcarman.codec;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -440,6 +442,99 @@ class TypeRefTest {
     }
   }
 
+  /** A subclass that rebinds its parameter as an array component of a non-generic type. */
+  static class PlainArrayOf<X> extends TypeRef<X[]> {}
+
+  /** A subclass that rebinds its parameter into a lower wildcard bound. */
+  static class LowerBoundedBy<X> extends TypeRef<List<? super X>> {}
+
+  /** A subclass that rebinds its parameter into a generic outer class. */
+  static class InnerOf<X> extends TypeRef<Outer<X>.Inner<Integer>> {}
+
+  @Test
+  void substitutingAnArrayComponentToAPlainClassShouldYieldTheArrayClass() {
+    TypeRef<String[]> ref = new PlainArrayOf<>() {};
+
+    assertThat(ref.getType()).isEqualTo(String[].class);
+    assertThat(ref.rawClass()).isEqualTo(String[].class);
+  }
+
+  @Test
+  void shouldSubstituteIntoALowerWildcardBound() {
+    TypeRef<List<? super String>> ref = new LowerBoundedBy<>() {};
+
+    assertThat(ref.getType()).isEqualTo(new TypeRef<List<? super String>>() {}.getType());
+    assertThat(ref).hasSameHashCodeAs(new TypeRef<List<? super String>>() {});
+  }
+
+  @Test
+  void shouldSubstituteIntoTheOwnerOfAnInnerClass() {
+    TypeRef<Outer<String>.Inner<Integer>> ref = new InnerOf<>() {};
+
+    assertThat(ref.getType()).isEqualTo(new TypeRef<Outer<String>.Inner<Integer>>() {}.getType());
+    assertThat(ref.getType().getTypeName()).contains("String").contains("Integer");
+  }
+
+  @Test
+  void aSubstitutedArrayTypeShouldBehaveLikeTheOneTheJdkReflects() {
+    Type substituted = new ArrayOf<String>() {}.getType();
+    Type reflected = new TypeRef<List<String>[]>() {}.getType();
+
+    assertThat(substituted)
+        .isInstanceOf(GenericArrayType.class)
+        .isEqualTo(reflected)
+        .hasSameHashCodeAs(reflected)
+        .hasToString(reflected.getTypeName())
+        .isNotEqualTo(String.class);
+    assertThat(((GenericArrayType) substituted).getGenericComponentType())
+        .isEqualTo(new TypeRef<List<String>>() {}.getType());
+    assertThat(substituted.getTypeName()).isEqualTo(reflected.getTypeName());
+  }
+
+  @Test
+  void aSubstitutedWildcardShouldBehaveLikeTheOneTheJdkReflects() {
+    WildcardType substituted = firstArgumentAsWildcard(new UpperBoundedBy<String>() {});
+    WildcardType reflected = firstArgumentAsWildcard(new TypeRef<List<? extends String>>() {});
+
+    assertThat(substituted)
+        .isEqualTo(reflected)
+        .hasSameHashCodeAs(reflected)
+        .hasToString("? extends java.lang.String")
+        .isNotEqualTo(String.class);
+    assertThat(substituted.getUpperBounds()).containsExactly(String.class);
+    assertThat(substituted.getLowerBounds()).isEmpty();
+  }
+
+  @Test
+  void aSubstitutedLowerBoundedWildcardShouldNameItselfWithSuper() {
+    WildcardType substituted = firstArgumentAsWildcard(new LowerBoundedBy<String>() {});
+
+    assertThat(substituted.getLowerBounds()).containsExactly(String.class);
+    assertThat(substituted).hasToString("? super java.lang.String");
+  }
+
+  @Test
+  void aSubstitutedWildcardBoundedByObjectShouldNameItselfUnbounded() {
+    WildcardType substituted = firstArgumentAsWildcard(new UpperBoundedBy<Object>() {});
+
+    assertThat(substituted).hasToString("?");
+  }
+
+  @Test
+  void substitutedTypesShouldNotEqualTheSameShapeOverADifferentType() {
+    assertThat(new ArrayOf<String>() {}.getType())
+        .isNotEqualTo(new ArrayOf<Integer>() {}.getType());
+    assertThat(firstArgumentAsWildcard(new UpperBoundedBy<String>() {}))
+        .isNotEqualTo(firstArgumentAsWildcard(new UpperBoundedBy<Integer>() {}));
+    // Same upper bound (Object, implicitly), different lower bound.
+    assertThat(firstArgumentAsWildcard(new LowerBoundedBy<String>() {}))
+        .isNotEqualTo(firstArgumentAsWildcard(new LowerBoundedBy<Integer>() {}));
+  }
+
+  private static WildcardType firstArgumentAsWildcard(TypeRef<?> ref) {
+    return (WildcardType) ((ParameterizedType) ref.getType()).getActualTypeArguments()[0];
+  }
+
   // --- documented limits ---
 
   static class Outer<A> {
@@ -513,8 +608,10 @@ class TypeRefTest {
 
   @Test
   void aReferenceCapturedIndirectlyShouldEqualTheSameTypeCapturedDirectly() {
-    assertThat(new Wrapping<String>() {}).isEqualTo(new TypeRef<List<String>>() {});
-    assertThat(new Wrapping<String>() {}).hasSameHashCodeAs(new TypeRef<List<String>>() {});
+    TypeRef<List<String>> indirect = new Wrapping<>() {};
+    TypeRef<List<String>> direct = new TypeRef<>() {};
+
+    assertThat(indirect).isEqualTo(direct).hasSameHashCodeAs(direct);
   }
 
   /** A subclass that rebinds its parameter inside a generic array. */

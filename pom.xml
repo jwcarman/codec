@@ -57,7 +57,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spotless.version>3.10.1</spotless.version>
+        <spotless.version>3.10.2</spotless.version>
         <jacocoArgLine></jacocoArgLine>
 
         <!-- Dependency versions -->
@@ -68,15 +68,15 @@
         <lz4-java.version>1.11.3</lz4-java.version>
 
         <!-- Build plugin versions -->
-        <compiler.plugin.version>3.15.0</compiler.plugin.version>
+        <compiler.plugin.version>3.16.0</compiler.plugin.version>
         <surefire.plugin.version>3.5.6</surefire.plugin.version>
         <failsafe.plugin.version>3.5.6</failsafe.plugin.version>
         <dependency.plugin.version>3.11.0</dependency.plugin.version>
         <clean.plugin.version>3.5.0</clean.plugin.version>
         <resources.plugin.version>3.5.0</resources.plugin.version>
         <jar.plugin.version>3.5.1</jar.plugin.version>
-        <install.plugin.version>3.1.4</install.plugin.version>
-        <deploy.plugin.version>3.1.4</deploy.plugin.version>
+        <install.plugin.version>3.2.0</install.plugin.version>
+        <deploy.plugin.version>3.2.0</deploy.plugin.version>
 
         <!-- Publishing plugin versions -->
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
@@ -86,7 +86,7 @@
         <license.plugin.version>5.1.2</license.plugin.version>
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
         <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
-        <sonar.plugin.version>5.7.0.6970</sonar.plugin.version>
+        <sonar.plugin.version>5.8.0.7211</sonar.plugin.version>
         <versions.plugin.version>2.22.0</versions.plugin.version>
 
         <!-- License Header Configuration -->

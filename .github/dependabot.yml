@@ -17,6 +17,22 @@ updates:
       include: "scope"
     reviewers:
       - "jwcarman"
+    ignore:
+      # Surefire/failsafe 3.6.0 provision a junit-platform that enforces the current
+      # ArgumentsProvider SPI, `provideArguments(ParameterDeclarations, ExtensionContext)`.
+      # Jazzer's AgentConfiguringArgumentsProvider still implements the old signature, so
+      # codec-crypto's fuzz tests fail with a JUnitException and a NoClassDefFoundError for
+      # jazzer/utils/UnsafeProvider. Jazzer 0.30.0 is the newest release and does not fix it,
+      # so there is nothing to upgrade to. Without this the build-plugins group PR fails every
+      # week on one member and holds the other bumps hostage with it.
+      # Remove both entries once a Jazzer release supports the current SPI: check
+      # https://repo1.maven.org/maven2/com/code-intelligence/jazzer-junit/ for a version
+      # above 0.30.0, bump it in codec-crypto/pom.xml, and let the group bump surefire again.
+      - dependency-name: "org.apache.maven.plugins:maven-surefire-plugin"
+        versions: [">=3.6.0"]
+      - dependency-name: "org.apache.maven.plugins:maven-failsafe-plugin"
+        versions: [">=3.6.0"]
+
     groups:
       spring:
         patterns:

@@ -30,6 +30,7 @@ validation:
 
 # Process artifacts (specs) and internal working notes stay out of the site.
 exclude_docs: |
+  /requirements.*
   /superpowers/
   /native-image-hints.md
 
@@ -78,6 +79,36 @@ extra_css:
 
 extra_javascript:
   - javascripts/hex-tape.js
+
+# Declaring plugins replaces MkDocs' default list, so search is named here too.
+plugins:
+  - search
+  # https://llmstxt.org: an index of the docs for coding agents at /llms.txt, every page in
+  # one file at /llms-full.txt, and a Markdown copy of each page beside its HTML.
+  - llmstxt:
+      full_output: llms-full.txt
+      markdown_description: |
+        Codec is a type-safe serialization abstraction for Java 25: libraries depend on `Codec<T>`, and
+        applications choose the backend. Maven coordinates: `org.jwcarman.codec`; import `codec-bom`, then
+        add `codec-spring-boot-starter` (Spring Boot) and one backend module. The changelog says what each
+        version has: https://github.com/jwcarman/codec/blob/main/CHANGELOG.md.
+      sections:
+        Start here:
+          - index.md: what Codec is and which module does what
+          - guides/getting-started.md: adding Codec, choosing a backend and encoding and decoding values
+          - guides/spring-boot.md: the starter, auto-configuration and choosing a backend in Spring Boot
+        Guides:
+          - guides/composition.md: composing codecs with byte-level transforms such as compression
+          - guides/error-handling.md: CodecException and handling encode and decode failures
+          - guides/versioned.md: evolving stored formats with versioned codecs
+          - guides/dataformats.md: Jackson dataformats such as CBOR, Smile, YAML and XML
+          - guides/fory.md: the Apache Fory backend for fast JVM-to-JVM payloads
+          - guides/encryption.md: envelope encryption with codec-crypto
+          - guides/threat-model.md: what codec-crypto's encryption does and does not defend against
+          - guides/redis.md: using any Codec with Spring Data Redis
+          - guides/kafka.md: using any Codec as a Kafka serializer and deserializer
+        Optional:
+          - benchmarks.md: JMH numbers comparing the backends and transforms
 
 nav:
   - Home: index.md

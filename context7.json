@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/jwcarman/codec",
+  "public_key": "pk_teuqTJ1f9Z3tSlPtgF1K9",
   "projectTitle": "Codec (type-safe serialization for Java)",
   "description": "Codec (org.jwcarman.codec) is a type-safe serialization abstraction for Java: libraries depend on Codec<T>, and applications choose a backend such as Jackson, Gson, Protobuf, JSON-B or Fory, with composable compression and encryption, Kafka and Spring Data Redis support, and Spring Boot auto-configuration.",
   "folders": [

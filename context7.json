@@ -1,0 +1,19 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Codec (type-safe serialization for Java)",
+  "description": "Codec (org.jwcarman.codec) is a type-safe serialization abstraction for Java: libraries depend on Codec<T>, and applications choose a backend such as Jackson, Gson, Protobuf, JSON-B or Fory, with composable compression and encryption, Kafka and Spring Data Redis support, and Spring Boot auto-configuration.",
+  "folders": [
+    "docs"
+  ],
+  "excludeFolders": [
+    "docs/superpowers",
+    "docs/javascripts",
+    "docs/stylesheets"
+  ],
+  "rules": [
+    "Import org.jwcarman.codec:codec-bom and add codec modules without versions.",
+    "Library code should depend only on Codec<T> and CodecFactory from codec-core, leaving the backend to the application.",
+    "In Spring Boot add codec-spring-boot-starter plus one backend module; outside Spring construct the backend's factory directly, e.g. new JacksonCodecFactory(objectMapper).",
+    "Check https://github.com/jwcarman/codec/blob/main/CHANGELOG.md against the codec version in use: entries under Unreleased are not in any release yet."
+  ]
+}
